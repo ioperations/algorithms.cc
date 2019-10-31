@@ -4,29 +4,50 @@ template<typename T>
 class List {
     private:
         class Node;
-        Node* head_ = nullptr;
-        Node* tail_ = nullptr;
+        Node* head_;
+        Node* tail_;
     public:
         class Iterator;
         using iterator = Iterator;
 
+        List() :head_(nullptr), tail_(nullptr) {};
+
+        List(const List&) = delete;
+        List& operator=(const List&) = delete;
+
+        List(List&& o) :head_(o.head_), tail_(o.tail) {
+            o.head_ = nullptr;
+            o.tail_ = nullptr;
+        }
+        List& operator=(List&& o) {
+            std::swap(head_, o.head_);
+            std::swap(tail_, o.tail_);
+            return *this;
+        }
+
         ~List() { delete head_; }
 
-        void push_back(T&& value) {
-            Node* node = new Node(std::move(value));
-            if (tail_) {
-                tail_->next_ = node;
-                tail_ = tail_->next_;
-            } else {
-                tail_ = node;
-                head_ = tail_;
+        template<typename TT>
+            void push_back(TT&& value) {
+                Node* node = new Node(std::forward<TT>(value));
+                if (tail_) {
+                    tail_->next_ = node;
+                    tail_ = tail_->next_;
+                } else {
+                    tail_ = node;
+                    head_ = tail_;
+                }
             }
-        }
+        
+        T& back() { return tail_->value_; }
         iterator begin() {
             return Iterator(head_);
         }
         iterator end() {
             return Iterator(nullptr);
+        }
+        bool empty() {
+            return head_ == nullptr;
         }
 };
 
@@ -34,7 +55,8 @@ template<typename T>
 struct List<T>::Node {
     T value_;
     Node* next_;
-    Node(T&& value) :value_(std::move(value)), next_(nullptr) {}
+    template<typename TT>
+        Node(TT&& value) :value_(std::forward<TT>(value)), next_(nullptr) {}
     ~Node() { delete next_; }
 };
 
@@ -49,5 +71,6 @@ class List<T>::Iterator {
             return *this;
         }
         bool operator!=(Iterator& o) { return node_ != o.node_; }
+        bool operator!=(Iterator&& o) { return node_ != o.node_; }
         T& operator*() { return node_->value_; }
 };

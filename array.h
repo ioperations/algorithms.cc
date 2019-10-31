@@ -13,11 +13,13 @@ class Array {
             static void do_build_array(B&& builder, TT&& t, Args&&... args);
         template<typename B>
             static void do_build_array(B&& builder);
+
+        Array(T* ptr, size_t size) :ptr_(ptr), size_(size) {}
     public:
         using iterator = T*;
 
         Array() :Array(nullptr, 0) {}
-        Array(T* ptr, size_t size) :ptr_(ptr), size_(size) {}
+        Array(size_t size) :Array(new T[size], size) {}
 
         Array(const Array&) = delete;
         Array& operator=(const Array&) = delete;
@@ -34,6 +36,10 @@ class Array {
 
         ~Array() { delete[] ptr_; }
 
+        T& operator[](size_t index) { return ptr_[index]; }
+
+        size_t size() { return size_; }
+
         iterator begin() { return ptr_; }
         iterator end() { return ptr_ + size_; }
 
@@ -44,9 +50,8 @@ class Array {
 template<typename T>
 template<typename... Args>
 auto Array<T>::build_array(Args&&... args) {
-    using builder_type = typename Array<T>::Builder;
-    auto builder = builder_type();
-    do_build_array(std::forward<builder_type>(builder), std::forward<Args>(args)...);
+    Array<T>::Builder builder;
+    do_build_array(builder, std::forward<Args>(args)...);
     return builder.build();
 }
 
@@ -59,8 +64,7 @@ void Array<T>::do_build_array(B&& builder, TT&& t, Args&&... args) {
 
 template<typename T>
 template<typename B>
-void Array<T>::do_build_array(B&& builder) {
-}
+void Array<T>::do_build_array(B&& builder) {}
 
 template<typename T>
 struct Array<T>::Builder {
