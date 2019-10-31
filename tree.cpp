@@ -1,4 +1,3 @@
-
 #include <cstddef>
 #include <iostream>
 
@@ -7,24 +6,25 @@
 template<typename T>
 struct Node {
     T data_;
-    Node* children_;
-    size_t children_size_;
-    Node(T data, Node* children, size_t children_size) :data_(data), children_(children), children_size_(children_size) {}
-    ~Node() { delete [] children_; }
+    Array<Node> children_;
+    Node(T data, Array<Node>&& children) :data_(data), children_(std::move(children)) {}
+    Node(T data) :data_(data) {}
+    Node() = default;
+
+    Node(Node&& o) :data_(o.data_), children_(std::move(o.children_)) {}
+    Node& operator=(Node&& o) {
+        std::swap(data_, o.data_);
+        std::swap(children_, o.children_);
+        return *this;
+    }
 };
 
 int main() {
-    List<int> list;
-    list.push_back(1);
-    list.push_back(2);
-    list.push_back(3);
+    using node = Node<int>;
+    using nodes = Array<node>;
 
-    for (auto& t : list)
-        std::cout << t << std::endl;
-
-    auto a = Array<int>::Builder().add(1).add(2).add(3).build();
-
-    for (auto& t : a)
-        std::cout << t << std::endl;
-
+    node n(1, nodes::build_array(
+            node(11, nodes::build_array(111, 112)),
+            node(12, nodes::build_array(121, 122))
+            ));
 }
