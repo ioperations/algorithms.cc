@@ -1,48 +1,31 @@
-#include <memory>
 #include <iostream>
+
+#include "print_utils.h"
+
+using namespace Print_utils;
 
 template<typename T>
 class Stack {
     private:
         struct Node {
             T data_;
-            std::unique_ptr<Node> next_;
-            Node(T& data, std::unique_ptr<Node>&& next)
-                :data_(data), next_(std::move(next))
-            {}
-        };
-        std::unique_ptr<Node> head_;
-    public:
-        void push(T&& t) {
-            std::unique_ptr<Node> node(new Node(t, std::move(head_)));
-            head_ = std::move(node);
-        }
-        T pop() {
-            std::unique_ptr<Node> node = std::move(head_);
-            head_ = std::move(node->next_);
-            return node->data_;
-
-        }
-        bool empty() {
-            return head_.get() == nullptr;
-        }
-};
-
-template<typename T>
-class Stack_2 {
-    private:
-        struct Node {
-            T data_;
             Node* next_;
-            Node(T& data, Node* next) :data_(data), next_(next) {}
+            template<typename TT>
+                Node(TT& data, Node* next) :data_(data), next_(next) {}
             ~Node() { delete next_; }
         };
-        Node* head_ = nullptr;
+        Node* head_;
+        template<typename TT>
+            friend std::ostream& operator<<(std::ostream& stream, Stack<TT>& stack);
     public:
-        ~Stack_2() { delete head_; }
-        void push(T&& data) {
-            head_ = new Node(data, head_);
-        }
+        Stack() :head_(nullptr) {}
+        Stack(const Stack&) = delete;
+        Stack& operator=(const Stack&) = delete;
+        ~Stack() { delete head_; }
+        template<typename TT>
+            void push(TT&& data) {
+                head_ = new Node(data, head_);
+            }
         T pop() {
             Node* node = head_;
             head_ = head_->next_;
@@ -56,14 +39,50 @@ class Stack_2 {
         }
 };
 
-int main() {
-    Stack_2<int> stack;
-    std::cout << "empty: " << stack.empty() << std::endl;
-    stack.push(1);
-    stack.push(2);
+template<typename T>
+std::ostream& operator<<(std::ostream& stream, Stack<T>& stack) {
+    stream << "[";
+    for (auto node = stack.head_; node != nullptr; node = node->next_) {
+        if (node != stack.head_)
+            stream << ", ";
+        stream << node->data_;
+    }
+    stream << "]";
+    return stream;
+}
 
-    std::cout << "empty: " << stack.empty() << std::endl;
-    // std::cout << stack.pop() << std::endl;
-    // std::cout << stack.pop() << std::endl;
-    // std::cout << "empty: " << stack.empty() << std::endl;
+int main() {
+    {
+        Stack<int> stack;
+        printf("empty: {}\n", stack.empty());
+        stack.push(1);
+        stack.push(2);
+
+        printf("stack: {}\n", stack);
+
+        printf("empty: {}\n", stack.empty());
+        std::cout << stack.pop() << std::endl;
+        std::cout << stack.pop() << std::endl;
+        printf("empty: {}\n", stack.empty());
+    }
+
+    {
+        const char* infix = "5 * ( ( ( 9 + 8 ) * ( 4 * 6 ) ) + 7 )";
+        std::cout << infix << std::endl;
+        Stack<char> stack;
+        const char* p;
+        char c;
+        for (p = infix; c != '\0'; ++p) {
+            c = *p;
+            if (c == ')')
+                std::cout << stack.pop();
+            else if (c == '+' || c == '*')
+                stack.push(c);
+            else if (c >= '0' && c <= '9') {
+                std::cout << c;
+            }
+        }
+        while (!stack.empty())
+            std::cout << stack.pop();
+    }
 }
