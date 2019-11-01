@@ -27,7 +27,7 @@ class Tree_printer {
         using Lines = Array<Line>;
 
         template<typename T>
-            void populate_lines(Node<T>& node, Lines& lines, Siblings& siblings, int level = 0) {
+            void populate_lines(const Node<T>& node, Lines& lines, Siblings& siblings, int level = 0) {
                 siblings.push_back(Printed_node(std::to_string(node.value()), &siblings)); // todo add emplace_back method
                 auto parent = &siblings.back();
                 ++level;
@@ -35,13 +35,14 @@ class Tree_printer {
                 if (node.children().size() > 0) {
                     auto& line = lines[level];
                     line.push_back(Siblings(parent));
-                    for (auto& child : node.children())
-                        populate_lines(child, lines, line.back(), level);
+                    const Array<Node<T>>& children = node.children();
+                    for (auto it = children.cbegin(); it != children.cend(); ++it)
+                        populate_lines(*it, lines, line.back(), level);
                 }
             };
 
         template<typename T>
-            Lines compose_lines(Node<T>& node) {
+            Lines compose_lines(const Node<T>& node) {
                 Lines lines(node.depth());
                 auto& first_line = lines[0];
                 first_line.push_back(Siblings(nullptr));
@@ -52,7 +53,7 @@ class Tree_printer {
         void print(Lines& lines, std::ostream& stream);
     public:
         template<typename T>
-            void print(Node<T>& node, std::ostream& stream) {
+            void print(const Node<T>& node, std::ostream& stream) {
                 Lines lines = compose_lines(node);
                 print(lines, stream);
             }

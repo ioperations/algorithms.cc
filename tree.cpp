@@ -17,6 +17,6 @@ int main() {
             ));
     Tree_printer().print(n, std::cout);
 
-    std::cout << n;
+    // std::cout << n;
 }
 

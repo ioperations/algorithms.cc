@@ -10,14 +10,13 @@ class Node {
         T value_;
         Array<Node> children_;
 
-        template<typename TT>
-            static int calculate_depth(Node<TT>& node, int level = 0) {
-                ++level;
-                int depth = level;
-                for (auto& child : node.children())
-                    depth = std::max(depth, calculate_depth(child, level));
-                return depth;
-            }
+        static int calculate_depth(const Node<T>& node, int level = 0) {
+            ++level;
+            int depth = level;
+            for (auto it = node.children_.cbegin(); it != node.children_.cend(); ++it)
+                depth = std::max(depth, calculate_depth(*it, level));
+            return depth;
+        }
     public:
         Node(T data, Array<Node>&& children) :value_(data), children_(std::move(children)) {}
         Node(T data) :value_(data) {}
@@ -30,16 +29,16 @@ class Node {
             return *this;
         }
 
-        T value() { return value_; }
-        Array<Node>& children() { return children_; }
-        int depth() { return calculate_depth(*this); }
+        T value() const { return value_; }
+        const Array<Node>& children() const { return children_; }
+        int depth() const { return calculate_depth(*this); }
 };
 
-#include "tree_printer.h"
+// #include "tree_printer.h"
 
-template<typename T>
-std::ostream& operator<<(std::ostream& stream, const Node<T>& node) {
-    // Tree_printer().print(node, stream);
-    return stream;
-}
+// template<typename T>
+// std::ostream& operator<<(std::ostream& stream, const Node<T>& node) {
+//     Tree_printer().print<Node<T>>(node, stream);
+//     return stream;
+// }
 
