@@ -10,13 +10,28 @@ class Tree_printer {
     private:
         struct Siblings;
 
-        struct Printed_node {
-            std::string label_;
-            int position_;
-            Siblings* const siblings_;
-            Printed_node(std::string label, Siblings* siblings)
-                :label_(label), position_(0), siblings_(siblings)
-            {}
+        class Printed_node {
+            private:
+                const std::string label_;
+                const int label_half_width_;
+                int position_;
+                Siblings* const siblings_;
+            public:
+                Printed_node(std::string label, Siblings* siblings)
+                    :label_(label), label_half_width_(label.size() / 2), position_(0), siblings_(siblings)
+                {}
+
+                const std::string label() { return label_; }
+
+                int position() { return position_; }
+                void position(int p) { position_ = p; }
+
+                int center() const { return position_ + label_half_width_; }
+                void center(int c) { position_ = c - label_half_width_; }
+
+                void shift(int s) { position_ += s; }
+                int border() const { return position_ + label_.size() + 2; }
+                void fix_positions(Siblings* previous, bool fix_min_positions);
         };
 
         struct Siblings : public List<Printed_node> {
@@ -24,6 +39,7 @@ class Tree_printer {
             Siblings(Printed_node* parent) :parent_(parent) {}
             void fix_positions(Siblings* previous = nullptr, bool fix_min_positions = false);
         };
+
 
         using Line = List<Siblings>;
         using Lines = Array<Line>;

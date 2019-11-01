@@ -1,18 +1,24 @@
 #include "tree_printer.h"
 
+void Tree_printer::Printed_node::fix_positions(Siblings* previous, bool fix_min_positions) {
+    siblings_->fix_positions(previous, fix_min_positions);
+}
+
 void Tree_printer::Siblings::fix_positions(Siblings* previous, bool fix_min_positions) {
     auto middle = [this]() {
-        return front().position_ + (back().position_ - front().position_ + 1) / 2;
+        int b = front().center();
+        int e = back().center();
+        return b + (e - b + 1) / 2;
     };
 
     auto shift = 0;
     if (previous) {
         auto& previous_node = previous->back();
-        shift = previous_node.position_ + previous_node.label_.size() + 2 - front().position_;
+        shift = previous_node.border() - front().position();
     }
     int current_middle = middle();
     if (parent_) 
-        shift = std::max(shift, parent_->position_ - current_middle);
+        shift = std::max(shift, parent_->center() - current_middle);
 
     bool shifted = false;
     if (shift > 0)
@@ -21,11 +27,11 @@ void Tree_printer::Siblings::fix_positions(Siblings* previous, bool fix_min_posi
     if (shift > 0 || fix_min_positions) { // todo pass parent as iterator and fix min pos for nodes after parent only?
         Printed_node* previous_node = nullptr;
         for (auto& node : *this) {
-            node.position_ += shift;
+            node.shift(shift);
             if (previous_node) {
-                int min_position = previous_node->position_ + previous_node->label_.size() + 2;
-                if (min_position > node.position_) {
-                    node.position_ = min_position;
+                int min_position = previous_node->border();
+                if (min_position > node.position()) {
+                    node.position(min_position);
                     shifted = true;
                 }
             }
@@ -36,9 +42,9 @@ void Tree_printer::Siblings::fix_positions(Siblings* previous, bool fix_min_posi
     if (parent_) {
         if (shifted)
             current_middle = middle();
-        if (parent_->position_ != current_middle) {
-            parent_->position_ = current_middle;
-            parent_->siblings_->fix_positions(nullptr, true);
+        if (parent_->center() != current_middle) {
+            parent_->center(current_middle);
+            parent_->fix_positions(nullptr, true);
         }
     }
 }
@@ -49,7 +55,7 @@ void Tree_printer::do_print(Lines& lines, std::ostream& stream) {
         for (auto& siblings : line) {
             for (auto& node : siblings) {
                 if (previous)
-                    node.position_ = previous->position_ + previous->label_.size() + 2;
+                    node.position(previous->border());
                 previous = &node;
             }
         }
@@ -95,10 +101,10 @@ void Tree_printer::do_print(Lines& lines, std::ostream& stream) {
                     more_than_one = second != siblings.end();
                 }
                 auto parent = siblings.parent_;
-                auto parent_position = parent->position_ + parent->label_.size() / 2;
+                auto parent_position = parent->center();
 
                 if (more_than_one) {
-                    appender.repeat_until(node->position_ + node->label_.size() / 2, " ");
+                    appender.repeat_until(node->center(), " ");
                     ++node;
                     bool first = true;
                     for (; node != siblings.end(); ++node) {
@@ -109,7 +115,7 @@ void Tree_printer::do_print(Lines& lines, std::ostream& stream) {
                             appender << "┼";
                         else
                             appender << "┬";
-                        auto end = node->position_ + (node->label_.size()) / 2;
+                        auto end = node->center();
                         if (parent_position > appender.count_ && parent_position < end) {
                             appender.repeat_until(parent_position, "─");
                             appender << "┴";
@@ -128,8 +134,8 @@ void Tree_printer::do_print(Lines& lines, std::ostream& stream) {
         Appender appender(stream);
         for (auto& siblings : *line)
             for (auto& node : siblings) {
-                appender.repeat_until(node.position_, " ");
-                appender << node.label_;
+                appender.repeat_until(node.position(), " ");
+                appender << node.label();
             }
     }
 }
