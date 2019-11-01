@@ -15,7 +15,7 @@ class List {
         List(const List&) = delete;
         List& operator=(const List&) = delete;
 
-        List(List&& o) :head_(o.head_), tail_(o.tail) {
+        List(List&& o) :head_(o.head_), tail_(o.tail_) {
             o.head_ = nullptr;
             o.tail_ = nullptr;
         }
@@ -39,6 +39,7 @@ class List {
                 }
             }
         
+        T& front() { return head_->value_; }
         T& back() { return tail_->value_; }
         iterator begin() {
             return Iterator(head_);

@@ -36,31 +36,62 @@ class Node {
 
 using node = Node<int>;
 
+struct Siblings;
+
 struct Printed_node {
     std::string label_;
-    int offset_;
-    Printed_node* parent_;
-    Printed_node(std::string label, int offset, Printed_node* parent)
-        :label_(label), offset_(offset), parent_(parent)
+    int position_;
+    Siblings* const siblings_;
+    Printed_node(std::string label, Siblings* siblings)
+        :label_(label), position_(0), siblings_(siblings)
     {}
 };
 
-using Line = List<Printed_node>;
+std::ostream& operator<<(std::ostream& stream, const Printed_node& node) {
+    stream << node.label_ << "[" << node.position_ << "]";
+    return stream;
+}
+
+struct Siblings : public List<Printed_node> {
+    Printed_node* parent_;
+    Siblings(Printed_node* parent) :parent_(parent) {}
+    void foo() {
+        auto middle = [this]() {
+            return front().position_ + (back().position_ - front().position_ + 1) / 2;
+        };
+        if (parent_) {
+            int shift = parent_->position_ - middle();
+            if (shift > 0)
+                for (auto& node : *this)
+                    node.position_ += shift; // todo check previous siblings group position and shift further if required
+            
+            parent_->position_ = middle();
+            parent_->siblings_->foo();
+        }
+    }
+};
+
+using Line = List<Siblings>;
 using Lines = Array<Line>;
 
-void populate_lines(node& node, Lines& lines, Printed_node* parent = nullptr, int level = 0) {
-    auto& line = lines[level];
-    int offset = line.empty() ? 0 : 2;
-    line.push_back(Printed_node(std::to_string(node.value()), offset, parent)); // todo add emplace_back method
-    parent = &line.back();
+void populate_lines(node& node, Lines& lines, Siblings& siblings, int level = 0) {
+    siblings.push_back(Printed_node(std::to_string(node.value()), &siblings)); // todo add emplace_back method
+    auto parent = &siblings.back();
     ++level;
-    for (auto& child : node.children())
-        populate_lines(child, lines, parent, level);
+
+    if (node.children().size() > 0) {
+        auto& line = lines[level];
+        line.push_back(Siblings(parent));
+        for (auto& child : node.children())
+            populate_lines(child, lines, line.back(), level);
+    }
 };
 
 Lines compose_lines(node& node) {
     Lines lines(node.depth());
-    populate_lines(node, lines);
+    auto& first_line = lines[0];
+    first_line.push_back(Siblings(nullptr));
+    populate_lines(node, lines, first_line.back());
     return lines;
 }
 
@@ -76,49 +107,66 @@ int main() {
 
     Lines lines = compose_lines(n);
 
-    auto print = [&lines]() {
-        for (auto& line : lines) {
-            for (auto& node : line) {
-                for (int i = 0; i < node.offset_; ++i) std::cout << " ";
-                std::cout << node.label_;
+    for (auto& line : lines) {
+        Printed_node* previous = nullptr;
+        for (auto& siblings : line) {
+            for (auto& node : siblings) {
+                if (previous)
+                    node.position_ = previous->position_ + previous->label_.size() + 2;
+                previous = &node;
             }
+        }
+    }
+
+    auto print = [&lines]() {
+        auto middle = [](int i) { return (i + 1) / 2; };
+        for (auto it = lines.begin(); it != lines.end(); ++it) {
+            auto& line = *it;
+            if (it != lines.begin()) {
+                int chars_count = 0;
+                for (auto& siblings : line) {
+
+                    auto node_it = siblings.begin();
+                    {
+                        auto& node = *node_it;
+                        for (; chars_count < node.position_ + node.label_.size() / 2; ++chars_count)
+                            std::cout << " ";
+                    }
+                    if (node_it != siblings.end()) ++node_it;
+                    bool first = true;
+                    for (; node_it != siblings.end(); ++node_it) {
+                        auto& node = *node_it;
+                        if (first) {
+                            std::cout << "┌";
+                            first = false;
+                        } else
+                            std::cout << "┬";
+                        ++chars_count;
+                        for (; chars_count < node.position_ + (node.label_.size() + 1) / 2; ++chars_count)
+                            std::cout << "─";
+                    }
+                    std::cout << "┐";
+                    ++chars_count;
+                }
+                std::cout << std::endl;
+            }
+            int chars_count = 0;
+            for (auto& siblings : line)
+                for (auto& node : siblings) {
+                    for (int i = 0; i < node.position_ - chars_count; ++i) 
+                        std::cout << " ";
+                    std::cout << node.label_;
+                    chars_count = node.position_ + node.label_.size();
+                }
             std::cout << std::endl;
         }
     };
 
     print();
 
-    for (int i = 1; i < lines.size(); ++i) {
-        Line& line = lines[i];
-        Printed_node* previous = nullptr;
-        int previous_length = 0;
-        int length = 0;
-        auto foo = [&]() {
-            // std::cout << "node: " << previous->label_ << std::endl;
-            // std::cout << "parent: " << previous->parent_->label_ << std::endl;
-            // std::cout << "length: " << length << std::endl;
-
-            previous->parent_->offset_ = previous_length + length / 2;
-        };
-        for (auto& current : line) {
-            bool first = previous && previous->parent_ != current.parent_;
-            if (first) {
-                foo();
-                previous_length += length / 2;
-                length = 0;
-            }
-            length += current.label_.size();
-            if (first)
-                previous += current.offset_;
-            else
-                length += current.offset_;
-            previous = &current;
-        }
-        if (previous) {
-            foo();
-        }
-    }
+    for (int i = 1; i < lines.size(); ++i)
+        for (auto& siblings : lines[i])
+            siblings.foo();
 
     print();
-
 }
