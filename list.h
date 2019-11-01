@@ -74,4 +74,5 @@ class List<T>::Iterator {
         bool operator!=(Iterator& o) { return node_ != o.node_; }
         bool operator!=(Iterator&& o) { return node_ != o.node_; }
         T& operator*() { return node_->value_; }
+        T* operator->() { return &node_->value_; }
 };
