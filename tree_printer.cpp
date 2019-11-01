@@ -15,7 +15,7 @@ void Tree_printer::Siblings::fix_positions() {
     }
 }
 
-void Tree_printer::print(Lines& lines, std::ostream& stream) {
+void Tree_printer::do_print(Lines& lines, std::ostream& stream) {
     for (auto& line : lines) {
         Printed_node* previous = nullptr;
         for (auto& siblings : line) {

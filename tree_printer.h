@@ -1,8 +1,9 @@
 #pragma once
 
-#include "tree.h"
-
 #include <iostream>
+
+#include "array.h"
+#include "list.h"
 
 class Tree_printer {
     private:
@@ -26,8 +27,8 @@ class Tree_printer {
         using Line = List<Siblings>;
         using Lines = Array<Line>;
 
-        template<typename T>
-            void populate_lines(const Node<T>& node, Lines& lines, Siblings& siblings, int level = 0) {
+        template<typename N>
+            void populate_lines(const N& node, Lines& lines, Siblings& siblings, int level = 0) {
                 siblings.push_back(Printed_node(std::to_string(node.value()), &siblings)); // todo add emplace_back method
                 auto parent = &siblings.back();
                 ++level;
@@ -35,26 +36,41 @@ class Tree_printer {
                 if (node.children().size() > 0) {
                     auto& line = lines[level];
                     line.push_back(Siblings(parent));
-                    const Array<Node<T>>& children = node.children();
+                    auto& children = node.children();
                     for (auto it = children.cbegin(); it != children.cend(); ++it)
                         populate_lines(*it, lines, line.back(), level);
                 }
             };
 
-        template<typename T>
-            Lines compose_lines(const Node<T>& node) {
-                Lines lines(node.depth());
+        template<typename N>
+            int calculate_depth(const N& node, int level = 0) {
+                ++level;
+                int depth = level;
+                auto& children = node.children();
+                for (auto it = children.cbegin(); it != children.cend(); ++it)
+                    depth = std::max(depth, calculate_depth(*it, level));
+                return depth;
+            }
+
+        template<typename N>
+            Lines compose_lines(const N& node) {
+                Lines lines(calculate_depth(node));
                 auto& first_line = lines[0];
                 first_line.push_back(Siblings(nullptr));
                 populate_lines(node, lines, first_line.back());
                 return lines;
             }
 
-        void print(Lines& lines, std::ostream& stream);
+        void do_print(Lines& lines, std::ostream& stream);
     public:
-        template<typename T>
-            void print(const Node<T>& node, std::ostream& stream) {
+        template<typename N>
+            void print(const N& node, std::ostream& stream) {
                 Lines lines = compose_lines(node);
-                print(lines, stream);
+                do_print(lines, stream);
             }
+
+        static Tree_printer default_instance() {
+            static Tree_printer printer;
+            return printer;
+        }
 };
