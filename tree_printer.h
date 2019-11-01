@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <sstream>
 
 #include "array.h"
 #include "list.h"
@@ -21,7 +22,7 @@ class Tree_printer {
         struct Siblings : public List<Printed_node> {
             Printed_node* parent_;
             Siblings(Printed_node* parent) :parent_(parent) {}
-            void fix_positions();
+            void fix_positions(Siblings* previous = nullptr, bool fix_min_positions = false);
         };
 
         using Line = List<Siblings>;
@@ -29,7 +30,9 @@ class Tree_printer {
 
         template<typename N>
             void populate_lines(const N& node, Lines& lines, Siblings& siblings, int level = 0) {
-                siblings.push_back(Printed_node(std::to_string(node.value()), &siblings)); // todo add emplace_back method
+                std::stringstream ss;
+                ss << node.value();
+                siblings.push_back(Printed_node(ss.str(), &siblings)); // todo add emplace_back method
                 auto parent = &siblings.back();
                 ++level;
 

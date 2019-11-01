@@ -6,7 +6,7 @@
 #include "tree_printer.h"
 
 int main() {
-    {
+    { // todo delete
         using node = Node<int>;
         using nodes = Array<node>;
         node n(1, nodes::build_array(
