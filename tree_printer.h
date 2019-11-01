@@ -4,7 +4,7 @@
 #include <sstream>
 
 #include "array.h"
-#include "list.h"
+#include "forward_list.h"
 
 class Tree_printer {
     private:
