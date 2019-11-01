@@ -71,7 +71,7 @@ void Array<T>::do_build_array(B&& builder) {}
 
 template<typename T>
 struct Array<T>::Builder {
-    List<T> list_;
+    Forward_list<T> list_;
     size_t count_ = 0;
     void add(T&& value) {
         list_.push_back(std::move(value));

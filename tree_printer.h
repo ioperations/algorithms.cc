@@ -34,7 +34,7 @@ class Tree_printer {
                 void fix_positions(Siblings* previous = nullptr);
         };
 
-        class Siblings : public List<Printed_node> {
+        class Siblings : public Forward_list<Printed_node> {
             private:
                 Printed_node* const parent_;
                 iterator parent_it_;
@@ -46,7 +46,7 @@ class Tree_printer {
                 Printed_node* parent() { return parent_; }
         };
 
-        using Line = List<Siblings>;
+        using Line = Forward_list<Siblings>;
         using Lines = Array<Line>;
 
         template<typename N>

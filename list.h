@@ -3,7 +3,7 @@
 #include <algorithm>
 
 template<typename T>
-class List {
+class Forward_list {
     private:
         class Node;
         Node* head_;
@@ -12,22 +12,22 @@ class List {
         class Iterator;
         using iterator = Iterator;
 
-        List() :head_(nullptr), tail_(nullptr) {};
+        Forward_list() :head_(nullptr), tail_(nullptr) {};
 
-        List(const List&) = delete;
-        List& operator=(const List&) = delete;
+        Forward_list(const Forward_list&) = delete;
+        Forward_list& operator=(const Forward_list&) = delete;
 
-        List(List&& o) :head_(o.head_), tail_(o.tail_) {
+        Forward_list(Forward_list&& o) :head_(o.head_), tail_(o.tail_) {
             o.head_ = nullptr;
             o.tail_ = nullptr;
         }
-        List& operator=(List&& o) {
+        Forward_list& operator=(Forward_list&& o) {
             std::swap(head_, o.head_);
             std::swap(tail_, o.tail_);
             return *this;
         }
 
-        ~List() { delete head_; }
+        ~Forward_list() { delete head_; }
 
         template<typename TT>
             void push_back(TT&& value) {
@@ -59,7 +59,7 @@ class List {
 };
 
 template<typename T>
-struct List<T>::Node {
+struct Forward_list<T>::Node {
     T value_;
     Node* next_;
     template<typename TT>
@@ -68,7 +68,7 @@ struct List<T>::Node {
 };
 
 template<typename T>
-class List<T>::Iterator {
+class Forward_list<T>::Iterator {
     private:
         Node* node_;
     public:
