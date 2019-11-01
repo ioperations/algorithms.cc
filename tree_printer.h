@@ -34,12 +34,17 @@ class Tree_printer {
                 void fix_positions(Siblings* previous, bool fix_min_positions);
         };
 
-        struct Siblings : public List<Printed_node> {
-            Printed_node* parent_;
-            Siblings(Printed_node* parent) :parent_(parent) {}
-            void fix_positions(Siblings* previous = nullptr, bool fix_min_positions = false);
+        class Siblings : public List<Printed_node> {
+            private:
+                Printed_node* const parent_;
+                iterator parent_it_;
+            public:
+                Siblings(iterator parent_it = iterator(nullptr)) 
+                    :parent_(parent_it.empty() ? nullptr : &*parent_it), parent_it_(parent_it) 
+                    {}
+                void fix_positions(Siblings* previous = nullptr, bool fix_min_positions = false);
+                Printed_node* parent() { return parent_; }
         };
-
 
         using Line = List<Siblings>;
         using Lines = Array<Line>;
@@ -49,12 +54,12 @@ class Tree_printer {
                 std::stringstream ss;
                 ss << node.value();
                 siblings.push_back(Printed_node(ss.str(), &siblings)); // todo add emplace_back method
-                auto parent = &siblings.back();
+                auto parent_it = siblings.before_end();
                 ++level;
 
                 if (node.children().size() > 0) {
                     auto& line = lines[level];
-                    line.push_back(Siblings(parent));
+                    line.push_back(Siblings(parent_it));
                     auto& children = node.children();
                     for (auto it = children.cbegin(); it != children.cend(); ++it)
                         populate_lines(*it, lines, line.back(), level);
@@ -75,7 +80,7 @@ class Tree_printer {
             Lines compose_lines(const N& node) {
                 Lines lines(calculate_depth(node));
                 auto& first_line = lines[0];
-                first_line.push_back(Siblings(nullptr));
+                first_line.push_back(Siblings());
                 populate_lines(node, lines, first_line.back());
                 return lines;
             }

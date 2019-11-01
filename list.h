@@ -47,7 +47,11 @@ class List {
             return Iterator(head_);
         }
         iterator end() {
-            return Iterator(nullptr);
+            static Iterator it(nullptr);
+            return it;
+        }
+        iterator before_end() {
+            return Iterator(tail_);
         }
         bool empty() {
             return head_ == nullptr;
@@ -69,6 +73,7 @@ class List<T>::Iterator {
         Node* node_;
     public:
         Iterator(Node* node) :node_(node) {}
+        bool empty() { return node_ == nullptr; }
         Iterator& operator++() { 
             node_ = node_->next_; 
             return *this;

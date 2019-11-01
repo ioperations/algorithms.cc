@@ -7,43 +7,34 @@ void Tree_printer::Printed_node::fix_positions(Siblings* previous, bool fix_min_
 void Tree_printer::Siblings::fix_positions(Siblings* previous, bool fix_min_positions) {
     auto middle = [this]() {
         int b = front().center();
-        int e = back().center();
-        return b + (e - b + 1) / 2;
+        return b + (back().center() - b + 1) / 2;
     };
 
     auto shift = 0;
-    if (previous) {
-        auto& previous_node = previous->back();
-        shift = previous_node.border() - front().position();
-    }
+    if (previous)
+        shift = previous->back().border() - front().position();
     int current_middle = middle();
     if (parent_) 
         shift = std::max(shift, parent_->center() - current_middle);
 
-    bool shifted = false;
     if (shift > 0)
-        shifted = true;
-
-    if (shift > 0 || fix_min_positions) { // todo pass parent as iterator and fix min pos for nodes after parent only?
-        Printed_node* previous_node = nullptr;
-        for (auto& node : *this) {
+        for (auto& node : *this)
             node.shift(shift);
-            if (previous_node) {
-                int min_position = previous_node->border();
-                if (min_position > node.position()) {
-                    node.position(min_position);
-                    shifted = true;
-                }
-            }
-            previous_node = &node;
-        }
-    }
 
     if (parent_) {
-        if (shifted)
+        if (shift > 0)
             current_middle = middle();
         if (parent_->center() != current_middle) {
             parent_->center(current_middle);
+            auto previous_node = parent_;
+            auto parent_sibling = parent_it_;
+            ++parent_sibling;
+            for (; !parent_sibling.empty(); ++parent_sibling) {
+                int min_position = previous_node->border();
+                if (min_position > parent_sibling->position())
+                    parent_sibling->position(min_position);
+                previous_node = &*parent_sibling;
+            }
             parent_->fix_positions(nullptr, true);
         }
     }
@@ -100,8 +91,7 @@ void Tree_printer::do_print(Lines& lines, std::ostream& stream) {
                     ++second;
                     more_than_one = second != siblings.end();
                 }
-                auto parent = siblings.parent_;
-                auto parent_position = parent->center();
+                auto parent_center = siblings.parent()->center();
 
                 if (more_than_one) {
                     appender.repeat_until(node->center(), " ");
@@ -111,13 +101,13 @@ void Tree_printer::do_print(Lines& lines, std::ostream& stream) {
                         if (first) {
                             appender << "┌";
                             first = false;
-                        } else if (parent_position == appender.count_)
+                        } else if (parent_center == appender.count_)
                             appender << "┼";
                         else
                             appender << "┬";
                         auto end = node->center();
-                        if (parent_position > appender.count_ && parent_position < end) {
-                            appender.repeat_until(parent_position, "─");
+                        if (parent_center > appender.count_ && parent_center < end) {
+                            appender.repeat_until(parent_center, "─");
                             appender << "┴";
                             appender.repeat_until(end, "─");
                         } else
@@ -125,7 +115,7 @@ void Tree_printer::do_print(Lines& lines, std::ostream& stream) {
                     }
                     appender << "┐";
                 } else {
-                    appender.repeat_until(parent_position, " ");
+                    appender.repeat_until(parent_center, " ");
                     appender << "│";
                 }
             }
