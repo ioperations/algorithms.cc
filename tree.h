@@ -6,28 +6,31 @@
 #include "tree_printer.h"
 
 template<typename T>
-class Node {
+class Tree_node {
     private:
         T value_;
-        Array<Node> children_;
+        Array<Tree_node> children_;
     public:
-        Node(T data, Array<Node>&& children) :value_(data), children_(std::move(children)) {}
-        Node(T data) :value_(data) {}
-        Node() = default;
+        Tree_node(T data, Array<Tree_node>&& children) :value_(data), children_(std::move(children)) {}
+        Tree_node(T data) :value_(data) {}
+        Tree_node() = default;
 
-        Node(Node&& o) :value_(o.value_), children_(std::move(o.children_)) {}
-        Node& operator=(Node&& o) {
+        Tree_node(const Tree_node&) = delete;
+        Tree_node& operator=(const Tree_node&) = delete;
+
+        Tree_node(Tree_node&& o) :value_(o.value_), children_(std::move(o.children_)) {}
+        Tree_node& operator=(Tree_node&& o) {
             std::swap(value_, o.value_);
             std::swap(children_, o.children_);
             return *this;
         }
 
         T value() const { return value_; }
-        const Array<Node>& children() const { return children_; }
+        const Array<Tree_node>& children() const { return children_; }
 };
 
 template<typename T>
-std::ostream& operator<<(std::ostream& stream, const Node<T>& node) {
+std::ostream& operator<<(std::ostream& stream, const Tree_node<T>& node) {
     Tree_printer::default_instance().print(node, stream);
     return stream;
 }
