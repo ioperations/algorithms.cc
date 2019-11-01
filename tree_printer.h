@@ -31,7 +31,7 @@ class Tree_printer {
 
                 void shift(int s) { position_ += s; }
                 int border() const { return position_ + label_.size() + 2; }
-                void fix_positions(Siblings* previous, bool fix_min_positions);
+                void fix_positions(Siblings* previous = nullptr);
         };
 
         class Siblings : public List<Printed_node> {
@@ -42,7 +42,7 @@ class Tree_printer {
                 Siblings(iterator parent_it = iterator(nullptr)) 
                     :parent_(parent_it.empty() ? nullptr : &*parent_it), parent_it_(parent_it) 
                     {}
-                void fix_positions(Siblings* previous = nullptr, bool fix_min_positions = false);
+                void fix_positions(Siblings* previous);
                 Printed_node* parent() { return parent_; }
         };
 

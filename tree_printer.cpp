@@ -1,10 +1,10 @@
 #include "tree_printer.h"
 
-void Tree_printer::Printed_node::fix_positions(Siblings* previous, bool fix_min_positions) {
-    siblings_->fix_positions(previous, fix_min_positions);
+void Tree_printer::Printed_node::fix_positions(Siblings* previous) {
+    siblings_->fix_positions(previous);
 }
 
-void Tree_printer::Siblings::fix_positions(Siblings* previous, bool fix_min_positions) {
+void Tree_printer::Siblings::fix_positions(Siblings* previous) {
     auto middle = [this]() {
         int b = front().center();
         return b + (back().center() - b + 1) / 2;
@@ -35,7 +35,7 @@ void Tree_printer::Siblings::fix_positions(Siblings* previous, bool fix_min_posi
                     parent_sibling->position(min_position);
                 previous_node = &*parent_sibling;
             }
-            parent_->fix_positions(nullptr, true);
+            parent_->fix_positions();
         }
     }
 }
