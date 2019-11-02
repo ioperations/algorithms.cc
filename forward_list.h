@@ -46,9 +46,10 @@ class Forward_list {
             append_node(new Node(T(std::forward<Args>(args)...)));
         }
 
-        void push_back(T&& value) {
-            append_node(new Node(std::forward<T>(value)));
-        }
+        template<typename TT>
+            void push_back(TT&& value) {
+                append_node(new Node(std::forward<TT>(value)));
+            }
 
         T& front() { return head_->value_; }
         T& back() { return tail_->value_; }
