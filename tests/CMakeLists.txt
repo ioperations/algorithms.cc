@@ -6,3 +6,4 @@ include_directories(${MAIN_SRC})
 link_libraries(GTest::GTest GTest::Main)
 
 add_executable(tree_printer_test tree_printer_test.cpp ${MAIN_SRC}/tree_printer.cpp)
+add_executable(forward_list_test forward_list_test.cpp)

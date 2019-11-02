@@ -10,7 +10,9 @@ class Forward_list {
         Node* tail_;
     public:
         class Iterator;
+        class Const_iterator;
         using iterator = Iterator;
+        using const_iterator = Const_iterator;
 
         Forward_list() :head_(nullptr), tail_(nullptr) {};
 
@@ -50,6 +52,13 @@ class Forward_list {
             static Iterator it(nullptr);
             return it;
         }
+        const_iterator cbegin() const {
+            return Const_iterator(head_);
+        }
+        const_iterator cend() const {
+            static Const_iterator it(nullptr);
+            return it;
+        }
         iterator before_end() {
             return Iterator(tail_);
         }
@@ -67,19 +76,50 @@ struct Forward_list<T>::Node {
     ~Node() { delete next_; }
 };
 
-template<typename T>
-class Forward_list<T>::Iterator {
-    private:
-        Node* node_;
+template<typename N>
+class Base_iterator {
+    protected:
+        N node_;
     public:
-        Iterator(Node* node) :node_(node) {}
-        bool empty() { return node_ == nullptr; }
-        Iterator& operator++() { 
+        Base_iterator(N node) :node_(node) {}
+        bool empty() const { return node_ == nullptr; }
+        Base_iterator& operator++() { 
             node_ = node_->next_; 
             return *this;
         }
-        bool operator!=(Iterator& o) { return node_ != o.node_; }
-        bool operator!=(Iterator&& o) { return node_ != o.node_; }
-        T& operator*() { return node_->value_; }
-        T* operator->() { return &node_->value_; }
+        bool operator==(const Base_iterator& o) { return node_ == o.node_; }
+        bool operator!=(const Base_iterator& o) { return node_ != o.node_; }
+        bool operator==(Base_iterator&& o) { return node_ == o.node_; }
+        bool operator!=(Base_iterator&& o) { return node_ != o.node_; }
 };
+
+template<typename T>
+class Forward_list<T>::Iterator : public Base_iterator<Node*> {
+    private:
+        using Base = Base_iterator<Node*>;
+    public:
+        Iterator(Node* node) :Base(node) {}
+        T& operator*() { return Base::node_->value_; }
+        T* operator->() { return &Base::node_->value_; }
+};
+
+template<typename T>
+class Forward_list<T>::Const_iterator : public Base_iterator<const Node*> {
+    private:
+        using Base = Base_iterator<const Node*>;
+    public:
+        Const_iterator(Node* node) :Base(node) {}
+        const T& operator*() { return Base::node_->value_; }
+        const T* operator->() { return &Base::node_->value_; }
+};
+
+template<typename T>
+std::ostream& operator<<(std::ostream& stream, const Forward_list<T>& a) {
+    stream << "[";
+    for (auto it = a.cbegin(); it != a.cend(); ++it) {
+        if (it != a.cbegin())
+            stream << ", ";
+        stream << *it;
+    }
+    return stream << "]";
+}

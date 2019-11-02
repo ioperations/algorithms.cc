@@ -8,7 +8,6 @@ class Array {
         T* ptr_;
         size_t size_;
 
-        struct Builder;
         template<typename B, typename TT, typename... Args>
             static void do_build_array(B&& builder, TT&& t, Args&&... args);
         template<typename B>
@@ -16,6 +15,8 @@ class Array {
 
         Array(T* ptr, size_t size) :ptr_(ptr), size_(size) {}
     public:
+        struct Builder;
+
         using iterator = T*;
         using const_iterator = T* const;
 
@@ -51,6 +52,18 @@ class Array {
 };
 
 template<typename T>
+std::ostream& operator<<(std::ostream& stream, const Array<T>& a) {
+    stream << "[";
+    for (auto it = a.cbegin(); it != a.cend(); ++it) {
+        if (it != a.cbegin())
+            stream << ", ";
+        stream << *it;
+    }
+    return stream << "]";
+}
+    
+
+template<typename T>
 template<typename... Args>
 auto Array<T>::build_array(Args&&... args) {
     Array<T>::Builder builder;
@@ -70,18 +83,20 @@ template<typename B>
 void Array<T>::do_build_array(B&& builder) {}
 
 template<typename T>
-struct Array<T>::Builder {
-    Forward_list<T> list_;
-    size_t count_ = 0;
-    void add(T&& value) {
-        list_.push_back(std::move(value));
-        ++count_;
-    }
-    Array build() {
-        Array a(new T[count_], count_);
-        int i = -1;
-        for (auto& v : list_) a.ptr_[++i] = std::move(v);
-        return a;
-    }
+class Array<T>::Builder {
+    private:
+        Forward_list<T> list_;
+        size_t count_ = 0;
+    public:
+        void add(T&& value) {
+            list_.push_back(std::move(value));
+            ++count_;
+        }
+        Array build() {
+            Array a(new T[count_], count_);
+            int i = -1;
+            for (auto& v : list_) a.ptr_[++i] = std::move(v);
+            return a;
+        }
 };
 
