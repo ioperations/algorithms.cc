@@ -53,7 +53,7 @@ class Tree_printer {
             void populate_lines(const N& node, Lines& lines, Siblings& siblings, int level = 0) {
                 std::stringstream ss;
                 ss << node.value();
-                siblings.push_back(Printed_node(ss.str(), &siblings)); // todo add emplace_back method
+                siblings.emplace_back(ss.str(), &siblings);
                 auto parent_it = siblings.before_end();
                 ++level;
 

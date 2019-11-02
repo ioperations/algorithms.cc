@@ -8,6 +8,16 @@ class Forward_list {
         class Node;
         Node* head_;
         Node* tail_;
+
+        void append_node(Node* node) {
+            if (tail_) {
+                tail_->next_ = node;
+                tail_ = tail_->next_;
+            } else {
+                tail_ = node;
+                head_ = tail_;
+            }
+        }
     public:
         class Iterator;
         class Const_iterator;
@@ -31,18 +41,15 @@ class Forward_list {
 
         ~Forward_list() { delete head_; }
 
-        template<typename TT>
-            void push_back(TT&& value) {
-                Node* node = new Node(std::forward<TT>(value));
-                if (tail_) {
-                    tail_->next_ = node;
-                    tail_ = tail_->next_;
-                } else {
-                    tail_ = node;
-                    head_ = tail_;
-                }
-            }
-        
+        template<typename... Args>
+        void emplace_back(Args&&... args) {
+            append_node(new Node(T(std::forward<Args>(args)...)));
+        }
+
+        void push_back(T&& value) {
+            append_node(new Node(std::forward<T>(value)));
+        }
+
         T& front() { return head_->value_; }
         T& back() { return tail_->value_; }
         iterator begin() {

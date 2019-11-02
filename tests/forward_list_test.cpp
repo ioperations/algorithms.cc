@@ -1,11 +1,11 @@
 #include "gtest/gtest.h"
 
 #include "forward_list.h"
+#include "pair.h"
 
 #include <sstream>
 
 TEST(Forward_list_test, test_0) {
-
     using list = Forward_list<int>;
 
     auto to_string = [](const list& l) {
@@ -33,4 +33,11 @@ TEST(Forward_list_test, test_0) {
     std::stringstream ss;
     for (auto i : l) ss << i << " ";
     ASSERT_EQ("4 5 7 8 ", ss.str());
+}
+
+TEST(Forward_list_test, test_1) {
+    Forward_list<Pair<int, int>> list;
+    list.emplace_back(1, 2);
+    auto pair = *list.begin();
+    ASSERT_EQ(Pair(1, 2), *list.begin());
 }

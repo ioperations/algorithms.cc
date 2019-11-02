@@ -88,6 +88,11 @@ class Array<T>::Builder {
         Forward_list<T> list_;
         size_t count_ = 0;
     public:
+        template<typename... Args>
+            void emplace(Args... args) {
+                list_.emplace_back(std::forward<Args>(args)...);
+                ++count_;
+            }
         void add(T&& value) {
             list_.push_back(std::move(value));
             ++count_;
