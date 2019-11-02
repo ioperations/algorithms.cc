@@ -89,7 +89,7 @@ class Array<T>::Builder {
         size_t count_ = 0;
     public:
         template<typename... Args>
-            void emplace(Args... args) {
+            void emplace(Args&&... args) {
                 list_.emplace_back(std::forward<Args>(args)...);
                 ++count_;
             }
