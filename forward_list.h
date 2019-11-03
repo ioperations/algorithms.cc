@@ -132,9 +132,10 @@ template<typename T>
 std::ostream& operator<<(std::ostream& stream, const Forward_list<T>& a) {
     stream << "[";
     auto it = a.cbegin();
-    if (it != a.cend())
+    if (it != a.cend()) {
         stream << *it;
-    for (; it != a.cend(); ++it)
-        stream << ", " << *it;
+        for (++it; it != a.cend(); ++it)
+            stream << ", " << *it;
+    }
     return stream << "]";
 }
