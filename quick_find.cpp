@@ -5,12 +5,43 @@
 #include "forward_list.h"
 #include "pair.h"
 
+template<typename T>
+class Rich_text {
+    public:
+        T value_;
+        bool bold_;
+        Rich_text() = default;
+        template<typename TT>
+            Rich_text(TT&& value, bool bold): value_(std::forward<TT>(value)), bold_(bold) {}
+        template<typename TT>
+            friend std::ostream& operator<<(std::ostream& s, Rich_text<TT> r) {
+#ifdef unix
+                if (r.bold_)
+                    s << "\x1B[1m";
+#endif
+                s << r.value_;
+#ifdef unix
+                if (r.bold_)
+                    s << "\x1B[0m";
+#endif
+                return s;
+            }
+};
+
+using Connections = Array<Rich_text<int>>;
+using Connection_pairs = Forward_list<Pair<int, int>>;
+
 template<typename F>
-void search_connections(const Forward_list<Pair<int, int>>& pairs, Array<int>& connections, F connections_searcher) {
-    for (size_t i = 0; i < connections.size(); ++i)
-        connections[i] = i;
+void search_connections(const Connection_pairs& pairs, Connections& connections, F connections_searcher) {
+    for (size_t i = 0; i < connections.size(); ++i) {
+        connections[i].value_ = i;
+        connections[i].bold_ = false;
+    }
     std::cout << connections << std::endl;
     for (auto pair = pairs.cbegin(); pair != pairs.cend(); ++pair) {
+        if (pair != pairs.cbegin())
+            for (auto& connection : connections)
+                connection.bold_ = false;
         auto already_existing = connections_searcher(pair->first_, pair->second_, connections);
         std::cout << connections << "  " << pair->first_ << "-" << pair->second_;
         if (!already_existing.empty()) {
@@ -44,7 +75,7 @@ int main() {
 q)";
     std::stringstream ss(input);
 
-    Forward_list<Pair<int, int>> pairs;
+    Connection_pairs pairs;
     int size = 0;
 
     char cf, cs = '\0';
@@ -62,38 +93,45 @@ q)";
 
     std::cout << "connections to add:" << std::endl << pairs << std::endl;
 
-    Array<int> connections(size);
+    Connections connections(size);
 
     std::cout << "quick find:" << std::endl;
-    search_connections(pairs, connections, [](int f, int s, Array<int>& connections) {
+    search_connections(pairs, connections, [](int f, int s, Connections& connections) {
         Forward_list<int> l;
-        auto c = connections[f];
-        if (c == connections[s]) {
+        auto c = connections[f].value_;
+        if (c == connections[s].value_) {
             for (size_t i = 0; i < connections.size(); ++i)
-                if (connections[i] == c) 
+                if (connections[i].value_ == c) 
                     l.push_back(i);
         } else 
             for (auto& connection : connections)
-                if (connection == c)
+                if (connection.value_ == c) {
                     connection = connections[s];
+                    connection.bold_ = true;
+                }
         return l;
     });
 
     std::cout << "quick union:" << std::endl;
-    search_connections(pairs, connections, [](int f, int s, Array<int>& connections) {
+    search_connections(pairs, connections, [](int f, int s, Connections& connections) {
         Forward_list<int> l;
-        l.push_back(f);
-        int i, j;
-        for (i = f; i != connections[i]; i = connections[i])
-            l.push_back(connections[i]);
-        l.push_back(s);
-        for (j = s; j != connections[j]; j = connections[j])
-            l.push_back(connections[j]);
+        auto follow_links = [&l, &connections](int& index) {
+            bool linked;
+            do {
+                l.push_back(index);
+                connections[index].bold_ = true;
+                linked = index != connections[index].value_;
+                if (linked)
+                    index = connections[index].value_;
+            } while(linked);
+        };
+        follow_links(f);
+        follow_links(s);
 
-        if (i != j) {
-            connections[i] = j;
+        if (f != s) {
+            connections[f].value_ = s;
             l.clear();
-        } // todo else remove last item from list, double linked list required
+        } // todo remove duplicates
         return l;
     });
 
