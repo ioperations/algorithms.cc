@@ -5,6 +5,27 @@
 #include "forward_list.h"
 #include "pair.h"
 
+template<typename F>
+void search_connections(const Forward_list<Pair<int, int>>& pairs, Array<int>& connections, F connections_searcher) {
+    for (size_t i = 0; i < connections.size(); ++i)
+        connections[i] = i;
+    std::cout << connections << std::endl;
+    for (auto pair = pairs.cbegin(); pair != pairs.cend(); ++pair) {
+        auto already_existing = connections_searcher(pair->first_, pair->second_, connections);
+        std::cout << connections << "  " << pair->first_ << "-" << pair->second_;
+        if (!already_existing.empty()) {
+            std::cout << "  ";
+            for (auto it = already_existing.cbegin(); it != already_existing.cend(); ++it) {
+                if (it != already_existing.cbegin())
+                    std::cout << "-";
+                std::cout << (*it);
+            }
+
+        }
+        std::cout << std::endl;
+    }
+}
+
 int main() {
 
     auto input = R"(
@@ -42,17 +63,9 @@ q)";
     std::cout << "connections to add:" << std::endl << pairs << std::endl;
 
     Array<int> connections(size);
-    auto init_connections = [&connections]() {
-        for (size_t i = 0; i < connections.size(); ++i)
-            connections[i] = i;
-    };
 
     std::cout << "quick find:" << std::endl;
-    init_connections();
-    std::cout << connections << std::endl;
-    for (auto pair = pairs.cbegin(); pair != pairs.cend(); ++pair) {
-        auto f = pair->first_;
-        auto s = pair->second_;
+    search_connections(pairs, connections, [](int f, int s, Array<int>& connections) {
         Forward_list<int> l;
         auto c = connections[f];
         if (c == connections[s]) {
@@ -63,41 +76,25 @@ q)";
             for (auto& connection : connections)
                 if (connection == c)
                     connection = connections[s];
-        std::cout << connections << "  " << f << "-" << s;
-        if (!l.empty()) {
-            std::cout << "  ";
-            for (auto it = l.cbegin(); it != l.cend(); ++it) {
-                if (it != l.cbegin())
-                    std::cout << "-";
-                std::cout << (*it);
-            }
-
-        }
-        std::cout << std::endl;
-    }
+        return l;
+    });
 
     std::cout << "quick union:" << std::endl;
-    init_connections();
-    std::cout << connections << std::endl;
-    for (auto pair = pairs.cbegin(); pair != pairs.cend(); ++pair) {
-        auto f = pair->first_;
-        auto s = pair->second_;
-        int i, j;
+    search_connections(pairs, connections, [](int f, int s, Array<int>& connections) {
         Forward_list<int> l;
         l.push_back(f);
+        int i, j;
         for (i = f; i != connections[i]; i = connections[i])
             l.push_back(connections[i]);
         l.push_back(s);
         for (j = s; j != connections[j]; j = connections[j])
             l.push_back(connections[j]);
 
-        bool already_connected = i == j;
-        if (!already_connected)
+        if (i != j) {
             connections[i] = j;
-        std::cout << connections << "  " << f << "-" << s;
-        if (already_connected) // todo remove last item from list
-            std::cout << "  " << l;
-        std::cout << std::endl;
-    }
+            l.clear();
+        } // todo else remove last item from list, double linked list required
+        return l;
+    });
 
 }

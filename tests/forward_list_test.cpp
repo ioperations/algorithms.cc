@@ -15,10 +15,18 @@ TEST(Forward_list_test, test_0) {
     };
 
     list l;
-    l.push_back(3);
-    l.push_back(7);
-    l.push_back(9);
-    l.push_back(2);
+    auto fill_list = [&l]() {
+        l.push_back(3);
+        l.push_back(7);
+        l.push_back(9);
+        l.push_back(2);
+    };
+    fill_list();
+
+    l.clear();
+    ASSERT_TRUE(l.empty());
+    fill_list();
+    ASSERT_FALSE(l.empty());
 
     ASSERT_EQ("3 7 9 2 ", to_string(l));
 

@@ -73,6 +73,11 @@ class Forward_list {
         bool empty() {
             return head_ == nullptr;
         }
+        void clear() {
+            delete head_;
+            head_ = nullptr;
+            tail_ = nullptr;
+        }
 };
 
 template<typename T>
