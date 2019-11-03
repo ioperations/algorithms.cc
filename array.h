@@ -54,11 +54,11 @@ class Array {
 template<typename T>
 std::ostream& operator<<(std::ostream& stream, const Array<T>& a) {
     stream << "[";
-    for (auto it = a.cbegin(); it != a.cend(); ++it) {
-        if (it != a.cbegin())
-            stream << ", ";
+    auto it = a.cbegin();
+    if (it != a.cend())
         stream << *it;
-    }
+    for (; it != a.cend(); ++it)
+        stream << ", " << *it;
     return stream << "]";
 }
     

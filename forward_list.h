@@ -131,10 +131,10 @@ class Forward_list<T>::Const_iterator : public Base_iterator<const Node*> {
 template<typename T>
 std::ostream& operator<<(std::ostream& stream, const Forward_list<T>& a) {
     stream << "[";
-    for (auto it = a.cbegin(); it != a.cend(); ++it) {
-        if (it != a.cbegin())
-            stream << ", ";
+    auto it = a.cbegin();
+    if (it != a.cend())
         stream << *it;
-    }
+    for (; it != a.cend(); ++it)
+        stream << ", " << *it;
     return stream << "]";
 }
