@@ -38,6 +38,5 @@ TEST(Forward_list_test, test_0) {
 TEST(Forward_list_test, test_1) {
     Forward_list<Pair<int, int>> list;
     list.emplace_back(1, 2);
-    auto pair = *list.begin();
     ASSERT_EQ(Pair(1, 2), *list.begin());
 }

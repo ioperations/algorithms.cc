@@ -42,9 +42,9 @@ class Forward_list {
         ~Forward_list() { delete head_; }
 
         template<typename... Args>
-        void emplace_back(Args&&... args) {
-            append_node(new Node(T(std::forward<Args>(args)...)));
-        }
+            void emplace_back(Args&&... args) {
+                append_node(new Node(std::forward<Args>(args)...));
+            }
 
         template<typename TT>
             void push_back(TT&& value) {
@@ -81,6 +81,8 @@ struct Forward_list<T>::Node {
     Node* next_;
     template<typename TT>
         Node(TT&& value) :value_(std::forward<TT>(value)), next_(nullptr) {}
+    template<typename... Args>
+        Node(Args&&... args) :value_(std::forward<Args>(args)...), next_(nullptr) {}
     ~Node() { delete next_; }
 };
 

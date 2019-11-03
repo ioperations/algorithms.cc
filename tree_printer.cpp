@@ -52,7 +52,7 @@ void Tree_printer::do_print(Lines& lines, std::ostream& stream) {
         }
     }
 
-    for (int i = 1; i < lines.size(); ++i) {
+    for (size_t i = 1; i < lines.size(); ++i) {
         Siblings* previous = nullptr;
         for (auto& siblings : lines[i]) {
             siblings.fix_positions(previous);

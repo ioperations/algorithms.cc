@@ -64,7 +64,7 @@ class Tree_printer {
                     for (auto it = children.cbegin(); it != children.cend(); ++it)
                         populate_lines(*it, lines, line.back(), level);
                 }
-            };
+            }
 
         template<typename N>
             int calculate_depth(const N& node, int level = 0) {

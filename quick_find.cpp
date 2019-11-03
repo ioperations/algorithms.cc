@@ -7,7 +7,7 @@
 
 int main() {
 
-auto input = R"(
+    auto input = R"(
 3 4
 4 9
 8 0
@@ -42,27 +42,29 @@ q)";
     std::cout << "connections to add:" << std::endl << pairs << std::endl;
 
     Array<int> connections(size);
-    for (int i = 0; i < connections.size(); ++i)
-        connections[i] = i;
+    auto init_connections = [&connections]() {
+        for (size_t i = 0; i < connections.size(); ++i)
+            connections[i] = i;
+    };
 
-    for (auto& pair : pairs) {
-        auto f = pair.first_;
-        auto s = pair.second_;
-        auto t = connections[f];
-        bool alread_connected = true;
+    std::cout << "quick find:" << std::endl;
+    init_connections();
+    std::cout << connections << std::endl;
+    for (auto pair = pairs.cbegin(); pair != pairs.cend(); ++pair) {
+        auto f = pair->first_;
+        auto s = pair->second_;
         Forward_list<int> l;
-        if (t == connections[s]) {
-            for (int i = 0; i < connections.size(); ++i)
-                if (connections[i] == t) 
+        auto c = connections[f];
+        if (c == connections[s]) {
+            for (size_t i = 0; i < connections.size(); ++i)
+                if (connections[i] == c) 
                     l.push_back(i);
-        } else {
-            alread_connected = false;
+        } else 
             for (auto& connection : connections)
-                if (connection == t)
+                if (connection == c)
                     connection = connections[s];
-        }
         std::cout << connections << "  " << f << "-" << s;
-        if (alread_connected) {
+        if (!l.empty()) {
             std::cout << "  ";
             for (auto it = l.cbegin(); it != l.cend(); ++it) {
                 if (it != l.cbegin())
@@ -71,6 +73,30 @@ q)";
             }
 
         }
+        std::cout << std::endl;
+    }
+
+    std::cout << "quick union:" << std::endl;
+    init_connections();
+    std::cout << connections << std::endl;
+    for (auto pair = pairs.cbegin(); pair != pairs.cend(); ++pair) {
+        auto f = pair->first_;
+        auto s = pair->second_;
+        int i, j;
+        Forward_list<int> l;
+        l.push_back(f);
+        for (i = f; i != connections[i]; i = connections[i])
+            l.push_back(connections[i]);
+        l.push_back(s);
+        for (j = s; j != connections[j]; j = connections[j])
+            l.push_back(connections[j]);
+
+        bool already_connected = i == j;
+        if (!already_connected)
+            connections[i] = j;
+        std::cout << connections << "  " << f << "-" << s;
+        if (already_connected) // todo remove last item from list
+            std::cout << "  " << l;
         std::cout << std::endl;
     }
 
