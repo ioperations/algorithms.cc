@@ -31,31 +31,100 @@ class Rich_text {
 using Connections = Array<Rich_text<int>>;
 using Connection_pairs = Forward_list<Pair<int, int>>;
 
-template<typename F>
-void search_connections(const Connection_pairs& pairs, Connections& connections, F connections_searcher) {
-    for (size_t i = 0; i < connections.size(); ++i) {
-        connections[i].value_ = i;
-        connections[i].bold_ = false;
-    }
-    std::cout << connections << std::endl;
-    for (auto pair = pairs.cbegin(); pair != pairs.cend(); ++pair) {
-        if (pair != pairs.cbegin())
-            for (auto& connection : connections)
-                connection.bold_ = false;
-        auto already_existing = connections_searcher(pair->first_, pair->second_, connections);
-        std::cout << connections << "  " << pair->first_ << "-" << pair->second_;
-        if (!already_existing.empty()) {
-            std::cout << "  ";
-            for (auto it = already_existing.cbegin(); it != already_existing.cend(); ++it) {
-                if (it != already_existing.cbegin())
-                    std::cout << "-";
-                std::cout << (*it);
-            }
-
+template<typename A>
+struct Searcher : A {
+    template<typename... Args>
+        Searcher(Args&&... args) :A(std::forward<Args>(args)...) {}
+    void search(const Connection_pairs& pairs, Connections& connections) {
+        for (size_t i = 0; i < connections.size(); ++i) {
+            connections[i].value_ = i;
+            connections[i].bold_ = false;
         }
-        std::cout << std::endl;
+        std::cout << connections << std::endl;
+        for (auto pair = pairs.cbegin(); pair != pairs.cend(); ++pair) {
+            if (pair != pairs.cbegin())
+                for (auto& connection : connections)
+                    connection.bold_ = false;
+            auto already_existing = A::add(pair->first_, pair->second_, connections);
+            std::cout << connections << "  " << pair->first_ << "-" << pair->second_;
+            if (!already_existing.empty()) {
+                std::cout << "  ";
+                for (auto it = already_existing.cbegin(); it != already_existing.cend(); ++it) {
+                    if (it != already_existing.cbegin())
+                        std::cout << "-";
+                    std::cout << (*it);
+                }
+
+            }
+            std::cout << std::endl;
+        }
     }
-}
+};
+
+struct Quick_find {
+    auto add(int f, int s, Connections& connections) {
+        Forward_list<int> l;
+        auto c = connections[f].value_;
+        if (c == connections[s].value_) {
+            for (size_t i = 0; i < connections.size(); ++i)
+                if (connections[i].value_ == c) 
+                    l.push_back(i);
+        } else 
+            for (auto& connection : connections)
+                if (connection.value_ == c) {
+                    connection = connections[s];
+                    connection.bold_ = true;
+                }
+        return l;
+    };
+};
+
+template<typename A>
+struct Quick_union : A {
+    template<typename... Args>
+        Quick_union(Args&&... args) :A(std::forward<Args>(args)...) {}
+    auto add(int f, int s, Connections& connections) {
+        Forward_list<int> l;
+        auto follow_links = [&l, &connections](int& index) {
+            bool linked;
+            do {
+                linked = index != connections[index].value_;
+                if (linked)
+                    index = connections[index].value_;
+                connections[index].bold_ = true;
+                l.push_back(index);
+            } while(linked);
+        };
+        follow_links(f);
+        follow_links(s);
+        A::add(f, s, connections, l);
+        return l;
+    }
+};
+
+struct Quick_union_simple_adder {
+    void add(int f, int s, Connections& connections, Forward_list<int>& l) {
+        if (f != s) {
+            connections[f].value_ = s;
+            l.clear();
+        }
+    }
+};
+
+struct Quick_union_weighted_adder {
+    Array<int> sizes_;
+    Quick_union_weighted_adder(size_t size) :sizes_(size) {}
+    void add(int f, int s, Connections& connections, Forward_list<int>& l) {
+        if (f != s) {
+            if (sizes_[f] < sizes_[s]) {
+                connections[f].value_ = s; sizes_[s] += sizes_[f];
+            } else {
+                connections[s].value_ = f; sizes_[f] += sizes_[s];
+            }
+            l.clear();
+        }
+    }
+};
 
 int main() {
 
@@ -96,71 +165,12 @@ q)";
     Connections connections(size);
 
     std::cout << "quick find:" << std::endl;
-    search_connections(pairs, connections, [](int f, int s, Connections& connections) {
-        Forward_list<int> l;
-        auto c = connections[f].value_;
-        if (c == connections[s].value_) {
-            for (size_t i = 0; i < connections.size(); ++i)
-                if (connections[i].value_ == c) 
-                    l.push_back(i);
-        } else 
-            for (auto& connection : connections)
-                if (connection.value_ == c) {
-                    connection = connections[s];
-                    connection.bold_ = true;
-                }
-        return l;
-    });
+    Searcher<Quick_find>().search(pairs, connections);
 
     std::cout << "quick union:" << std::endl;
-    search_connections(pairs, connections, [](int f, int s, Connections& connections) {
-        Forward_list<int> l;
-        auto follow_links = [&l, &connections](int& index) {
-            bool linked;
-            do {
-                linked = index != connections[index].value_;
-                if (linked)
-                    index = connections[index].value_;
-                connections[index].bold_ = true;
-                l.push_back(index);
-            } while(linked);
-        };
-        follow_links(f);
-        follow_links(s);
-
-        if (f != s) {
-            connections[f].value_ = s;
-            l.clear();
-        } // todo remove duplicates
-        return l;
-    });
+    Searcher<Quick_union<Quick_union_simple_adder>>().search(pairs, connections);
 
     std::cout << "weighted quick union:" << std::endl;
-    Array<int> sizes(connections.size());
-    search_connections(pairs, connections, [&sizes](int f, int s, Connections& connections) {
-        Forward_list<int> l;
-        auto follow_links = [&l, &connections](int& index) {
-            bool linked;
-            do {
-                linked = index != connections[index].value_;
-                if (linked)
-                    index = connections[index].value_;
-                connections[index].bold_ = true;
-                l.push_back(index);
-            } while(linked);
-        };
-        follow_links(f);
-        follow_links(s);
-
-        if (f != s) {
-            if (sizes[f] < sizes[s]) {
-                connections[f].value_ = s; sizes[s] += sizes[f];
-            } else {
-                connections[s].value_ = f; sizes[f] += sizes[s];
-            }
-            l.clear();
-        }
-        return l;
-    });
+    Searcher<Quick_union<Quick_union_weighted_adder>>(connections.size()).search(pairs, connections);
 
 }
