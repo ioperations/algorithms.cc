@@ -40,7 +40,56 @@ void Tree_printer::Siblings::fix_positions(Siblings* previous) {
     }
 }
 
-void Tree_printer::do_print(Lines& lines, std::ostream& stream) {
+template<typename S>
+class Base_appender {
+    protected:
+        S stream_;
+        int count_;
+        Base_appender(S&& stream): stream_(std::forward<S>(stream)), count_(0) {}
+    public:
+        void operator<<(const char* s) {
+            stream_ << s;
+            ++count_;
+        }
+        void operator<<(const std::string& s) {
+            stream_ << s;
+            count_ += s.size();
+        }
+        void repeat_until(int bound, const char* s) {
+            while (count_ < bound)
+                *this << s;
+        }
+        int count() { return count_; }
+        void reset() { count_ = 0; }
+};
+
+void Tree_printer::print(Lines& lines, std::ostream& stream) {
+    struct Appender : Base_appender<std::ostream&> {
+        Appender(std::ostream& stream) :Base_appender<std::ostream&>(stream) {}
+        void new_line() {
+            stream_ << std::endl;
+        }
+    };
+    print(lines, Appender(stream));
+}
+
+Forward_list<std::string> Tree_printer::compose_text_lines(Lines& lines) {
+    struct Appender : Base_appender<std::stringstream> {
+        Forward_list<std::string> lines_;
+        Appender(): Base_appender<std::stringstream>(std::stringstream()) {}
+        void new_line() {
+            lines_.push_back(stream_.str());
+            stream_ = {};
+        }
+    };
+    Appender appender;
+    print(lines, appender);
+    appender.new_line();
+    return std::move(appender.lines_);
+}
+
+template<typename A>
+void Tree_printer::print(Lines& lines, A&& appender) {
     for (auto& line : lines) {
         Printed_node* previous = nullptr;
         for (auto& siblings : line) {
@@ -60,28 +109,10 @@ void Tree_printer::do_print(Lines& lines, std::ostream& stream) {
         }
     }
 
-    struct Appender {
-        std::ostream& stream_;
-        int count_;
-        Appender(std::ostream& stream) :stream_(stream), count_(0) {}
-        void operator<<(const char* s) {
-            stream_ << s;
-            ++count_;
-        }
-        void operator<<(const std::string& s) {
-            stream_ << s;
-            count_ += s.size();
-        }
-        void repeat_until(int bound, const char* s) {
-            while (count_ < bound)
-                *this << s;
-        }
-    };
-
     for (auto line = lines.begin(); line != lines.end(); ++line) {
         if (line != lines.begin()) {
-            stream << std::endl;
-            Appender appender(stream);
+            appender.new_line();
+            appender.reset();
             for (auto& siblings : *line) {
                 auto node = siblings.begin();
 
@@ -101,12 +132,12 @@ void Tree_printer::do_print(Lines& lines, std::ostream& stream) {
                         if (first) {
                             appender << "┌";
                             first = false;
-                        } else if (parent_center == appender.count_)
+                        } else if (parent_center == appender.count())
                             appender << "┼";
                         else
                             appender << "┬";
                         auto end = node->center();
-                        if (parent_center > appender.count_ && parent_center < end) {
+                        if (parent_center > appender.count() && parent_center < end) {
                             appender.repeat_until(parent_center, "─");
                             appender << "┴";
                             appender.repeat_until(end, "─");
@@ -119,9 +150,9 @@ void Tree_printer::do_print(Lines& lines, std::ostream& stream) {
                     appender << "│";
                 }
             }
-            stream << std::endl;
+            appender.new_line();
         }
-        Appender appender(stream);
+        appender.reset();
         for (auto& siblings : *line)
             for (auto& node : siblings) {
                 appender.repeat_until(node.position(), " ");

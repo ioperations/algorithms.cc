@@ -86,12 +86,21 @@ class Tree_printer {
                 return lines;
             }
 
-        void do_print(Lines& lines, std::ostream& stream);
+        template<typename A>
+            void print(Lines& lines, A&& appender);
+        void print(Lines& lines, std::ostream& stream);
+        Forward_list<std::string> compose_text_lines(Lines& lines); // todo const lines
     public:
         template<typename N>
             void print(const N& node, std::ostream& stream) {
                 Lines lines = compose_lines(node);
-                do_print(lines, stream);
+                print(lines, stream);
+            }
+
+        template<typename N>
+            Forward_list<std::string> compose_text_lines(const N& node) {
+                Lines lines = compose_lines(node);
+                return compose_text_lines(lines);
             }
 
         static Tree_printer default_instance() {
@@ -99,3 +108,4 @@ class Tree_printer {
             return printer;
         }
 };
+
