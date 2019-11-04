@@ -57,11 +57,12 @@ class Tree_printer {
                 auto parent_it = siblings.before_end();
                 ++level;
 
-                if (node.children().size() > 0) {
+                auto& children = node.children();
+                auto it = children.cbegin();
+                if (it != children.cend()) {
                     auto& line = lines[level];
                     line.push_back(Siblings(parent_it));
-                    auto& children = node.children();
-                    for (auto it = children.cbegin(); it != children.cend(); ++it)
+                    for (; it != children.cend(); ++it)
                         populate_lines(*it, lines, line.back(), level);
                 }
             }

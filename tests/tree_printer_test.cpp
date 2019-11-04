@@ -4,7 +4,7 @@
 #include "tree_printer.h"
 
 TEST(Tree_printer_test, test_0) {
-    using node = Tree_node<int>;
+    using node = Array_tree_node<int>;
     using nodes = Array<node>;
 
     auto to_string = [](const node& node) {

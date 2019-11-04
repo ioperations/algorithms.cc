@@ -5,6 +5,9 @@
 #include "forward_list.h"
 #include "pair.h"
 
+#include <map>
+#include "tree.h"
+
 template<typename T>
 class Rich_text {
     public:
@@ -58,6 +61,7 @@ struct Searcher : A {
             }
             std::cout << std::endl;
         }
+        A::post_process(connections);
     }
 };
 
@@ -77,7 +81,10 @@ struct Quick_find {
                 }
         return l;
     };
+    void post_process(Connections& connections) {}
 };
+
+
 
 template<typename A>
 struct Quick_union : A {
@@ -89,8 +96,10 @@ struct Quick_union : A {
             bool linked;
             do {
                 linked = index != connections[index].value_;
-                if (linked)
-                    index = connections[index].value_;
+                if (linked) {
+                    index = connections[connections[index].value_].value_;
+                    // index = connections[index].value_;
+                }
                 connections[index].bold_ = true;
                 l.push_back(index);
             } while(linked);
@@ -100,6 +109,39 @@ struct Quick_union : A {
         if (f != s)
             A::add(f, s, connections, l);
         return l;
+    }
+    using Node = Forward_list_tree_node<Pair<int, int>>;
+    void post_process(Connections& connections) {
+        Array<Node> nodes(connections.size());
+        for (size_t i = 0; i < connections.size(); ++i)
+            nodes[i] = Node(Pair<int, int>(i, connections[i].value_)); // todo add emplace
+
+        std::map<int, Node*> map;
+        for (size_t i = 0; i < nodes.size(); ++i)
+            map[i] = &nodes[i];
+
+        for (auto& node : nodes) {
+            auto id = node.value().first_;
+            auto parent_id = node.value().second_;
+            if (id != parent_id) {
+                auto parent = map[parent_id];
+                auto& children = parent->children();
+                children.push_back(std::move(node));
+                map[id] = &children.back();
+            }
+        }
+        Forward_list_tree_node<std::string> printable_node("");
+        for (auto& e : map)
+            if (e.first == e.second->value().second_)
+                printable_node.children().push_back(to_printable_node(*e.second));
+        std::cout << printable_node << std::endl;
+
+    }
+    Forward_list_tree_node<std::string> to_printable_node(Node& node) {
+        Forward_list_tree_node<std::string> p(std::to_string(node.value().first_));
+        for (auto& child : node.children())
+            p.children().push_back(to_printable_node(child));
+        return p;
     }
 };
 

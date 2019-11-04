@@ -3,34 +3,54 @@
 #include <iostream>
 
 #include "array.h"
+#include "forward_list.h"
 #include "tree_printer.h"
 
-template<typename T>
-class Tree_node {
+template<typename T, typename C>
+class Base_tree_node {
     private:
         T value_;
-        Array<Tree_node> children_;
+        C children_;
     public:
-        Tree_node(T data, Array<Tree_node>&& children) :value_(data), children_(std::move(children)) {}
-        Tree_node(T data) :value_(data) {}
-        Tree_node() = default;
+        Base_tree_node(T data) :value_(data) {}
+        Base_tree_node(T data, C&& children) :value_(data), children_(std::move(children)) {}
+        Base_tree_node() = default;
 
-        Tree_node(const Tree_node&) = delete;
-        Tree_node& operator=(const Tree_node&) = delete;
+        Base_tree_node(const Base_tree_node&) = delete;
+        Base_tree_node& operator=(const Base_tree_node&) = delete;
 
-        Tree_node(Tree_node&& o) :value_(o.value_), children_(std::move(o.children_)) {}
-        Tree_node& operator=(Tree_node&& o) {
+        Base_tree_node(Base_tree_node&& o) :value_(std::move(o.value_)), children_(std::move(o.children_)) {}
+        Base_tree_node& operator=(Base_tree_node&& o) {
             std::swap(value_, o.value_);
             std::swap(children_, o.children_);
             return *this;
         }
 
         T value() const { return value_; }
-        const Array<Tree_node>& children() const { return children_; }
+        const C& children() const { return children_; }
+        C& children() { return children_; }
 };
 
 template<typename T>
-std::ostream& operator<<(std::ostream& stream, const Tree_node<T>& node) {
+class Array_tree_node : public Base_tree_node<T, Array<Array_tree_node<T>>> {
+    public:
+        using Base = Base_tree_node<T, Array<Array_tree_node<T>>>;
+        Array_tree_node(T data, Array<Array_tree_node>&& children) :Base(data, std::move(children)) {}
+        Array_tree_node(T data) :Base(data) {}
+        Array_tree_node() = default;
+};
+
+template<typename T>
+class Forward_list_tree_node : public Base_tree_node<T, Forward_list<Forward_list_tree_node<T>>> {
+    public:
+        using Base = Base_tree_node<T, Forward_list<Forward_list_tree_node<T>>>;
+        Forward_list_tree_node(T data, Forward_list<Forward_list_tree_node>&& children) :Base(data, std::move(children)) {}
+        Forward_list_tree_node(T data) :Base(data) {}
+        Forward_list_tree_node() = default;
+};
+
+template<typename T, typename C>
+std::ostream& operator<<(std::ostream& stream, const Base_tree_node<T, C>& node) {
     Tree_printer::default_instance().print(node, stream);
     return stream;
 }

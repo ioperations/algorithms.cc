@@ -10,6 +10,6 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 endif()
 
 add_executable(stack stack.cpp)
-add_executable(quick_find quick_find.cpp)
+add_executable(quick_find quick_find.cpp tree_printer.cpp)
 
 add_subdirectory(tests)
