@@ -97,32 +97,32 @@ struct Quick_union : A {
         };
         follow_links(f);
         follow_links(s);
-        A::add(f, s, connections, l);
+        if (f != s)
+            A::add(f, s, connections, l);
         return l;
     }
 };
 
 struct Quick_union_simple_adder {
     void add(int f, int s, Connections& connections, Forward_list<int>& l) {
-        if (f != s) {
-            connections[f].value_ = s;
-            l.clear();
-        }
+        connections[f].value_ = s;
+        l.clear();
     }
 };
 
 struct Quick_union_weighted_adder {
     Array<int> sizes_;
-    Quick_union_weighted_adder(size_t size) :sizes_(size) {}
+    Quick_union_weighted_adder(size_t size) :sizes_(size) {
+        for (auto& size: sizes_)
+            size = 0;
+    }
     void add(int f, int s, Connections& connections, Forward_list<int>& l) {
-        if (f != s) {
-            if (sizes_[f] < sizes_[s]) {
-                connections[f].value_ = s; sizes_[s] += sizes_[f];
-            } else {
-                connections[s].value_ = f; sizes_[f] += sizes_[s];
-            }
-            l.clear();
+        if (sizes_[f] < sizes_[s]) {
+            connections[f].value_ = s; sizes_[s] += sizes_[f];
+        } else {
+            connections[s].value_ = f; sizes_[f] += sizes_[s];
         }
+        l.clear();
     }
 };
 
