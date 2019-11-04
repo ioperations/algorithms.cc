@@ -118,11 +118,11 @@ q)";
         auto follow_links = [&l, &connections](int& index) {
             bool linked;
             do {
-                l.push_back(index);
-                connections[index].bold_ = true;
                 linked = index != connections[index].value_;
                 if (linked)
                     index = connections[index].value_;
+                connections[index].bold_ = true;
+                l.push_back(index);
             } while(linked);
         };
         follow_links(f);
@@ -132,6 +132,34 @@ q)";
             connections[f].value_ = s;
             l.clear();
         } // todo remove duplicates
+        return l;
+    });
+
+    std::cout << "weighted quick union:" << std::endl;
+    Array<int> sizes(connections.size());
+    search_connections(pairs, connections, [&sizes](int f, int s, Connections& connections) {
+        Forward_list<int> l;
+        auto follow_links = [&l, &connections](int& index) {
+            bool linked;
+            do {
+                linked = index != connections[index].value_;
+                if (linked)
+                    index = connections[index].value_;
+                connections[index].bold_ = true;
+                l.push_back(index);
+            } while(linked);
+        };
+        follow_links(f);
+        follow_links(s);
+
+        if (f != s) {
+            if (sizes[f] < sizes[s]) {
+                connections[f].value_ = s; sizes[s] += sizes[f];
+            } else {
+                connections[s].value_ = f; sizes[f] += sizes[s];
+            }
+            l.clear();
+        }
         return l;
     });
 
