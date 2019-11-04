@@ -18,6 +18,15 @@ class Forward_list {
                 head_ = tail_;
             }
         }
+
+        void remove_nodes() {
+            Node* node = head_;
+            while (node) {
+                Node* previous = node;
+                node = node->next_;
+                delete previous;
+            }
+        }
     public:
         class Iterator;
         class Const_iterator;
@@ -39,7 +48,7 @@ class Forward_list {
             return *this;
         }
 
-        ~Forward_list() { delete head_; }
+        ~Forward_list() { remove_nodes(); }
 
         template<typename... Args>
             void emplace_back(Args&&... args) {
@@ -74,7 +83,7 @@ class Forward_list {
             return head_ == nullptr;
         }
         void clear() {
-            delete head_;
+            remove_nodes();
             head_ = nullptr;
             tail_ = nullptr;
         }
@@ -88,7 +97,6 @@ struct Forward_list<T>::Node {
         Node(TT&& value) :value_(std::forward<TT>(value)), next_(nullptr) {}
     template<typename... Args>
         Node(Args&&... args) :value_(std::forward<Args>(args)...), next_(nullptr) {}
-    ~Node() { delete next_; }
 };
 
 template<typename N>
