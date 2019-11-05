@@ -6,8 +6,14 @@ void Tree_printer_base::Printed_node::fix_positions(Siblings* previous) {
 
 void Tree_printer_base::Siblings::fix_positions(Siblings* previous) {
     auto middle = [this]() {
-        int b = front().center();
-        return b + (back().center() - b + 1) / 2;
+        int middle;
+        if (&front() == &back())
+            middle = front().center();
+        else {
+            int b = front().center();
+            middle = b + (back().center() - b + 1) / 2;
+        }
+        return middle;
     };
 
     auto shift = 0;
@@ -26,16 +32,28 @@ void Tree_printer_base::Siblings::fix_positions(Siblings* previous) {
             current_middle = middle();
         if (parent_->center() != current_middle) {
             parent_->center(current_middle);
-            auto previous_node = parent_;
-            auto parent_sibling = parent_it_;
-            ++parent_sibling;
-            for (; !parent_sibling.empty(); ++parent_sibling) {
-                int min_position = previous_node->border();
-                if (min_position > parent_sibling->position())
-                    parent_sibling->position(min_position);
-                previous_node = &*parent_sibling;
-            }
+
+            auto shift_siblings = [](Printed_node* previous, Siblings::iterator sibling) {
+                for (; !sibling.empty(); ++sibling) {
+                    int min_position = previous->border();
+                    if (min_position > sibling->position())
+                        sibling->position(min_position);
+                    sibling->fix_positions();
+                    previous = &*sibling;
+                }
+                return previous;
+            };
+
             parent_->fix_positions();
+            auto sibling = parent_it_;
+            ++sibling;
+            Printed_node* previous = shift_siblings(parent_, sibling);
+
+            auto next_siblings = parent_->siblings()->next_;
+            while (next_siblings) {
+                previous = shift_siblings(previous, next_siblings->begin());
+                next_siblings = next_siblings->next_;
+            }
         }
     }
 }
@@ -105,6 +123,59 @@ void Tree_printer_base::print(Lines& lines, A&& appender) {
         }
     }
 
+    auto do_print = [&lines, &appender]() {
+        for (auto line = lines.begin(); line != lines.end(); ++line) {
+            if (line != lines.begin()) {
+                appender.new_line();
+                appender.reset();
+                for (auto& siblings : *line) {
+                    auto node = siblings.begin();
+
+                    bool more_than_one = false;
+                    if (node != siblings.end()) {
+                        auto second = node;
+                        ++second;
+                        more_than_one = second != siblings.end();
+                    }
+                    auto parent_center = siblings.parent()->center();
+
+                    if (more_than_one) {
+                        appender.repeat_until(node->center(), " ");
+                        ++node;
+                        bool first = true;
+                        for (; node != siblings.end(); ++node) {
+                            if (first) {
+                                appender << "┌";
+                                first = false;
+                            } else if (parent_center == appender.count())
+                                appender << "┼";
+                            else
+                                appender << "┬";
+                            auto end = node->center();
+                            if (parent_center > appender.count() && parent_center < end) {
+                                appender.repeat_until(parent_center, "─");
+                                appender << "┴";
+                                appender.repeat_until(end, "─");
+                            } else
+                                appender.repeat_until(end, "─");
+                        }
+                        appender << "┐";
+                    } else {
+                        appender.repeat_until(parent_center, " ");
+                        appender << "│";
+                    }
+                }
+                appender.new_line();
+            }
+            appender.reset();
+            for (auto& siblings : *line)
+                for (auto& node : siblings) {
+                    appender.repeat_until(node.position(), " ");
+                    appender << node;
+                }
+        }
+    };
+
     for (size_t i = 1; i < lines.size(); ++i) {
         Siblings* previous = nullptr;
         for (auto& siblings : lines[i]) {
@@ -113,54 +184,6 @@ void Tree_printer_base::print(Lines& lines, A&& appender) {
         }
     }
 
-    for (auto line = lines.begin(); line != lines.end(); ++line) {
-        if (line != lines.begin()) {
-            appender.new_line();
-            appender.reset();
-            for (auto& siblings : *line) {
-                auto node = siblings.begin();
+    do_print();
 
-                bool more_than_one = false;
-                if (node != siblings.end()) {
-                    auto second = node;
-                    ++second;
-                    more_than_one = second != siblings.end();
-                }
-                auto parent_center = siblings.parent()->center();
-
-                if (more_than_one) {
-                    appender.repeat_until(node->center(), " ");
-                    ++node;
-                    bool first = true;
-                    for (; node != siblings.end(); ++node) {
-                        if (first) {
-                            appender << "┌";
-                            first = false;
-                        } else if (parent_center == appender.count())
-                            appender << "┼";
-                        else
-                            appender << "┬";
-                        auto end = node->center();
-                        if (parent_center > appender.count() && parent_center < end) {
-                            appender.repeat_until(parent_center, "─");
-                            appender << "┴";
-                            appender.repeat_until(end, "─");
-                        } else
-                            appender.repeat_until(end, "─");
-                    }
-                    appender << "┐";
-                } else {
-                    appender.repeat_until(parent_center, " ");
-                    appender << "│";
-                }
-            }
-            appender.new_line();
-        }
-        appender.reset();
-        for (auto& siblings : *line)
-            for (auto& node : siblings) {
-                appender.repeat_until(node.position(), " ");
-                appender << node;
-            }
-    }
 }

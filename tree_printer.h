@@ -35,6 +35,7 @@ class Tree_printer_base {
                 int border() const { return position_ + label_width_ + 2; }
                 void fix_positions(Siblings* previous = nullptr);
                 size_t label_width() const { return label_width_; }
+                Siblings* const siblings() { return siblings_; }
         };
 
         class Siblings : public Forward_list<Printed_node> {
@@ -42,8 +43,9 @@ class Tree_printer_base {
                 Printed_node* const parent_;
                 iterator parent_it_;
             public:
+                Siblings* next_;
                 Siblings(iterator parent_it = iterator(nullptr)) 
-                    :parent_(parent_it.empty() ? nullptr : &*parent_it), parent_it_(parent_it) 
+                    :parent_(parent_it.empty() ? nullptr : &*parent_it), parent_it_(parent_it), next_(nullptr)
                     {}
                 void fix_positions(Siblings* previous);
                 Printed_node* parent() { return parent_; }
@@ -79,19 +81,28 @@ class Tree_printer : protected Tree_printer_base {
     private:
         S stringifier_;
         L label_width_calculator_;
-        void populate_lines(const N& node, Lines& lines, Siblings& siblings, int level = 0) {
-            auto string = stringifier_(node.value());
-            siblings.emplace_back(string, label_width_calculator_(node, string), &siblings);
-            auto parent_it = siblings.before_end();
-            ++level;
 
-            auto& children = node.children();
-            auto it = children.cbegin();
-            if (it != children.cend()) {
-                auto& line = lines[level];
-                line.push_back(Siblings(parent_it));
-                for (; it != children.cend(); ++it)
-                    populate_lines(*it, lines, line.back(), level);
+        void populate_lines(const N& node, Lines& lines,
+                            Siblings::iterator parent = Siblings::iterator(nullptr), int level = 0) {
+            auto& line = lines[level];
+            if (line.empty())
+                line.emplace_back(parent);
+            Siblings* siblings = &line.back();
+            if (siblings->parent() != &*parent) {
+                line.emplace_back(parent);
+                Siblings* previous_siblings = siblings;
+                siblings = &line.back();
+                previous_siblings->next_ = siblings;
+            }
+            auto string = stringifier_(node.value());
+            siblings->emplace_back(string, label_width_calculator_(node, string), siblings);
+
+            auto child = node.children().cbegin();
+            if (child != node.children().cend()) {
+                ++level;
+                parent = siblings->before_end();
+                for (; child != node.children().cend(); ++child)
+                    populate_lines(*child, lines, parent, level);
             }
         }
 
@@ -106,9 +117,7 @@ class Tree_printer : protected Tree_printer_base {
 
         Lines compose_lines(const N& node) {
             Lines lines(calculate_depth(node));
-            auto& first_line = lines[0];
-            first_line.push_back(Siblings());
-            populate_lines(node, lines, first_line.back());
+            populate_lines(node, lines);
             return lines;
         }
     public:

@@ -83,5 +83,24 @@ TEST(Tree_printer_test, test_0) {
 111  112  113  121  122               131            132  133
                ┌─────┼─────┐     ┌─────┼─────┐     ┌──┴──┐
              1221  1222  1223  1311  1312  1313  1321  1322)");
+
+    n = {7, nodes::build_array(
+            node(5, nodes::build_array(
+                    node(2, nodes::build_array(
+                            node(3, nodes::build_array(4, 9)))),
+                    6)), 
+            node(8, nodes::build_array(0)))
+    };
+
+    ASSERT_EQ(to_string(n), R"(
+      7
+    ┌─┴─┐
+    5   8
+  ┌─┴┐  │
+  2  6  0
+  │
+  3
+┌─┴┐
+4  9)");
 }
 
