@@ -51,7 +51,7 @@ class Forward_list_tree_node : public Base_tree_node<T, Forward_list<Forward_lis
 
 template<typename T, typename C>
 std::ostream& operator<<(std::ostream& stream, const Base_tree_node<T, C>& node) {
-    Tree_printer::default_instance().print(node, stream);
+    Tree_printer<Base_tree_node<T, C>>::default_instance().print(node, stream);
     return stream;
 }
 

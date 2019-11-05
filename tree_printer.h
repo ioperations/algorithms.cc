@@ -6,8 +6,8 @@
 #include "array.h"
 #include "forward_list.h"
 
-class Tree_printer {
-    private:
+class Tree_printer_base {
+    protected:
         struct Siblings;
 
         class Printed_node {
@@ -49,59 +49,66 @@ class Tree_printer {
         using Line = Forward_list<Siblings>;
         using Lines = Array<Line>;
 
-        template<typename N>
-            void populate_lines(const N& node, Lines& lines, Siblings& siblings, int level = 0) {
-                std::stringstream ss;
-                ss << node.value();
-                siblings.emplace_back(ss.str(), &siblings);
-                auto parent_it = siblings.before_end();
-                ++level;
-
-                auto& children = node.children();
-                auto it = children.cbegin();
-                if (it != children.cend()) {
-                    auto& line = lines[level];
-                    line.push_back(Siblings(parent_it));
-                    for (; it != children.cend(); ++it)
-                        populate_lines(*it, lines, line.back(), level);
-                }
-            }
-
-        template<typename N>
-            int calculate_depth(const N& node, int level = 0) {
-                ++level;
-                int depth = level;
-                auto& children = node.children();
-                for (auto it = children.cbegin(); it != children.cend(); ++it)
-                    depth = std::max(depth, calculate_depth(*it, level));
-                return depth;
-            }
-
-        template<typename N>
-            Lines compose_lines(const N& node) {
-                Lines lines(calculate_depth(node));
-                auto& first_line = lines[0];
-                first_line.push_back(Siblings());
-                populate_lines(node, lines, first_line.back());
-                return lines;
-            }
-
         template<typename A>
             void print(Lines& lines, A&& appender);
         void print(Lines& lines, std::ostream& stream);
         Forward_list<std::string> compose_text_lines(Lines& lines); // todo const lines
-    public:
-        template<typename N>
-            void print(const N& node, std::ostream& stream) {
-                Lines lines = compose_lines(node);
-                print(lines, stream);
-            }
+};
 
-        template<typename N>
-            Forward_list<std::string> compose_text_lines(const N& node) {
-                Lines lines = compose_lines(node);
-                return compose_text_lines(lines);
+template<typename T>
+struct Default_stringifier {
+    std::string operator()(const T& t) {
+        std::stringstream ss;
+        ss << t.value();
+        return ss.str();
+    }
+};
+
+template<typename N, typename S = Default_stringifier<N>>
+class Tree_printer : protected Tree_printer_base {
+    private:
+        S stringifier_;
+        void populate_lines(const N& node, Lines& lines, Siblings& siblings, int level = 0) {
+            siblings.emplace_back(stringifier_(node.value()), &siblings);
+            auto parent_it = siblings.before_end();
+            ++level;
+
+            auto& children = node.children();
+            auto it = children.cbegin();
+            if (it != children.cend()) {
+                auto& line = lines[level];
+                line.push_back(Siblings(parent_it));
+                for (; it != children.cend(); ++it)
+                    populate_lines(*it, lines, line.back(), level);
             }
+        }
+
+        int calculate_depth(const N& node, int level = 0) {
+            ++level;
+            int depth = level;
+            auto& children = node.children();
+            for (auto it = children.cbegin(); it != children.cend(); ++it)
+                depth = std::max(depth, calculate_depth(*it, level));
+            return depth;
+        }
+
+        Lines compose_lines(const N& node) {
+            Lines lines(calculate_depth(node));
+            auto& first_line = lines[0];
+            first_line.push_back(Siblings());
+            populate_lines(node, lines, first_line.back());
+            return lines;
+        }
+    public:
+        void print(const N& node, std::ostream& stream) {
+            Lines lines = compose_lines(node);
+            Tree_printer_base::print(lines, stream);
+        }
+
+        Forward_list<std::string> compose_text_lines(const N& node) {
+            Lines lines = compose_lines(node);
+            return Tree_printer_base::compose_text_lines(lines);
+        }
 
         static Tree_printer default_instance() {
             static Tree_printer printer;

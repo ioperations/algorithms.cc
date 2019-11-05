@@ -25,7 +25,7 @@ TEST(Tree_printer_test, test_0) {
 
     std::stringstream ss;
     ss << std::endl;
-    for (auto& s : Tree_printer::default_instance().compose_text_lines(n))
+    for (auto& s : Tree_printer<node>::default_instance().compose_text_lines(n))
         ss << s << std::endl;
 
     ASSERT_EQ(ss.str(), R"(

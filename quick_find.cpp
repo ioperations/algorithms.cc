@@ -1,35 +1,13 @@
 #include <iostream>
 #include <sstream>
+#include <map>
 
 #include "array.h"
 #include "forward_list.h"
 #include "pair.h"
-
-#include <map>
 #include "tree.h"
-
-template<typename T>
-class Rich_text {
-    public:
-        T value_;
-        bool bold_;
-        Rich_text() = default;
-        template<typename TT>
-            Rich_text(TT&& value, bool bold): value_(std::forward<TT>(value)), bold_(bold) {}
-        template<typename TT>
-            friend std::ostream& operator<<(std::ostream& s, Rich_text<TT> r) {
-#ifdef unix
-                if (r.bold_)
-                    s << "\x1B[1m";
-#endif
-                s << r.value_;
-#ifdef unix
-                if (r.bold_)
-                    s << "\x1B[0m";
-#endif
-                return s;
-            }
-};
+#include "string_utils.h"
+#include "rich_text.h"
 
 using Connections = Array<Rich_text<int>>;
 using Connection_pairs = Forward_list<Pair<int, int>>;
@@ -84,12 +62,37 @@ struct Quick_find {
     void post_process(Connections& connections) {}
 };
 
+using Pair_tree_node = Forward_list_tree_node<Pair<int, int>>;
 
+struct Tree_stringifier {
+    std::string operator()(const Pair_tree_node& node) {
+        std::stringstream ss;
+        ss << node.value().first_;
+        return ss.str();
+    }
+};
+auto pair_tree_printer = Tree_printer<Pair_tree_node, Tree_stringifier>();
 
 template<typename A>
 struct Quick_union : A {
+
+    using Lines = Forward_list<std::string>;
+    struct Text_block {
+        Lines lines_;
+        size_t width_ = 0;
+        int lines_count_ = 0;
+        Text_block(Lines&& lines): lines_(std::move(lines)) {
+            for (auto l : lines_) {
+                width_ = std::max<size_t>(width_, string_length(l));
+                ++lines_count_;
+            }
+        }
+    };
+    using Text_blocks = Forward_list<Text_block>;
+
     template<typename... Args>
         Quick_union(Args&&... args) :A(std::forward<Args>(args)...) {}
+
     auto add(int f, int s, Connections& connections) {
         Forward_list<int> l;
         auto follow_links = [&l, &connections](int& index) {
@@ -110,13 +113,13 @@ struct Quick_union : A {
             A::add(f, s, connections, l);
         return l;
     }
-    using Node = Forward_list_tree_node<Pair<int, int>>;
-    void post_process(Connections& connections) {
-        Array<Node> nodes(connections.size());
-        for (size_t i = 0; i < connections.size(); ++i)
-            nodes[i] = Node(Pair<int, int>(i, connections[i].value_)); // todo add emplace
 
-        std::map<int, Node*> map;
+    void post_process(Connections& connections) {
+        Array<Pair_tree_node> nodes(connections.size());
+        for (size_t i = 0; i < connections.size(); ++i)
+            nodes[i] = Pair_tree_node(Pair<int, int>(i, connections[i].value_)); // todo add emplace
+
+        std::map<int, Pair_tree_node*> map;
         for (size_t i = 0; i < nodes.size(); ++i)
             map[i] = &nodes[i];
 
@@ -130,19 +133,36 @@ struct Quick_union : A {
                 map[id] = &children.back();
             }
         }
-        Forward_list_tree_node<std::string> printable_node("");
+        Text_blocks blocks;
+        Forward_list<Lines::iterator> its;
+        int lines_count = 0;
         for (auto& e : map)
-            if (e.first == e.second->value().second_)
-                printable_node.children().push_back(to_printable_node(*e.second));
-        std::cout << printable_node << std::endl;
+            if (e.first == e.second->value().second_) {
+                blocks.emplace_back(pair_tree_printer.compose_text_lines(*e.second));
+                auto& block = blocks.back();
+                lines_count = std::max(lines_count, block.lines_count_);
+                its.push_back(block.lines_.begin());
+            }
+        for (int line = 0; line < lines_count; ++line) {
+            auto block = blocks.begin();
+            for (auto& entry : its) {
+                if (!entry.empty()) {
+                    std::cout << (*entry);
+                    for (size_t i = 0; i < block->width_ - string_length(*entry); ++i)
+                        std::cout << " ";
+                    ++entry;
+                } else {
+                    for (size_t i = 0; i < block->width_; ++i)
+                        std::cout << " ";
+                }
+                std::cout << "   ";
+                ++block;
+            }
+            std::cout << std::endl;
+        }
 
     }
-    Forward_list_tree_node<std::string> to_printable_node(Node& node) {
-        Forward_list_tree_node<std::string> p(std::to_string(node.value().first_));
-        for (auto& child : node.children())
-            p.children().push_back(to_printable_node(child));
-        return p;
-    }
+
 };
 
 struct Quick_union_simple_adder {

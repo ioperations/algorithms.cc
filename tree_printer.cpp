@@ -1,10 +1,10 @@
 #include "tree_printer.h"
 
-void Tree_printer::Printed_node::fix_positions(Siblings* previous) {
+void Tree_printer_base::Printed_node::fix_positions(Siblings* previous) {
     siblings_->fix_positions(previous);
 }
 
-void Tree_printer::Siblings::fix_positions(Siblings* previous) {
+void Tree_printer_base::Siblings::fix_positions(Siblings* previous) {
     auto middle = [this]() {
         int b = front().center();
         return b + (back().center() - b + 1) / 2;
@@ -63,7 +63,7 @@ class Base_appender {
         void reset() { count_ = 0; }
 };
 
-void Tree_printer::print(Lines& lines, std::ostream& stream) {
+void Tree_printer_base::print(Lines& lines, std::ostream& stream) {
     struct Appender : Base_appender<std::ostream&> {
         Appender(std::ostream& stream) :Base_appender<std::ostream&>(stream) {}
         void new_line() {
@@ -73,7 +73,7 @@ void Tree_printer::print(Lines& lines, std::ostream& stream) {
     print(lines, Appender(stream));
 }
 
-Forward_list<std::string> Tree_printer::compose_text_lines(Lines& lines) {
+Forward_list<std::string> Tree_printer_base::compose_text_lines(Lines& lines) {
     struct Appender : Base_appender<std::stringstream> {
         Forward_list<std::string> lines_;
         Appender(): Base_appender<std::stringstream>(std::stringstream()) {}
@@ -89,7 +89,7 @@ Forward_list<std::string> Tree_printer::compose_text_lines(Lines& lines) {
 }
 
 template<typename A>
-void Tree_printer::print(Lines& lines, A&& appender) {
+void Tree_printer_base::print(Lines& lines, A&& appender) {
     for (auto& line : lines) {
         Printed_node* previous = nullptr;
         for (auto& siblings : line) {
