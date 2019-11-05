@@ -118,8 +118,7 @@ struct Quick_union : A {
         if (f != s) {
             Array<Pair_tree_node> nodes(connections_.size());
             for (size_t i = 0; i < connections_.size(); ++i) {
-                // bool bold = (int) i == f || (int) i == s;
-                bool bold = false;
+                bool bold = (int) i == fi || (int) i == si;
                 nodes[i] = Pair_tree_node(Pair<Rich_text<int>, int>(Rich_text<int>(i, bold), connections_[i].value_)); // todo add emplace
             }
 

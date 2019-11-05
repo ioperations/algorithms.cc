@@ -5,6 +5,7 @@
 
 #include "array.h"
 #include "forward_list.h"
+#include "string_utils.h"
 
 class Tree_printer_base {
     protected:
@@ -13,15 +14,16 @@ class Tree_printer_base {
         class Printed_node {
             private:
                 const std::string label_;
+                const int label_width_;
                 const int label_half_width_;
                 int position_;
                 Siblings* const siblings_;
             public:
-                Printed_node(std::string label, Siblings* siblings)
-                    :label_(label), label_half_width_(label.size() / 2), position_(0), siblings_(siblings)
+                Printed_node(std::string label, size_t width, Siblings* siblings)
+                    :label_(label), label_width_(width), label_half_width_(width / 2), position_(0), siblings_(siblings)
                 {}
 
-                const std::string label() { return label_; }
+                const std::string label() const { return label_; }
 
                 int position() { return position_; }
                 void position(int p) { position_ = p; }
@@ -30,8 +32,9 @@ class Tree_printer_base {
                 void center(int c) { position_ = c - label_half_width_; }
 
                 void shift(int s) { position_ += s; }
-                int border() const { return position_ + label_.size() + 2; }
+                int border() const { return position_ + label_width_ + 2; }
                 void fix_positions(Siblings* previous = nullptr);
+                size_t label_width() const { return label_width_; }
         };
 
         class Siblings : public Forward_list<Printed_node> {
@@ -55,21 +58,30 @@ class Tree_printer_base {
         Forward_list<std::string> compose_text_lines(Lines& lines); // todo const lines
 };
 
-template<typename T>
+template<typename N>
 struct Default_stringifier {
-    std::string operator()(const T& t) {
+    std::string operator()(const N& node) {
         std::stringstream ss;
-        ss << t.value();
+        ss << node.value();
         return ss.str();
     }
 };
 
-template<typename N, typename S = Default_stringifier<N>>
+template<typename N>
+struct Default_label_width_calculator {
+    size_t operator()(const N& node, const std::string label) {
+        return string_length(label);
+    }
+};
+
+template<typename N, typename S = Default_stringifier<N>, typename L = Default_label_width_calculator<N>>
 class Tree_printer : protected Tree_printer_base {
     private:
         S stringifier_;
+        L label_width_calculator_;
         void populate_lines(const N& node, Lines& lines, Siblings& siblings, int level = 0) {
-            siblings.emplace_back(stringifier_(node.value()), &siblings);
+            auto string = stringifier_(node.value());
+            siblings.emplace_back(string, label_width_calculator_(node, string), &siblings);
             auto parent_it = siblings.before_end();
             ++level;
 

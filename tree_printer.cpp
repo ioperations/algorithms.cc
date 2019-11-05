@@ -55,6 +55,10 @@ class Base_appender {
             stream_ << s;
             count_ += s.size();
         }
+        void operator<<(const Tree_printer_base::Printed_node& node) {
+            stream_ << node.label();
+            count_ += node.label_width();
+        }
         void repeat_until(int bound, const char* s) {
             while (count_ < bound)
                 *this << s;
@@ -156,7 +160,7 @@ void Tree_printer_base::print(Lines& lines, A&& appender) {
         for (auto& siblings : *line)
             for (auto& node : siblings) {
                 appender.repeat_until(node.position(), " ");
-                appender << node.label();
+                appender << node;
             }
     }
 }
