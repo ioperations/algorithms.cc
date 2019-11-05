@@ -25,24 +25,20 @@ void Tree_printer_base::Siblings::fix_positions(Siblings* previous) {
         if (parent_->center() != current_middle) {
             parent_->center(current_middle);
 
-            auto shift_siblings = [](Printed_node* previous, Printed_node* sibling) {
-                for (; sibling; sibling = sibling->next_) {
-                    int min_position = previous->border();
-                    if (min_position > sibling->position())
-                        sibling->position(min_position);
-                    sibling->siblings_->fix_positions();
-                    previous = sibling;
-                }
-                return previous;
-            };
+            auto previous = parent_;
+            for (auto sibling = parent_->next_; sibling; sibling = sibling->next_) {
+                int min_position = previous->border();
+                if (min_position > sibling->position())
+                    sibling->position(min_position);
+                previous = sibling;
+            }
 
             parent_->siblings_->fix_positions();
-            Printed_node* previous = shift_siblings(parent_, parent_->next_);
 
-            auto next_siblings = parent_->siblings_->next_;
-            while (next_siblings) {
-                previous = shift_siblings(previous, next_siblings->head_);
-                next_siblings = next_siblings->next_;
+            auto previous_siblings = parent_->siblings_;
+            for (auto siblings = previous_siblings->next_; siblings; siblings = siblings->next_) {
+                siblings->fix_positions(previous_siblings);
+                previous_siblings = siblings;
             }
         }
     }
