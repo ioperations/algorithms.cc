@@ -12,6 +12,18 @@
 using Connections = Array<Rich_text<int>>;
 using Connection_pairs = Forward_list<Pair<int, int>>;
 
+void print_links(const Forward_list<int>& links, std::ostream& stream) {
+    if (!links.empty()) {
+        stream << "  ";
+        for (auto it = links.cbegin(); it != links.cend(); ++it) {
+            if (it != links.cbegin())
+                stream << "-";
+            stream << (*it);
+        }
+
+    }
+}
+
 template<typename A>
 struct Searcher : A {
     template<typename... Args>
@@ -27,17 +39,9 @@ struct Searcher : A {
                 for (auto& connection : connections)
                     connection.bold_ = false;
             auto already_existing = A::add(pair->first_, pair->second_, connections);
-            std::cout << connections << "  " << pair->first_ << "-" << pair->second_;
-            if (!already_existing.empty()) {
-                std::cout << "  ";
-                for (auto it = already_existing.cbegin(); it != already_existing.cend(); ++it) {
-                    if (it != already_existing.cbegin())
-                        std::cout << "-";
-                    std::cout << (*it);
-                }
-
-            }
-            std::cout << std::endl;
+            // std::cout << connections << "  " << pair->first_ << "-" << pair->second_;
+            // print_links(already_existing, std::cout);
+            // std::cout << std::endl;
         }
         A::post_process(connections);
     }
@@ -76,10 +80,18 @@ auto pair_tree_printer = Tree_printer<Pair_tree_node, Tree_stringifier>();
 template<typename A>
 struct Quick_union : A {
 
+    struct Custom_text_blocks : public Text_blocks {
+        size_t trees_width_ = 0;
+        Text_block* last_tree_ = nullptr;
+    };
+
+    Forward_list<Custom_text_blocks> text_blocks_lines_;
+
     template<typename... Args>
         Quick_union(Args&&... args) :A(std::forward<Args>(args)...) {}
 
     auto add(int f, int s, Connections& connections) {
+        int fi = f, si = s; // todo remove
         Forward_list<int> l;
         auto follow_links = [&l, &connections](int& index) {
             bool linked;
@@ -97,7 +109,10 @@ struct Quick_union : A {
         follow_links(s);
         if (f != s) {
             A::add(f, s, connections, l);
+        }
 
+        Custom_text_blocks blocks;
+        if (f != s) {
             Array<Pair_tree_node> nodes(connections.size());
             for (size_t i = 0; i < connections.size(); ++i)
                 nodes[i] = Pair_tree_node(Pair<int, int>(i, connections[i].value_)); // todo add emplace
@@ -116,16 +131,31 @@ struct Quick_union : A {
                     map[id] = &children.back();
                 }
             }
-            Text_blocks blocks;
             for (auto& e : map)
                 if (e.first == e.second->value().second_)
                     blocks.emplace_back(pair_tree_printer.compose_text_lines(*e.second));
-            std::cout << blocks << std::endl;
-        }
+        } else
+            blocks.emplace_back("(same)");
+        blocks.trees_width_ = blocks.width();
+        blocks.last_tree_ = &blocks.back();
+
+        std::stringstream ss;
+        ss << fi << "-" << si << "  ";
+        print_links(l, ss); 
+        blocks.emplace_back(ss.str());
+        text_blocks_lines_.push_back(std::move(blocks));
         return l;
     }
 
     void post_process(Connections& connections) {
+        size_t max_trees_width = 0;
+        for (auto& blocks : text_blocks_lines_)
+            max_trees_width = std::max(max_trees_width, blocks.trees_width_);
+        for (auto& blocks : text_blocks_lines_) {
+            auto last_tree = blocks.last_tree_;
+            last_tree->set_width(last_tree->width() + max_trees_width - blocks.trees_width_);
+            std::cout << blocks << std::endl;
+        }
     }
 
 };
@@ -191,11 +221,11 @@ q)";
 
     Connections connections(size);
 
-    std::cout << "quick find:" << std::endl;
-    Searcher<Quick_find>().search(pairs, connections);
+    // std::cout << "quick find:" << std::endl;
+    // Searcher<Quick_find>().search(pairs, connections);
 
-    std::cout << "quick union:" << std::endl;
-    Searcher<Quick_union<Quick_union_simple_adder>>().search(pairs, connections);
+    // std::cout << "quick union:" << std::endl;
+    // Searcher<Quick_union<Quick_union_simple_adder>>().search(pairs, connections);
 
     std::cout << "weighted quick union:" << std::endl;
     Searcher<Quick_union<Quick_union_weighted_adder>>(connections.size()).search(pairs, connections);

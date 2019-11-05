@@ -80,7 +80,7 @@ class Forward_list {
         iterator before_end() {
             return Iterator(tail_);
         }
-        bool empty() {
+        bool empty() const {
             return head_ == nullptr;
         }
         void clear() {
