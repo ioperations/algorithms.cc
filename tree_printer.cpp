@@ -1,31 +1,23 @@
 #include "tree_printer.h"
 
-void Tree_printer_base::Printed_node::fix_positions(Siblings* previous) {
-    siblings_->fix_positions(previous);
-}
-
 void Tree_printer_base::Siblings::fix_positions(Siblings* previous) {
     auto middle = [this]() {
-        int middle;
-        if (&front() == &back())
-            middle = front().center();
-        else {
-            int b = front().center();
-            middle = b + (back().center() - b + 1) / 2;
-        }
+        int middle = head_->center();
+        if (head_ != tail_)
+            middle = middle + (tail_->center() - middle + 1) / 2;
         return middle;
     };
 
     auto shift = 0;
     if (previous)
-        shift = previous->back().border() - front().position();
+        shift = previous->tail_->border() - head_->position();
     int current_middle = middle();
     if (parent_) 
         shift = std::max(shift, parent_->center() - current_middle);
 
     if (shift > 0)
-        for (auto& node : *this)
-            node.shift(shift);
+        for (auto node = head_; node; node = node->next_)
+            node->shift(shift);
 
     if (parent_) {
         if (shift > 0)
@@ -33,25 +25,23 @@ void Tree_printer_base::Siblings::fix_positions(Siblings* previous) {
         if (parent_->center() != current_middle) {
             parent_->center(current_middle);
 
-            auto shift_siblings = [](Printed_node* previous, Siblings::iterator sibling) {
-                for (; !sibling.empty(); ++sibling) {
+            auto shift_siblings = [](Printed_node* previous, Printed_node* sibling) {
+                for (; sibling; sibling = sibling->next_) {
                     int min_position = previous->border();
                     if (min_position > sibling->position())
                         sibling->position(min_position);
-                    sibling->fix_positions();
-                    previous = &*sibling;
+                    sibling->siblings_->fix_positions();
+                    previous = sibling;
                 }
                 return previous;
             };
 
-            parent_->fix_positions();
-            auto sibling = parent_it_;
-            ++sibling;
-            Printed_node* previous = shift_siblings(parent_, sibling);
+            parent_->siblings_->fix_positions();
+            Printed_node* previous = shift_siblings(parent_, parent_->next_);
 
-            auto next_siblings = parent_->siblings()->next_;
+            auto next_siblings = parent_->siblings_->next_;
             while (next_siblings) {
-                previous = shift_siblings(previous, next_siblings->begin());
+                previous = shift_siblings(previous, next_siblings->head_);
                 next_siblings = next_siblings->next_;
             }
         }
@@ -73,9 +63,9 @@ class Base_appender {
             stream_ << s;
             count_ += s.size();
         }
-        void operator<<(const Tree_printer_base::Printed_node& node) {
-            stream_ << node.label();
-            count_ += node.label_width();
+        void operator<<(const Tree_printer_base::Printed_node* node) {
+            stream_ << node->label();
+            count_ += node->label_width();
         }
         void repeat_until(int bound, const char* s) {
             while (count_ < bound)
@@ -115,11 +105,11 @@ void Tree_printer_base::print(Lines& lines, A&& appender) {
     for (auto& line : lines) {
         Printed_node* previous = nullptr;
         for (auto& siblings : line) {
-            for (auto& node : siblings) {
+            for (auto node = siblings.head(); node != nullptr; node = node->next_) {
                 if (previous)
-                    node.position(previous->border());
-                previous = &node;
-            }
+                    node->position(previous->border());
+                previous = node;
+            } 
         }
     }
 
@@ -129,21 +119,15 @@ void Tree_printer_base::print(Lines& lines, A&& appender) {
                 appender.new_line();
                 appender.reset();
                 for (auto& siblings : *line) {
-                    auto node = siblings.begin();
+                    auto node = siblings.head();
 
-                    bool more_than_one = false;
-                    if (node != siblings.end()) {
-                        auto second = node;
-                        ++second;
-                        more_than_one = second != siblings.end();
-                    }
-                    auto parent_center = siblings.parent()->center();
+                    auto parent_center = siblings.parent_->center();
 
-                    if (more_than_one) {
+                    if (node && node->next_) {
                         appender.repeat_until(node->center(), " ");
-                        ++node;
+                        node = node->next_;
                         bool first = true;
-                        for (; node != siblings.end(); ++node) {
+                        for (; node; node = node->next_) {
                             if (first) {
                                 appender << "┌";
                                 first = false;
@@ -169,8 +153,8 @@ void Tree_printer_base::print(Lines& lines, A&& appender) {
             }
             appender.reset();
             for (auto& siblings : *line)
-                for (auto& node : siblings) {
-                    appender.repeat_until(node.position(), " ");
+                for (auto node = siblings.head(); node; node = node->next_) {
+                    appender.repeat_until(node->position(), " ");
                     appender << node;
                 }
         }

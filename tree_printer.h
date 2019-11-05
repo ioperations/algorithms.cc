@@ -17,11 +17,13 @@ class Tree_printer_base {
                 const int label_width_;
                 const int label_half_width_;
                 int position_;
-                Siblings* const siblings_;
             public:
+                Siblings* const siblings_;
+                Printed_node* next_;
                 Printed_node(std::string label, size_t width, Siblings* siblings)
-                    :label_(label), label_width_(width), label_half_width_(width / 2), position_(0), siblings_(siblings)
+                    :label_(label), label_width_(width), label_half_width_(width / 2), position_(0), siblings_(siblings), next_(nullptr)
                 {}
+                Printed_node(Printed_node&&) = delete;
 
                 const std::string label() const { return label_; }
 
@@ -35,29 +37,48 @@ class Tree_printer_base {
                 int border() const { return position_ + label_width_ + 2; }
                 void fix_positions(Siblings* previous = nullptr);
                 size_t label_width() const { return label_width_; }
-                Siblings* const siblings() { return siblings_; }
         };
 
-        class Siblings : public Forward_list<Printed_node> {
+        class Siblings {
             private:
-                Printed_node* const parent_;
-                iterator parent_it_;
+                Printed_node* head_;
+                Printed_node* tail_;
             public:
+                Printed_node* const parent_;
                 Siblings* next_;
-                Siblings(iterator parent_it = iterator(nullptr)) 
-                    :parent_(parent_it.empty() ? nullptr : &*parent_it), parent_it_(parent_it), next_(nullptr)
-                    {}
-                void fix_positions(Siblings* previous);
-                Printed_node* parent() { return parent_; }
+
+                Siblings(Printed_node* parent) 
+                    :head_(nullptr), tail_(nullptr), parent_(parent), next_(nullptr)
+                {}
+                ~Siblings() {
+                    Printed_node* node = head_;
+                    while (node) {
+                        auto previous = node;
+                        node = node->next_;
+                        delete previous;
+                    }
+                }
+                Siblings(Siblings&& o) = delete;
+                Printed_node* head() { return head_; }
+                void add(Printed_node* node) {
+                    if (tail_) {
+                        tail_->next_ = node;
+                        tail_ = tail_->next_;
+                    } else {
+                        head_ = node;
+                        tail_ = node;
+                    }
+                }
+                void fix_positions(Siblings* previous = nullptr);
         };
 
         using Line = Forward_list<Siblings>;
         using Lines = Array<Line>;
 
+        void print(Lines& lines, std::ostream& stream);
+        Forward_list<std::string> compose_text_lines(Lines& lines);
         template<typename A>
             void print(Lines& lines, A&& appender);
-        void print(Lines& lines, std::ostream& stream);
-        Forward_list<std::string> compose_text_lines(Lines& lines); // todo const lines
 };
 
 template<typename N>
@@ -82,29 +103,29 @@ class Tree_printer : protected Tree_printer_base {
         S stringifier_;
         L label_width_calculator_;
 
-        void populate_lines(const N& node, Lines& lines,
-                            Siblings::iterator parent = Siblings::iterator(nullptr), int level = 0) {
+        void populate_lines(const N& node, Lines& lines, Printed_node* parent = nullptr, int level = 0) {
             auto& line = lines[level];
             if (line.empty())
                 line.emplace_back(parent);
             Siblings* siblings = &line.back();
-            if (siblings->parent() != &*parent) {
+            if (siblings->parent_ != parent) {
                 line.emplace_back(parent);
-                Siblings* previous_siblings = siblings;
+                Siblings* previous = siblings;
                 siblings = &line.back();
-                previous_siblings->next_ = siblings;
+                previous->next_ = siblings;
             }
             auto string = stringifier_(node.value());
-            siblings->emplace_back(string, label_width_calculator_(node, string), siblings);
+            Printed_node* printable_node = new Printed_node(string, label_width_calculator_(node, string), siblings);
+            siblings->add(printable_node);
 
             auto child = node.children().cbegin();
             if (child != node.children().cend()) {
                 ++level;
-                parent = siblings->before_end();
                 for (; child != node.children().cend(); ++child)
-                    populate_lines(*child, lines, parent, level);
+                    populate_lines(*child, lines, printable_node, level);
             }
         }
+
 
         int calculate_depth(const N& node, int level = 0) {
             ++level;
@@ -114,20 +135,16 @@ class Tree_printer : protected Tree_printer_base {
                 depth = std::max(depth, calculate_depth(*it, level));
             return depth;
         }
-
-        Lines compose_lines(const N& node) {
-            Lines lines(calculate_depth(node));
-            populate_lines(node, lines);
-            return lines;
-        }
     public:
         void print(const N& node, std::ostream& stream) {
-            Lines lines = compose_lines(node);
+            Lines lines(calculate_depth(node));
+            populate_lines(node, lines);
             Tree_printer_base::print(lines, stream);
         }
 
         Forward_list<std::string> compose_text_lines(const N& node) {
-            Lines lines = compose_lines(node);
+            Lines lines(calculate_depth(node));
+            populate_lines(node, lines);
             return Tree_printer_base::compose_text_lines(lines);
         }
 
