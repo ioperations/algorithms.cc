@@ -20,12 +20,12 @@ class Tree_printer_base {
                 int position_;
 
                 Printed_node(std::string&& label, size_t width, Siblings* siblings)
-                    :label_(label), label_width_(width), label_half_width_(width / 2), position_(0), siblings_(siblings), next_(nullptr)
+                    :label_(label), label_width_(width), label_half_width_(width / 2), position_(0), next_(nullptr), siblings_(siblings)
                 {}
                 Printed_node(Printed_node&&) = delete;
+                Printed_node* next_;
             public:
                 Siblings* const siblings_;
-                Printed_node* next_;
 
                 const std::string label() const { return label_; }
 
@@ -39,6 +39,7 @@ class Tree_printer_base {
                 int border() const { return position_ + label_width_ + 2; }
                 void fix_positions(Siblings* previous = nullptr);
                 size_t label_width() const { return label_width_; }
+                Printed_node* next() { return next_; }
         };
 
         class Siblings {
@@ -61,8 +62,8 @@ class Tree_printer_base {
                 }
                 Siblings(Siblings&& o) = delete;
                 Printed_node* head() { return head_; }
-                auto add_node(std::string&& label, size_t width, Siblings* siblings) {
-                    Printed_node* node = new Printed_node(std::move(label), width, siblings);
+                auto add_node(std::string&& label, size_t width) {
+                    Printed_node* node = new Printed_node(std::move(label), width, this);
                     if (tail_) tail_->next_ = node;
                     else head_ = node;
                     tail_ = node;
@@ -121,7 +122,7 @@ class Tree_printer : protected Tree_printer_base {
             }
             auto string = stringifier_(node.value());
             auto label_width = label_width_calculator_(node, string);
-            auto printable_node = siblings->add_node(std::move(string), label_width, siblings);
+            auto printable_node = siblings->add_node(std::move(string), label_width);
 
             auto child = node.children().cbegin();
             if (child != node.children().cend()) {

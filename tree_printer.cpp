@@ -16,7 +16,7 @@ void Tree_printer_base::Siblings::fix_positions(Siblings* previous) {
         shift = std::max(shift, parent_->center() - current_middle);
 
     if (shift > 0)
-        for (auto node = head_; node; node = node->next_)
+        for (auto node = head_; node; node = node->next())
             node->shift(shift);
 
     if (parent_) {
@@ -26,7 +26,7 @@ void Tree_printer_base::Siblings::fix_positions(Siblings* previous) {
             parent_->center(current_middle);
 
             auto previous = parent_;
-            for (auto sibling = parent_->next_; sibling; sibling = sibling->next_) {
+            for (auto sibling = parent_->next(); sibling; sibling = sibling->next()) {
                 int min_position = previous->border();
                 if (min_position > sibling->position())
                     sibling->position(min_position);
@@ -119,11 +119,11 @@ void Tree_printer_base::print(Lines& lines, A&& appender) {
 
                     auto parent_center = siblings.parent_->center();
 
-                    if (node && node->next_) {
+                    if (node && node->next()) {
                         appender.repeat_until(node->center(), " ");
-                        node = node->next_;
+                        node = node->next();
                         bool first = true;
-                        for (; node; node = node->next_) {
+                        for (; node; node = node->next()) {
                             if (first) {
                                 appender << "┌";
                                 first = false;
