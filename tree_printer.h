@@ -37,7 +37,6 @@ class Tree_printer_base {
 
                 void shift(int s) { position_ += s; }
                 int border() const { return position_ + label_width_ + 2; }
-                void fix_positions(Siblings* previous = nullptr);
                 size_t label_width() const { return label_width_; }
                 Printed_node* next() { return next_; }
         };
@@ -136,9 +135,9 @@ class Tree_printer : protected Tree_printer_base {
                 siblings = &line.back();
                 previous->next_ = siblings;
             }
-            auto string = stringifier_(node.value());
-            auto label_width = label_width_calculator_(node, string);
-            auto printable_node = siblings->add_node(std::move(string), label_width);
+            auto label = stringifier_(node.value());
+            auto label_width = label_width_calculator_(node, label);
+            auto printable_node = siblings->add_node(std::move(label), label_width);
 
             auto child = node.children().cbegin();
             if (child != node.children().cend()) {

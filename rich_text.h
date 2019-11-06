@@ -24,3 +24,9 @@ class Rich_text {
                 return s;
             }
 };
+
+template<typename It>
+static void clear_rich_text_format(It b, It e) {
+    for (auto it = b; it != e; ++it)
+        it->bold_ = false;
+}

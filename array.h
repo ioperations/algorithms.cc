@@ -39,6 +39,7 @@ class Array {
         ~Array() { delete[] ptr_; }
 
         T& operator[](size_t index) { return ptr_[index]; }
+        const T& operator[](size_t index) const { return ptr_[index]; }
 
         template<typename... Args>
             void emplace(int index, Args&&... args) {

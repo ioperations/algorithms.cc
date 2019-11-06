@@ -11,5 +11,6 @@ endif()
 
 add_executable(stack stack.cpp)
 add_executable(quick_find quick_find.cpp tree_printer.cpp string_utils.cpp text_block.cpp)
+add_executable(sort sort.cpp)
 
 add_subdirectory(tests)
