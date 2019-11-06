@@ -109,6 +109,22 @@ class Tree_printer : protected Tree_printer_base {
         S stringifier_;
         L label_width_calculator_;
 
+        Lines compose_lines(const N& node) {
+            auto depth = calculate_depth(node);
+            Lines lines(depth);
+            populate_lines(node, lines);
+            return lines;
+        }
+
+        int calculate_depth(const N& node, int level = 0) {
+            ++level;
+            int depth = level;
+            auto& children = node.children();
+            for (auto child = children.cbegin(); child != children.cend(); ++child)
+                depth = std::max(depth, calculate_depth(*child, level));
+            return depth;
+        }
+
         void populate_lines(const N& node, Lines& lines, Printed_node* parent = nullptr, int level = 0) {
             auto& line = lines[level];
             if (line.empty())
@@ -127,29 +143,21 @@ class Tree_printer : protected Tree_printer_base {
             auto child = node.children().cbegin();
             if (child != node.children().cend()) {
                 ++level;
-                for (; child != node.children().cend(); ++child)
+                do {
                     populate_lines(*child, lines, printable_node, level);
+                    ++child;
+                } while (child != node.children().cend());
             }
         }
 
-        int calculate_depth(const N& node, int level = 0) {
-            ++level;
-            int depth = level;
-            auto& children = node.children();
-            for (auto it = children.cbegin(); it != children.cend(); ++it)
-                depth = std::max(depth, calculate_depth(*it, level));
-            return depth;
-        }
     public:
         void print(const N& node, std::ostream& stream) {
-            Lines lines(calculate_depth(node));
-            populate_lines(node, lines);
+            auto lines = compose_lines(node);
             Tree_printer_base::print(lines, stream);
         }
 
         Forward_list<std::string> compose_text_lines(const N& node) {
-            Lines lines(calculate_depth(node));
-            populate_lines(node, lines);
+            auto lines = compose_lines(node);
             return Tree_printer_base::compose_text_lines(lines);
         }
 
