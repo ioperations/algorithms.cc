@@ -40,6 +40,11 @@ class Array {
 
         T& operator[](size_t index) { return ptr_[index]; }
 
+        template<typename... Args>
+            void emplace(int index, Args&&... args) {
+                ptr_[index] = T(std::forward<Args>(args)...);
+            }
+
         size_t size() const { return size_; }
 
         iterator begin() { return ptr_; }

@@ -2,4 +2,4 @@
 
 #include <string>
 
-size_t string_length(const std::string& str);
+size_t string_actual_printed_length(const std::string& str);

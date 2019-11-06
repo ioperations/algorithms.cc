@@ -13,17 +13,19 @@ class Tree_printer_base {
 
         class Printed_node {
             private:
+                friend class Siblings;
                 const std::string label_;
                 const int label_width_;
                 const int label_half_width_;
                 int position_;
-            public:
-                Siblings* const siblings_;
-                Printed_node* next_;
-                Printed_node(std::string label, size_t width, Siblings* siblings)
+
+                Printed_node(std::string&& label, size_t width, Siblings* siblings)
                     :label_(label), label_width_(width), label_half_width_(width / 2), position_(0), siblings_(siblings), next_(nullptr)
                 {}
                 Printed_node(Printed_node&&) = delete;
+            public:
+                Siblings* const siblings_;
+                Printed_node* next_;
 
                 const std::string label() const { return label_; }
 
@@ -51,8 +53,7 @@ class Tree_printer_base {
                     :head_(nullptr), tail_(nullptr), parent_(parent), next_(nullptr)
                 {}
                 ~Siblings() {
-                    Printed_node* node = head_;
-                    while (node) {
+                    for (Printed_node* node = head_; node; ) {
                         auto previous = node;
                         node = node->next_;
                         delete previous;
@@ -60,16 +61,20 @@ class Tree_printer_base {
                 }
                 Siblings(Siblings&& o) = delete;
                 Printed_node* head() { return head_; }
-                void add(Printed_node* node) {
-                    if (tail_) {
-                        tail_->next_ = node;
-                        tail_ = tail_->next_;
-                    } else {
-                        head_ = node;
-                        tail_ = node;
-                    }
+                auto add_node(std::string&& label, size_t width, Siblings* siblings) {
+                    Printed_node* node = new Printed_node(std::move(label), width, siblings);
+                    if (tail_) tail_->next_ = node;
+                    else head_ = node;
+                    tail_ = node;
+                    return node;
                 }
                 void fix_positions(Siblings* previous = nullptr);
+                template<typename F>
+                    void for_each(F func) {
+                        for (auto node = head_; node; node = node->next_) {
+                            func(node);
+                        }
+                    }
         };
 
         using Line = Forward_list<Siblings>;
@@ -92,8 +97,8 @@ struct Default_stringifier {
 
 template<typename N>
 struct Default_label_width_calculator {
-    size_t operator()(const N& node, const std::string label) {
-        return string_length(label);
+    size_t operator()(const N& node, const std::string& label) {
+        return label.size();
     }
 };
 
@@ -115,8 +120,8 @@ class Tree_printer : protected Tree_printer_base {
                 previous->next_ = siblings;
             }
             auto string = stringifier_(node.value());
-            Printed_node* printable_node = new Printed_node(string, label_width_calculator_(node, string), siblings);
-            siblings->add(printable_node);
+            auto label_width = label_width_calculator_(node, string);
+            auto printable_node = siblings->add_node(std::move(string), label_width, siblings);
 
             auto child = node.children().cbegin();
             if (child != node.children().cend()) {
@@ -125,7 +130,6 @@ class Tree_printer : protected Tree_printer_base {
                     populate_lines(*child, lines, printable_node, level);
             }
         }
-
 
         int calculate_depth(const N& node, int level = 0) {
             ++level;

@@ -101,11 +101,11 @@ void Tree_printer_base::print(Lines& lines, A&& appender) {
     for (auto& line : lines) {
         Printed_node* previous = nullptr;
         for (auto& siblings : line) {
-            for (auto node = siblings.head(); node != nullptr; node = node->next_) {
+            siblings.for_each([&previous](auto node) {
                 if (previous)
                     node->position(previous->border());
                 previous = node;
-            } 
+            });
         }
     }
 
@@ -149,10 +149,10 @@ void Tree_printer_base::print(Lines& lines, A&& appender) {
             }
             appender.reset();
             for (auto& siblings : *line)
-                for (auto node = siblings.head(); node; node = node->next_) {
+                siblings.for_each([&appender](auto node) {
                     appender.repeat_until(node->position(), " ");
                     appender << node;
-                }
+                });
         }
     };
 

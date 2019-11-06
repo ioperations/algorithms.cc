@@ -12,13 +12,13 @@ class Text_block {
     public:
         Text_block(Lines&& lines): lines_(std::move(lines)) {
             for (auto l : lines_) {
-                width_ = std::max<size_t>(width_, string_length(l));
+                width_ = std::max<size_t>(width_, string_actual_printed_length(l));
                 ++lines_count_;
             }
         }
         Text_block(const std::string& s) {
             lines_.push_back(s);
-            width_ = string_length(s);
+            width_ = string_actual_printed_length(s);
             lines_count_ = 1;
         }
         const Lines& lines() const { return lines_; }

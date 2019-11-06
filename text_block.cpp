@@ -10,7 +10,7 @@ std::ostream& operator<<(std::ostream& stream, const Text_blocks& blocks) {
         for (auto& entry : text_block) {
             if (!entry.empty()) {
                 std::cout << (*entry);
-                for (size_t i = 0; i < block->width() - string_length(*entry); ++i)
+                for (size_t i = 0; i < block->width() - string_actual_printed_length(*entry); ++i)
                     std::cout << " ";
                 ++entry;
             } else {

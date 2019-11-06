@@ -75,7 +75,12 @@ struct Tree_stringifier {
         return ss.str();
     }
 };
-auto pair_tree_printer = Tree_printer<Pair_tree_node, Tree_stringifier>();
+struct Tree_label_width_calculator {
+    size_t operator()(const Pair_tree_node& node, const std::string& label) {
+        return string_actual_printed_length(label);
+    }
+};
+auto pair_tree_printer = Tree_printer<Pair_tree_node, Tree_stringifier, Tree_label_width_calculator>();
 
 template<typename A>
 struct Quick_union : A {
@@ -119,7 +124,7 @@ struct Quick_union : A {
             Array<Pair_tree_node> nodes(connections_.size());
             for (size_t i = 0; i < connections_.size(); ++i) {
                 bool bold = (int) i == fi || (int) i == si;
-                nodes[i] = Pair_tree_node(Pair<Rich_text<int>, int>(Rich_text<int>(i, bold), connections_[i].value_)); // todo add emplace
+                nodes.emplace(i, Pair<Rich_text<int>, int>(Rich_text<int>(i, bold), connections_[i].value_));
             }
 
             std::map<int, Pair_tree_node*> map;

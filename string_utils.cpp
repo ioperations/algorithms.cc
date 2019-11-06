@@ -1,6 +1,6 @@
 #include "string_utils.h"
 
-size_t string_length(const std::string& str) {
+size_t string_actual_printed_length(const std::string& str) {
     int length = 0;
     for (size_t i = 0; i < str.size(); ++i) {
         auto c = str[i];

@@ -11,18 +11,12 @@ class Forward_list {
         Node* tail_;
 
         void append_node(Node* node) {
-            if (tail_) {
-                tail_->next_ = node;
-                tail_ = tail_->next_;
-            } else {
-                tail_ = node;
-                head_ = tail_;
-            }
+            if (tail_) tail_->next_ = node;
+            else head_ = node;
+            tail_ = node;
         }
-
         void remove_nodes() {
-            Node* node = head_;
-            while (node) {
+            for (Node* node = head_; node; ) {
                 Node* previous = node;
                 node = node->next_;
                 delete previous;
