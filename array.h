@@ -1,5 +1,9 @@
 #pragma once
 
+#include <climits>
+#include <bitset>
+
+#include "math.h"
 #include "forward_list.h"
 
 template<typename T>
@@ -68,7 +72,63 @@ std::ostream& operator<<(std::ostream& stream, const Array<T>& a) {
     }
     return stream << "]";
 }
-    
+
+template<>
+struct Array<bool> {
+    public:
+        class Reference {
+            private:
+                friend class Array;
+                bool value_;
+                char* char_ptr_;
+                int bit_index_;
+                void set_index(char* ptr, size_t index) {
+                    char_ptr_ = ptr + index / CHAR_BIT;
+                    bit_index_ = index % CHAR_BIT;
+                    value_ = *char_ptr_ & (0x80 >> bit_index_);
+                }
+                void set(bool value) {
+                    if (value)
+                        *char_ptr_ |= (0x80 >> bit_index_);
+                    else
+                        *char_ptr_ &= ~(0x80 >> bit_index_); 
+                }
+                Reference() :value_(false), char_ptr_(nullptr), bit_index_(0) {};
+            public:
+                Reference(bool value) :value_(value), char_ptr_(nullptr), bit_index_(0) {
+                }
+                Reference(const Reference&) = delete;
+                Reference& operator=(const Reference& o) = delete;
+                Reference(Reference&&) = delete;
+                Reference& operator=(Reference&& o) {
+                    set(o.value_);
+                    return *this;
+                }
+                operator bool() const {
+                    return value_;
+                }
+        };
+    private:
+        char* ptr_;
+        size_t size_;
+        size_t actual_size_;
+        Reference current_reference_;
+        Array(char* ptr, size_t size) 
+            :ptr_(ptr), size_(size), actual_size_(divide_round_up(size, static_cast<size_t>(CHAR_BIT))) 
+        {}
+    public:
+        Array(size_t size) :Array(new char[size], size) {}
+
+        void print() { // todo delete
+            for (auto b = ptr_; b != ptr_ + actual_size_; ++b)
+                std::cout << std::bitset<CHAR_BIT>(*b) << std::endl;
+        }
+
+        Reference& operator[](size_t index) {
+            current_reference_.set_index(ptr_, index);
+            return current_reference_;
+        };
+};
 
 template<typename T>
 template<typename... Args>
