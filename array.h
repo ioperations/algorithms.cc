@@ -86,12 +86,6 @@ struct Array<bool> {
                     bit_index_ = index % CHAR_BIT;
                     value_ = *char_ptr_ & (0x80 >> bit_index_);
                 }
-                void set(bool value) {
-                    if (value)
-                        *char_ptr_ |= (0x80 >> bit_index_);
-                    else
-                        *char_ptr_ &= ~(0x80 >> bit_index_); 
-                }
                 Reference() :value_(false), char_ptr_(nullptr), bit_index_(0) {};
             public:
                 Reference(bool value) :value_(value), char_ptr_(nullptr), bit_index_(0) {
@@ -100,25 +94,20 @@ struct Array<bool> {
                 Reference& operator=(const Reference& o) = delete;
                 Reference(Reference&&) = delete;
                 Reference& operator=(Reference&& o) {
-                    set(o.value_);
+                    if (o.value_)
+                        *char_ptr_ |= (0x80 >> bit_index_);
+                    else
+                        *char_ptr_ &= ~(0x80 >> bit_index_); 
                     return *this;
                 }
                 operator bool() const {
                     return value_;
                 }
         };
-    private:
-        char* ptr_;
-        size_t size_;
-        size_t actual_size_;
-        Reference current_reference_;
-        Array(char* ptr, size_t size) 
-            :ptr_(ptr), size_(size), actual_size_(divide_round_up(size, static_cast<size_t>(CHAR_BIT))) 
-        {}
-    public:
         template<typename R>
         class Base_iterator {
-            protected:
+            private:
+                friend class Array;
                 char* const ptr_;
                 size_t index_;
                 Reference reference_;
@@ -138,35 +127,34 @@ struct Array<bool> {
                     return reference_;
                 }
         };
-        class Iterator : public Base_iterator<Reference> {
-            private:
-                friend class Array;
-                Iterator(char* ptr, size_t index) :Base_iterator(ptr, index) {}
-        };
-        class Const_iterator : public Base_iterator<const Reference> {
-            private:
-                friend class Array;
-                Const_iterator(char* ptr, size_t index) :Base_iterator(ptr, index) {}
-        };
-        using iterator = Iterator;
-        using const_iterator = Const_iterator;
+    private:
+        char* ptr_;
+        size_t size_;
+        size_t actual_size_;
+        Reference current_reference_;
+        Array(char* ptr, size_t size) 
+            :ptr_(ptr), size_(size), actual_size_(divide_round_up(size, static_cast<size_t>(CHAR_BIT))) 
+        {}
+    public:
+        using iterator = Base_iterator<Reference>;
+        using const_iterator = Base_iterator<const Reference>;
         Array(size_t size) :Array(new char[size], size) {}
 
         Reference& operator[](size_t index) {
             current_reference_.set_index(ptr_, index);
             return current_reference_;
         };
-        Iterator begin() {
-            return Iterator(ptr_, 0);
+        iterator begin() {
+            return iterator(ptr_, 0);
         };
-        Iterator end() {
-            return Iterator(ptr_, size_);
+        iterator end() {
+            return iterator(ptr_, size_);
         };
-        Const_iterator cbegin() const {
-            return Const_iterator(ptr_, 0);
+        const_iterator cbegin() const {
+            return const_iterator(ptr_, 0);
         };
-        Const_iterator cend() const {
-            return Const_iterator(ptr_, size_);
+        const_iterator cend() const {
+            return const_iterator(ptr_, size_);
         };
 };
 
