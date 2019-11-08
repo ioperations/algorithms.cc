@@ -5,20 +5,38 @@
 #include "math.h"
 #include "forward_list.h"
 
+template<typename A, typename T>
+class Array_builder {
+    private:
+        Forward_list<T> list_;
+        size_t count_ = 0;
+    public:
+        template<typename... Args>
+            void emplace(Args&&... args) {
+                list_.emplace_back(std::forward<Args>(args)...);
+                ++count_;
+            }
+        void add(T&& value) {
+            list_.push_back(std::move(value));
+            ++count_;
+        }
+        A build() {
+            A a(new T[count_], count_);
+            int i = -1;
+            for (auto& v : list_) a.ptr_[++i] = std::move(v);
+            return a;
+        }
+};
+
 template<typename T>
 class Array {
     private:
         T* ptr_;
         size_t size_;
-
-        template<typename B, typename TT, typename... Args>
-            static void do_build_array(B&& builder, TT&& t, Args&&... args);
-        template<typename B>
-            static void do_build_array(B&& builder);
-
         Array(T* ptr, size_t size) :ptr_(ptr), size_(size) {}
     public:
-        struct Builder;
+        using Builder = Array_builder<Array, T>;
+        friend class Array_builder<Array, T>;
 
         using iterator = T*;
         using const_iterator = T* const;
@@ -72,9 +90,34 @@ std::ostream& operator<<(std::ostream& stream, const Array<T>& a) {
     return stream << "]";
 }
 
+template<typename B, typename T, typename... Args>
+void do_build_array(B&& builder, T&& t, Args&&... args) {
+    builder.add(std::move(t));
+    do_build_array(std::forward<B>(builder), std::forward<Args>(args)...);
+}
+
+template<typename B>
+void do_build_array(B&& builder) {}
+
+template<typename T, typename... Args>
+auto build_array(Args&&... args) {
+    using builder_type = typename Array<T>::Builder;
+    builder_type builder;
+    do_build_array(builder, std::forward<Args>(args)...);
+    return builder.build();
+}
+
+template<typename T>
+template<typename... Args>
+auto Array<T>::build_array(Args&&... args) {
+    return ::build_array<T, Args...>(std::forward<Args>(args)...);
+}
+
 template<>
-struct Array<bool> {
+class Array<bool> {
     public:
+        using Builder = Array_builder<Array, bool>;
+        friend class Array_builder<Array, bool>;
         class Reference {
             private:
                 friend class Array;
@@ -104,6 +147,7 @@ struct Array<bool> {
                     return value_;
                 }
         };
+    private:
         template<typename R>
         class Base_iterator {
             private:
@@ -127,18 +171,25 @@ struct Array<bool> {
                     return reference_;
                 }
         };
-    private:
+        size_t actual_size_;
         char* ptr_;
         size_t size_;
-        size_t actual_size_;
         Reference current_reference_;
-        Array(char* ptr, size_t size) 
-            :ptr_(ptr), size_(size), actual_size_(divide_round_up(size, static_cast<size_t>(CHAR_BIT))) 
-        {}
     public:
         using iterator = Base_iterator<Reference>;
         using const_iterator = Base_iterator<const Reference>;
-        Array(size_t size) :Array(new char[size], size) {}
+        Array(size_t size) 
+            :actual_size_(divide_round_up(size, static_cast<size_t>(CHAR_BIT))), ptr_(new char[actual_size_]), size_(size) 
+        {}
+        Array(Array&& o) : actual_size_(o.actual_size_), ptr_(o.ptr_), size_(o.size_) {
+            o.ptr_ = nullptr;
+        }
+        Array& operator=(Array&& o) {
+            std::swap(actual_size_, o.actual_size_);
+            std::swap(ptr_, o.ptr_);
+            std::swap(size_, o.size_);
+            return *this;
+        }
 
         Reference& operator[](size_t index) {
             current_reference_.set_index(ptr_, index);
@@ -156,47 +207,13 @@ struct Array<bool> {
         const_iterator cend() const {
             return const_iterator(ptr_, size_);
         };
-};
-
-template<typename T>
-template<typename... Args>
-auto Array<T>::build_array(Args&&... args) {
-    Array<T>::Builder builder;
-    do_build_array(builder, std::forward<Args>(args)...);
-    return builder.build();
-}
-
-template<typename T>
-template<typename B, typename TT, typename... Args>
-void Array<T>::do_build_array(B&& builder, TT&& t, Args&&... args) {
-    builder.add(std::move(t));
-    do_build_array(std::forward<B>(builder), std::forward<Args>(args)...);
-}
-
-template<typename T>
-template<typename B>
-void Array<T>::do_build_array(B&& builder) {}
-
-template<typename T>
-class Array<T>::Builder {
-    private:
-        Forward_list<T> list_;
-        size_t count_ = 0;
-    public:
         template<typename... Args>
-            void emplace(Args&&... args) {
-                list_.emplace_back(std::forward<Args>(args)...);
-                ++count_;
+            static Array<bool> build_array(Args&&... args) {
+                return ::build_array<bool, Args...>(std::forward<Args>(args)...);
             }
-        void add(T&& value) {
-            list_.push_back(std::move(value));
-            ++count_;
-        }
-        Array build() {
-            Array a(new T[count_], count_);
-            int i = -1;
-            for (auto& v : list_) a.ptr_[++i] = std::move(v);
-            return a;
-        }
 };
+
+template<>
+Array<bool> Array_builder<Array<bool>, bool>::build();
+
 

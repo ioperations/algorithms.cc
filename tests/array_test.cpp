@@ -40,5 +40,8 @@ TEST(Array_test, test_0) {
         }
         ASSERT_EQ("1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 1 ", to_string_const(a));
     }
+
+    a = Array<bool>::build_array(false, true, false, true);
+    ASSERT_EQ("0 1 0 1 ", to_string_const(a));
 }
 
