@@ -16,16 +16,29 @@ class Array_builder {
                 list_.emplace_back(std::forward<Args>(args)...);
                 ++count_;
             }
-        void add(T&& value) {
-            list_.push_back(std::move(value));
-            ++count_;
-        }
+        template<typename TT>
+            void add(TT&& t) {
+                list_.push_back(std::forward<TT>(t));
+                ++count_;
+            }
+        template<typename TT, typename... Args>
+            void add(TT&& t, Args&&... value) {
+                list_.push_back(std::forward<TT>(t));
+                ++count_;
+                add(std::forward<Args>(value)...);
+            }
         A build() {
             A a(new T[count_], count_);
             int i = -1;
             for (auto& v : list_) a.ptr_[++i] = std::move(v);
             return a;
         }
+        template<typename... Args>
+            static A build_array(Args&&... args) {
+                Array_builder<A, T> builder;
+                builder.add(std::forward<Args>(args)...);
+                return builder.build();
+            }
 };
 
 template<typename T>
@@ -75,7 +88,9 @@ class Array {
         const_iterator cend() const { return ptr_ + size_; }
 
         template<typename... Args>
-            static auto build_array(Args&&... args);
+            static auto build_array(Args&&... args) {
+                return Array_builder<Array<T>, T>::build_array(std::forward<Args>(args)...);
+            }
 };
 
 template<typename T>
@@ -88,29 +103,6 @@ std::ostream& operator<<(std::ostream& stream, const Array<T>& a) {
             stream << ", " << *it;
     }
     return stream << "]";
-}
-
-template<typename B, typename T, typename... Args>
-void do_build_array(B&& builder, T&& t, Args&&... args) {
-    builder.add(std::move(t));
-    do_build_array(std::forward<B>(builder), std::forward<Args>(args)...);
-}
-
-template<typename B>
-void do_build_array(B&& builder) {}
-
-template<typename T, typename... Args>
-auto build_array(Args&&... args) {
-    using builder_type = typename Array<T>::Builder;
-    builder_type builder;
-    do_build_array(builder, std::forward<Args>(args)...);
-    return builder.build();
-}
-
-template<typename T>
-template<typename... Args>
-auto Array<T>::build_array(Args&&... args) {
-    return ::build_array<T, Args...>(std::forward<Args>(args)...);
 }
 
 template<>
@@ -190,6 +182,9 @@ class Array<bool> {
             std::swap(size_, o.size_);
             return *this;
         }
+        ~Array() {
+            delete[] ptr_;
+        }
 
         Reference& operator[](size_t index) {
             current_reference_.set_index(ptr_, index);
@@ -209,11 +204,10 @@ class Array<bool> {
         };
         template<typename... Args>
             static Array<bool> build_array(Args&&... args) {
-                return ::build_array<bool, Args...>(std::forward<Args>(args)...);
+                return Array_builder<Array<bool>, bool>::build_array(std::forward<Args>(args)...);
             }
 };
 
 template<>
 Array<bool> Array_builder<Array<bool>, bool>::build();
-
 
