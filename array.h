@@ -1,7 +1,6 @@
 #pragma once
 
 #include <climits>
-#include <bitset>
 
 #include "math.h"
 #include "forward_list.h"
@@ -117,16 +116,57 @@ struct Array<bool> {
             :ptr_(ptr), size_(size), actual_size_(divide_round_up(size, static_cast<size_t>(CHAR_BIT))) 
         {}
     public:
+        template<typename R>
+        class Base_iterator {
+            protected:
+                char* const ptr_;
+                size_t index_;
+                Reference reference_;
+                Base_iterator(char* ptr, size_t index) :ptr_(ptr), index_(index) {}
+            public:
+                void operator++() {
+                    ++index_;
+                };
+                bool operator==(const Base_iterator& o) {
+                    return index_ == o.index_;
+                }
+                bool operator!=(const Base_iterator& o) {
+                    return index_ != o.index_;
+                }
+                R& operator*() {
+                    reference_.set_index(ptr_, index_);
+                    return reference_;
+                }
+        };
+        class Iterator : public Base_iterator<Reference> {
+            private:
+                friend class Array;
+                Iterator(char* ptr, size_t index) :Base_iterator(ptr, index) {}
+        };
+        class Const_iterator : public Base_iterator<const Reference> {
+            private:
+                friend class Array;
+                Const_iterator(char* ptr, size_t index) :Base_iterator(ptr, index) {}
+        };
+        using iterator = Iterator;
+        using const_iterator = Const_iterator;
         Array(size_t size) :Array(new char[size], size) {}
-
-        void print() { // todo delete
-            for (auto b = ptr_; b != ptr_ + actual_size_; ++b)
-                std::cout << std::bitset<CHAR_BIT>(*b) << std::endl;
-        }
 
         Reference& operator[](size_t index) {
             current_reference_.set_index(ptr_, index);
             return current_reference_;
+        };
+        Iterator begin() {
+            return Iterator(ptr_, 0);
+        };
+        Iterator end() {
+            return Iterator(ptr_, size_);
+        };
+        Const_iterator cbegin() const {
+            return Const_iterator(ptr_, 0);
+        };
+        Const_iterator cend() const {
+            return Const_iterator(ptr_, size_);
         };
 };
 
