@@ -77,10 +77,10 @@ using Entry = Rich_text<int>;
 
 void quick_search(Array<Entry>& array, int value) {
     std::cout << "searching for " << value << std::endl;
-    int i = 0;
-    int j = array.size() - 1;
-    int index = -1;
-    while (index == -1 && i < j) {
+    size_t i = 0;
+    size_t j = array.size() - 1;
+    size_t index = -1;
+    while (index == static_cast<size_t>(-1) && i < j) {
         auto middle = i + (j - i) / 2;
         array[middle].bold_ = true;
         print_sequence(array.cbegin(), array.cend());
@@ -93,11 +93,10 @@ void quick_search(Array<Entry>& array, int value) {
         else
             i = middle + 1;
     }
-    std::cout << "index: " <<  ((int) index) << std::endl;
+    std::cout << "index: " << static_cast<int>(index) << std::endl;
 }
 
 int main() {
-
     Random_sequence_generator generator(300, 10, 99);
 
     Array<Entry> array(15);
