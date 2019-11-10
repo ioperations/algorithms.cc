@@ -200,6 +200,41 @@ struct Cirtular_list {
     }
 };
 
+void josephus_problem() {
+    std::cout << "Josephus problem" << std::endl;
+    struct Node {
+        Node* next_;
+        int data_;
+        Node(Node* next, int data) :next_(next), data_(data) {}
+    };
+    Node* head = new Node(nullptr, 10);
+    Node* node = head;
+    for (int i = 11; i < 30; ++i)
+        node = (node->next_ = new Node(node, i));
+    node->next_ = head;
+
+    auto print_circle = [](Node* head, std::ostream& stream) {
+        stream << head->data_;
+        for (Node* node = head->next_; node != head; node = node->next_)
+            stream << " " << node->data_;
+    };
+
+    node = head;
+    while (node != node->next_) {
+        for (int i = 0; i < 5; ++i) node = node->next_;
+        Node* to_remove = node->next_;
+        node->next_ = node->next_->next_;
+        std::cout << "[" << to_remove->data_ << "] ";
+        std::stringstream ss;
+        print_circle(node->next_, ss);
+        std::cout << ss.str() << std::endl;
+        delete to_remove;
+    }
+    std::cout << "[" << node->data_ << "]" << std::endl;
+
+    delete node;
+}
+
 int main() {
     Random_sequence_generator generator(300, 10, 99);
 
@@ -255,4 +290,7 @@ int main() {
     c_list.add(2);
     c_list.add(3);
     c_list.print();
+    std::cout << std::endl;
+
+    josephus_problem();
 }
