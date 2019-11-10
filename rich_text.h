@@ -7,7 +7,7 @@ class Rich_text {
     public:
         T value_;
         bool bold_;
-        Rich_text() = default;
+        Rich_text() :value_(), bold_(false) {}
         template<typename TT>
             Rich_text(TT&& value, bool bold): value_(std::forward<TT>(value)), bold_(bold) {}
         template<typename TT>
