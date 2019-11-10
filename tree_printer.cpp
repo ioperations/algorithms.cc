@@ -1,5 +1,7 @@
 #include "tree_printer.h"
 
+#include "box_drawing_chars.h"
+
 void Tree_printer_base::Siblings::fix_positions(Siblings* previous) {
     auto middle = [this]() {
         int middle = head_->center();
@@ -109,6 +111,8 @@ void Tree_printer_base::print(Lines& lines, A&& appender) {
         }
     }
 
+    namespace bc = Box_drawing_chars;
+
     auto do_print = [&lines, &appender]() {
         for (auto line = lines.begin(); line != lines.end(); ++line) {
             if (line != lines.begin()) {
@@ -125,24 +129,24 @@ void Tree_printer_base::print(Lines& lines, A&& appender) {
                         bool first = true;
                         for (; node; node = node->next()) {
                             if (first) {
-                                appender << "┌";
+                                appender << bc::right_bottom;
                                 first = false;
                             } else if (parent_center == appender.count())
-                                appender << "┼";
+                                appender << bc::cross;
                             else
-                                appender << "┬";
+                                appender << bc::bottom_t;
                             auto end = node->center();
                             if (parent_center > appender.count() && parent_center < end) {
-                                appender.repeat_until(parent_center, "─");
-                                appender << "┴";
-                                appender.repeat_until(end, "─");
+                                appender.repeat_until(parent_center, bc::h_line);
+                                appender << bc::top_t;
+                                appender.repeat_until(end, bc::h_line);
                             } else
-                                appender.repeat_until(end, "─");
+                                appender.repeat_until(end, bc::h_line);
                         }
-                        appender << "┐";
+                        appender << bc::left_bottom;
                     } else {
                         appender.repeat_until(parent_center, " ");
-                        appender << "│";
+                        appender << bc::v_line;
                     }
                 }
                 appender.new_line();
