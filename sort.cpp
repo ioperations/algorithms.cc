@@ -200,17 +200,18 @@ struct Cirtular_list {
     }
 };
 
+struct Node {
+    Node* next_;
+    int data_;
+    Node(Node* next, int data) :next_(next), data_(data) {}
+};
+
 void josephus_problem() {
     std::cout << "Josephus problem" << std::endl;
-    struct Node {
-        Node* next_;
-        int data_;
-        Node(Node* next, int data) :next_(next), data_(data) {}
-    };
     Node* head = new Node(nullptr, 10);
     Node* node = head;
     for (int i = 11; i < 30; ++i)
-        node = (node->next_ = new Node(node, i));
+        node = (node->next_ = new Node(nullptr, i));
     node->next_ = head;
 
     auto print_circle = [](Node* head, std::ostream& stream) {
@@ -233,6 +234,37 @@ void josephus_problem() {
     std::cout << "[" << node->data_ << "]" << std::endl;
 
     delete node;
+}
+
+void list_reversal() {
+    std::cout << "reversing list" << std::endl;
+    Node* head = new Node(nullptr, 10);
+    Node* node = head;
+    for (int i = 11; i < 21; ++i)
+        node = (node->next_ = new Node(nullptr, i));
+    auto print_list = [&head]() {
+        for (Node* node = head; node; node = node->next_)
+            std::cout << node->data_ << " ";
+        std::cout << std::endl;
+
+    };
+    print_list();
+    {
+        Node* previous = nullptr;
+        for (Node* current = head; current; ) {
+            Node* next = current->next_;
+            current->next_ = previous;
+            previous = current;
+            current = next;
+        }
+        head = previous;
+    }
+    print_list();
+    for (node = head; node; ) {
+        Node* previous = node;
+        node = node->next_;
+        delete previous;
+    }
 }
 
 int main() {
@@ -293,4 +325,5 @@ int main() {
     std::cout << std::endl;
 
     josephus_problem();
+    list_reversal();
 }
