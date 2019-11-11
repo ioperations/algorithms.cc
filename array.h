@@ -57,8 +57,18 @@ class Array {
         Array() :Array(nullptr, 0) {}
         Array(size_t size) :Array(new T[size], size) {}
 
-        Array(const Array&) = delete;
-        Array& operator=(const Array&) = delete;
+        Array(const Array& o) :Array(o.size_) {
+            for (size_t i = 0; i < size_; ++i)
+                ptr_[i] = o.ptr_[i];
+        }
+        Array& operator=(const Array& o) {
+            delete[] ptr_;
+            ptr_ = new T[o.size_];
+            for (size_t i = 0; i < size_; ++i)
+                ptr_[i] = o.ptr_[i];
+            size_ = o.size_;
+            return *this;
+        }
 
         Array(Array&& o) :ptr_(o.ptr_), size_(o.size_) {
             o.ptr_ = nullptr;

@@ -206,6 +206,21 @@ struct Node {
     Node(Node* next, int data) :next_(next), data_(data) {}
 };
 
+void print_forward_list(Node* head) {
+    for (Node* node = head; node; node = node->next_)
+        std::cout << node->data_ << " ";
+    std::cout << std::endl;
+
+}
+
+void delete_forward_list(Node* head) {
+    for (Node* node = head; node; ) {
+        Node* previous = node;
+        node = node->next_;
+        delete previous;
+    }
+}
+
 void josephus_problem() {
     std::cout << "Josephus problem" << std::endl;
     Node* head = new Node(nullptr, 10);
@@ -242,13 +257,7 @@ void list_reversal() {
     Node* node = head;
     for (int i = 11; i < 21; ++i)
         node = (node->next_ = new Node(nullptr, i));
-    auto print_list = [&head]() {
-        for (Node* node = head; node; node = node->next_)
-            std::cout << node->data_ << " ";
-        std::cout << std::endl;
-
-    };
-    print_list();
+    print_forward_list(head);
     {
         Node* previous = nullptr;
         for (Node* current = head; current; ) {
@@ -259,12 +268,32 @@ void list_reversal() {
         }
         head = previous;
     }
-    print_list();
-    for (node = head; node; ) {
-        Node* previous = node;
-        node = node->next_;
-        delete previous;
+    print_forward_list(head);
+    delete_forward_list(head);
+}
+
+template<typename It>
+void list_insertion_sort(It begin, It end) {
+    auto it = begin;
+    if (it == end) return;
+    ++it;
+    if (it == end) return;
+
+    it = begin;
+    Node* head = new Node(nullptr, *begin);
+    for (++it; it != end; ++it) {
+        if (*it < head->data_)
+            head = new Node(head, *it);
+        else {
+            Node* node;
+            for (node = head; node->next_; node = node->next_)
+                if (*it < node->next_->data_)
+                    break;
+            node->next_ = new Node(node->next_, *it);
+        }
     }
+    print_forward_list(head);
+    delete_forward_list(head);
 }
 
 int main() {
@@ -283,6 +312,12 @@ int main() {
 
     std::cout << "forward list sort" << std::endl;
     buble_sort(list.begin(), list.end());
+
+    Array<int> ints(array.size());
+    for (size_t i = 0; i < array.size(); ++i)
+        ints[i] = array[i].value_;
+    std::cout << "list insertion_sort" << std::endl;
+    list_insertion_sort(ints.begin(), ints.end());
 
     std::cout << "array sequential search" << std::endl;
     clear_rich_text_format(array.begin(), array.end());

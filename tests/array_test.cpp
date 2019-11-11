@@ -4,13 +4,27 @@
 
 #include <iostream>
 
-TEST(Array_test, test_0) {
-    auto to_string = [](Array<bool>& a) {
-        std::stringstream ss;
-        for (auto& i : a)
-            ss << i << " ";
-        return ss.str();
-    };
+template<typename A>
+auto to_string(A& a) {
+    std::stringstream ss;
+    for (auto& i : a)
+        ss << i << " ";
+    return ss.str();
+}
+
+TEST(Array_test, base) {
+    Array<int> a(15);
+    const char* expected = "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 ";
+    for (size_t i = 0; i < a.size(); ++i)
+        a[i] = i + 1;
+    ASSERT_EQ(expected, to_string(a));
+    auto a_copy = a;
+    ASSERT_EQ(expected, to_string(a_copy));
+    a_copy = a;
+    ASSERT_EQ(expected, to_string(a_copy));
+}
+
+TEST(Array_test, bool_specialization) {
 
     Array<bool> a(20);
     a[0] = true;
