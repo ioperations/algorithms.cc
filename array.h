@@ -64,9 +64,9 @@ class Array {
         Array& operator=(const Array& o) {
             delete[] ptr_;
             ptr_ = new T[o.size_];
+            size_ = o.size_;
             for (size_t i = 0; i < size_; ++i)
                 ptr_[i] = o.ptr_[i];
-            size_ = o.size_;
             return *this;
         }
 
