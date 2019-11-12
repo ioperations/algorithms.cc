@@ -141,5 +141,4 @@ int main() {
     postfix_expr.post_construct();
     std::cout << "postfix expression: " << postfix_expr << std::endl;
     std::cout << "result: " << postfix_expr.evaluate() << std::endl;
-
 }

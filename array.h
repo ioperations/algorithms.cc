@@ -2,7 +2,6 @@
 
 #include <climits>
 
-#include "math.h"
 #include "forward_list.h"
 
 template<typename A, typename T>
@@ -180,9 +179,7 @@ class Array<bool> {
     public:
         using iterator = Base_iterator<Reference>;
         using const_iterator = Base_iterator<const Reference>;
-        Array(size_t size) 
-            :actual_size_(divide_round_up(size, static_cast<size_t>(CHAR_BIT))), ptr_(new char[actual_size_]), size_(size) 
-        {}
+        Array(size_t size);
         Array(Array&& o) : actual_size_(o.actual_size_), ptr_(o.ptr_), size_(o.size_) {
             o.ptr_ = nullptr;
         }

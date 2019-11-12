@@ -9,3 +9,4 @@ add_executable(tree_printer_test tree_printer_test.cpp ${MAIN_SRC}/tree_printer.
 add_executable(forward_list_test forward_list_test.cpp)
 add_executable(array_test array_test.cpp ${MAIN_SRC}/array.cpp)
 add_executable(stack_test stack_test.cpp)
+add_executable(fraction_test fraction_test.cpp)
