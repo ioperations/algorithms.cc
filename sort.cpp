@@ -155,6 +155,53 @@ void count_points_within_distance(const Array<Point>& points, float max_distance
     std::cout << count << " pairs within " << max_distance << std::endl;
 }
 
+template<typename T>
+struct Node {
+    Node* next_;
+    T data_;
+    Node(Node* next, T data) :next_(next), data_(data) {}
+    void print() {
+        for (Node* node = this; node; node = node->next_)
+            std::cout << node->data_ << " ";
+        std::cout << std::endl;
+
+    }
+};
+
+template<typename T>
+void delete_forward_list(Node<T>* head) {
+    for (auto node = head; node; ) {
+        auto previous = node;
+        node = node->next_;
+        delete previous;
+    }
+}
+
+void count_points_within_distance_using_grids(const Array<Point>& points, float max_distance) {
+    int g = 1 / max_distance;
+    Array<Array<Node<Point>*>> grid(g + 2);
+    for (auto& item : grid) {
+        item = Array<Node<Point>*>(g + 2);
+        for (auto& point : item)
+            point = nullptr;
+    }
+    int count = 0;
+    for (auto point = points.cbegin(); point != points.cend(); ++point) {
+        size_t grid_x = point->x_ * g + 1;
+        size_t grid_y = point->y_ * g + 1;
+        for (size_t i = grid_x - 1; i <= grid_x + 1; ++i)
+            for (size_t j = grid_y - 1; j <= grid_y + 1; ++j)
+                for (Node<Point>* node = grid[i][j]; node; node = node->next_)
+                    if (node->data_.distance(*point) < max_distance)
+                        ++count;
+        grid[grid_x][grid_y] = new Node<Point>(grid[grid_x][grid_y], *point);
+    }
+    std::cout << count << " pairs within " << max_distance << std::endl;
+    for (auto& item : grid)
+        for (auto& point : item)
+            delete_forward_list(point);
+}
+
 struct Cirtular_list {
     struct Node {
         Node* next_;
@@ -200,45 +247,24 @@ struct Cirtular_list {
     }
 };
 
-struct Node {
-    Node* next_;
-    int data_;
-    Node(Node* next, int data) :next_(next), data_(data) {}
-};
-
-void print_forward_list(Node* head) {
-    for (Node* node = head; node; node = node->next_)
-        std::cout << node->data_ << " ";
-    std::cout << std::endl;
-
-}
-
-void delete_forward_list(Node* head) {
-    for (Node* node = head; node; ) {
-        Node* previous = node;
-        node = node->next_;
-        delete previous;
-    }
-}
-
 void josephus_problem() {
     std::cout << "Josephus problem" << std::endl;
-    Node* head = new Node(nullptr, 10);
-    Node* node = head;
+    Node<int>* head = new Node<int>(nullptr, 10);
+    auto node = head;
     for (int i = 11; i < 30; ++i)
-        node = (node->next_ = new Node(nullptr, i));
+        node = (node->next_ = new Node<int>(nullptr, i));
     node->next_ = head;
 
-    auto print_circle = [](Node* head, std::ostream& stream) {
+    auto print_circle = [](Node<int>* head, std::ostream& stream) {
         stream << head->data_;
-        for (Node* node = head->next_; node != head; node = node->next_)
+        for (auto node = head->next_; node != head; node = node->next_)
             stream << " " << node->data_;
     };
 
     node = head;
     while (node != node->next_) {
         for (int i = 0; i < 5; ++i) node = node->next_;
-        Node* to_remove = node->next_;
+        auto to_remove = node->next_;
         node->next_ = node->next_->next_;
         std::cout << "[" << to_remove->data_ << "] ";
         std::stringstream ss;
@@ -253,22 +279,22 @@ void josephus_problem() {
 
 void list_reversal() {
     std::cout << "reversing list" << std::endl;
-    Node* head = new Node(nullptr, 10);
-    Node* node = head;
+    Node<int>* head = new Node<int>(nullptr, 10);
+    auto node = head;
     for (int i = 11; i < 21; ++i)
-        node = (node->next_ = new Node(nullptr, i));
-    print_forward_list(head);
+        node = (node->next_ = new Node<int>(nullptr, i));
+    head->print();
     {
-        Node* previous = nullptr;
-        for (Node* current = head; current; ) {
-            Node* next = current->next_;
+        Node<int>* previous = nullptr;
+        for (auto current = head; current; ) {
+            auto next = current->next_;
             current->next_ = previous;
             previous = current;
             current = next;
         }
         head = previous;
     }
-    print_forward_list(head);
+    head->print();
     delete_forward_list(head);
 }
 
@@ -280,19 +306,19 @@ void list_insertion_sort(It begin, It end) {
     if (it == end) return;
 
     it = begin;
-    Node* head = new Node(nullptr, *begin);
+    Node<int>* head = new Node<int>(nullptr, *begin);
     for (++it; it != end; ++it) {
         if (*it < head->data_)
-            head = new Node(head, *it);
+            head = new Node<int>(head, *it);
         else {
-            Node* node;
+            Node<int>* node;
             for (node = head; node->next_; node = node->next_)
                 if (*it < node->next_->data_)
                     break;
-            node->next_ = new Node(node->next_, *it);
+            node->next_ = new Node<int>(node->next_, *it);
         }
     }
-    print_forward_list(head);
+    head->print();
     delete_forward_list(head);
 }
 
@@ -351,6 +377,7 @@ int main() {
         }
     }
     count_points_within_distance(points, 0.015);
+    count_points_within_distance_using_grids(points, 0.015);
 
     Cirtular_list c_list;
     c_list.add(1);
