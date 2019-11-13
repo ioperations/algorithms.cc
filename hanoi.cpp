@@ -43,11 +43,10 @@ struct Pegs {
             pegs_[0].place(&disks_[i]);
         }
     }
-    void print() {
+    void print(int disk_number = -1, int shift = -1) {
         int lines_count = 0;
         for (auto& peg : pegs_)
             lines_count = std::max(lines_count, peg.size_);
-        ++lines_count;
 
         Text_blocks text_blocks;
         for (auto& peg : pegs_) {
@@ -74,18 +73,25 @@ struct Pegs {
             }
             text_blocks.emplace_back(std::move(lines));
         }
+        if (disk_number > -1) {
+            std::stringstream ss;
+            ss << disk_number << "   " << shift;
+            text_blocks.emplace_back(ss.str());
+        }
         std::cout << text_blocks << std::endl;
     }
     void shift(int disk_number, int shift) {
-        std::cout << disk_number << " " << shift << std::endl;
         auto& disk = disks_[disk_number - 1];
         if (&disk != disk.peg_->head_)
             throw std::runtime_error(std::string("disk ") + std::to_string(disk_number) + " is not on top");
-        auto peg_index = disk.peg_ - &pegs_[0] + shift;
+        int peg_index = disk.peg_ - &pegs_[0] + shift;
         if (peg_index < 0)
-            peg_index = pegs_.size() + peg_index;
+            peg_index += pegs_.size();
+        else if (peg_index >= static_cast<int>(pegs_.size()))
+            peg_index -= pegs_.size();
         pegs_[peg_index].place(disk.peg_->remove());
-        print();
+        std::cout << std::endl;
+        print(disk_number, shift);
     }
     void hanoi(int n, int d) {
         if (n == 0) return;
@@ -95,16 +101,8 @@ struct Pegs {
     }
 };
 
-
 int main() {
     Pegs pegs(3, 5);
     pegs.print();
-    pegs.hanoi(3, 1);
-    // pegs.hanoi(3, 1);
-    // pegs.shift(1, 1);
-    // pegs.print();
-    // pegs.shift(2, 2);
-    // pegs.print();
-    // pegs.shift(3, -1);
-    // pegs.print();
+    pegs.hanoi(5, 1);
 }
