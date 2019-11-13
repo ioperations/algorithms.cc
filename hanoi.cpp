@@ -1,8 +1,10 @@
 #include <iostream> 
 #include <sstream>
+#include <cmath>
 
 #include "array.h"
 #include "text_block.h"
+#include "box_drawing_chars.h"
 
 struct Peg {
     struct Disk {
@@ -43,22 +45,22 @@ struct Pegs {
             pegs_[0].place(&disks_[i]);
         }
     }
-    void print(int disk_number = -1, int shift = -1) {
+
+    Text_blocks& to_text_blocks(Text_blocks& text_blocks) {
         int lines_count = 0;
         for (auto& peg : pegs_)
             lines_count = std::max(lines_count, peg.size_);
+        lines_count = std::max(3, lines_count);
 
-        Text_blocks text_blocks;
         for (auto& peg : pegs_) {
             Text_block::Lines lines;
-
-            for (int i = peg.size_; i < lines_count; ++i)
-                lines.push_back("");
             auto repeat = [](std::ostream& stream, int times, const char* str) {
                 for (int i = 0; i < times; ++i)
                     stream << str;
             };
-            if (peg.size_ > 0)
+            if (peg.size_ > 0) {
+                for (int i = peg.size_; i < lines_count; ++i)
+                    lines.push_back("");
                 for (auto disk = peg.head_; disk; disk = disk->next_) {
                     std::stringstream ss;
                     repeat(ss, disks_.size() - disk->number_ + 1, " ");
@@ -66,38 +68,80 @@ struct Pegs {
                     repeat(ss, disks_.size() - disk->number_ + 1, " ");
                     lines.push_back(ss.str());
                 }
-            else {
+            } else {
                 std::stringstream ss;
                 repeat(ss, 2 * disks_.size() + 3, " ");
                 lines.push_back(ss.str());
             }
             text_blocks.emplace_back(std::move(lines));
         }
-        if (disk_number > -1) {
-            std::stringstream ss;
-            ss << disk_number << "   " << shift;
-            text_blocks.emplace_back(ss.str());
-        }
-        std::cout << text_blocks << std::endl;
+        return text_blocks;
     }
+
+    void print() {
+        Text_blocks text_blocks;
+        std::cout << to_text_blocks(text_blocks) << std::endl;
+    }
+
     void shift(int disk_number, int shift) {
         auto& disk = disks_[disk_number - 1];
         if (&disk != disk.peg_->head_)
             throw std::runtime_error(std::string("disk ") + std::to_string(disk_number) + " is not on top");
         int peg_index = disk.peg_ - &pegs_[0] + shift;
-        if (peg_index < 0)
-            peg_index += pegs_.size();
-        else if (peg_index >= static_cast<int>(pegs_.size()))
-            peg_index -= pegs_.size();
+        for (; peg_index < 0; peg_index += pegs_.size());
+        for (; peg_index >= static_cast<int>(pegs_.size()); peg_index -= pegs_.size());
         pegs_[peg_index].place(disk.peg_->remove());
-        std::cout << std::endl;
-        print(disk_number, shift);
     }
-    void hanoi(int n, int d) {
+
+    void print_iteration(int n, int d, int level) {
+        std::string offset;
+        for (int i = 0; i < level; ++i)
+            offset += "  ";
+        Text_block::Lines lines;
+        std::string hanoi_invocation = offset + "hanoi(" + std::to_string(n - 1) + ", " + std::to_string(-d) + ");";
+        lines.push_back(hanoi_invocation);
+        lines.push_back(offset + "shift(" + std::to_string(n) + ", " + std::to_string(d) + ");");
+        lines.push_back(hanoi_invocation);
+        Text_blocks text_blocks;
+        to_text_blocks(text_blocks);
+        text_blocks.emplace_back(std::move(lines));
+        std::cout << std::endl << text_blocks << std::endl;
+    }
+
+    void hanoi(int n, int d, int level = 0) {
         if (n == 0) return;
-        hanoi(n - 1, -d);
+        hanoi(n - 1, -d, level + 1);
         shift(n, d);
-        hanoi(n - 1, -d);
+        print_iteration(n, d, level);
+        hanoi(n - 1, -d, level + 1);
+    }
+};
+
+struct Rule {
+    Array<int> marks_;
+    int h_;
+    Rule(int size, int h) :marks_(size), h_(h) {
+        mark(0, size - 1, h);
+    }
+    void mark(int l, int r, int h) {
+        if (h > 0) {
+            auto middle = (l + r) / 2;
+            mark(l, middle, h - 1);
+            marks_[middle] = h;
+            mark(middle, r, h - 1);
+        }
+    }
+    void print() {
+        for (int i = h_; i > -1; --i) {
+            for (auto& mark : marks_) {
+                if (mark >= i)
+                    std::cout << Box_drawing_chars::v_line;
+                else
+                    std::cout << " ";
+                std::cout << " ";
+            }
+            std::cout << std::endl;
+        }
     }
 };
 
@@ -105,4 +149,9 @@ int main() {
     Pegs pegs(3, 5);
     pegs.print();
     pegs.hanoi(5, 1);
+
+    std::cout << std::endl;
+
+    Rule rule(25, 3);
+    rule.print();
 }
