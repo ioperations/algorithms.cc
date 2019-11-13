@@ -322,6 +322,15 @@ void list_insertion_sort(It begin, It end) {
     delete_forward_list(head);
 }
 
+int recursive_max(const Array<int> a, size_t l, size_t r) {
+    if (l == r)
+        return a[l];
+    auto middle = (l + r) / 2;
+    auto max_l = recursive_max(a, l, middle);
+    auto max_r = recursive_max(a, middle + 1, r);
+    return max_l > max_r ? max_l : max_r;
+}
+
 int main() {
     Random_sequence_generator generator(300, 10, 99);
 
@@ -333,17 +342,19 @@ int main() {
         list.emplace_back(value, false);
     }
 
+    Array<int> ints(array.size());
+    for (size_t i = 0; i < array.size(); ++i)
+        ints[i] = array[i].value_;
+
     std::cout << "array sort" << std::endl;
     buble_sort(array.begin(), array.end());
 
     std::cout << "forward list sort" << std::endl;
     buble_sort(list.begin(), list.end());
 
-    Array<int> ints(array.size());
-    for (size_t i = 0; i < array.size(); ++i)
-        ints[i] = array[i].value_;
     std::cout << "list insertion_sort" << std::endl;
-    list_insertion_sort(ints.begin(), ints.end());
+    auto ints_copy = ints;
+    list_insertion_sort(ints_copy.begin(), ints_copy.end());
 
     std::cout << "array sequential search" << std::endl;
     clear_rich_text_format(array.begin(), array.end());
@@ -388,4 +399,6 @@ int main() {
 
     josephus_problem();
     list_reversal();
+    std::cout << "max = " << recursive_max(ints, 0, ints.size() - 1) << std::endl;
+
 }
