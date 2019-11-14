@@ -102,11 +102,26 @@ struct Default_label_width_calculator {
     }
 };
 
-template<typename N, typename S = Default_stringifier<N>, typename L = Default_label_width_calculator<N>>
+template<typename N>
+struct Default_children_iterator {
+    template<typename F>
+        void iterate(const N& n, F f) {
+            auto& children = n.children();
+            for (auto child = children.cbegin(); child != children.cend(); ++child)
+                f(&*child);
+        }
+    bool empty(const N& n) {
+        return false;
+    }
+};
+
+template<typename N, typename S = Default_stringifier<N>, typename L = Default_label_width_calculator<N>
+, typename Cit = Default_children_iterator<N>>
 class Tree_printer : protected Tree_printer_base {
     private:
         S stringifier_;
         L label_width_calculator_;
+        Cit children_iterator_;
 
         Lines compose_lines(const N& node) {
             struct Node_info {
@@ -139,13 +154,17 @@ class Tree_printer : protected Tree_printer_base {
                     siblings = &line.back();
                     previous->next_ = siblings;
                 }
-                auto label = stringifier_(n.node_->value());
-                auto label_width = label_width_calculator_(*n.node_, label);
-                auto printable_node = siblings->add_node(std::move(label), label_width);
+                if (n.node_) {
+                    auto label = stringifier_(n.node_->value());
+                    auto label_width = label_width_calculator_(*n.node_, label);
+                    auto printable_node = siblings->add_node(std::move(label), label_width);
+                    if (!children_iterator_.empty(*n.node_))
+                        children_iterator_.iterate(*n.node_, [&queue, n, printable_node](auto child) {
+                            queue.emplace_back(child, n.level_ + 1, printable_node);
+                        });
+                } else
+                    siblings->add_node(" ", 1);
 
-                auto& children = n.node_->children();
-                for (auto child = children.cbegin(); child != children.cend(); ++child)
-                    queue.emplace_back(&*child, n.level_ + 1, printable_node);
             }
             return lines;
         }

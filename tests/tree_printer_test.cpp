@@ -2,17 +2,19 @@
 
 #include "tree.h"
 #include "tree_printer.h"
+#include "binary_tree.h"
 
-TEST(Tree_printer_test, test_0) {
+template<typename N>
+auto to_string (const N& node) {
+    std::stringstream ss;
+    ss << std::endl;
+    ss << node;
+    return ss.str();
+}
+
+TEST(Tree_printer_test, arbitrary_tree) {
     using node = Array_tree_node<int>;
     using nodes = Array<node>;
-
-    auto to_string = [](const node& node) {
-        std::stringstream ss;
-        ss << std::endl;
-        ss << node;
-        return ss.str();
-    };
 
     node n(1);
     ASSERT_EQ(to_string(n), "\n1");
@@ -104,3 +106,38 @@ TEST(Tree_printer_test, test_0) {
 4  9)");
 }
 
+TEST(Tree_printer_test, binary_tree) {
+    using node = Binary_tree_node<int>;
+    node n = {1, 
+        new node(
+            11, nullptr, 
+            new node(112, nullptr, new node(1122))), 
+        new node(
+            12, nullptr, 
+            new node(122, nullptr, new node(1222))), 
+    };
+    ASSERT_EQ(to_string(n), R"(
+       1
+  ┌────┴───┐
+ 11       12
+┌─┴─┐   ┌──┴─┐
+   112      122
+ ┌──┴─┐   ┌──┴─┐
+    1122     1222)");
+    n = {1, 
+        new node(
+            11, nullptr, 
+            new node(112, new node(1121), new node(1122))), 
+        new node(
+            12, nullptr, 
+            new node(122, new node(1221), new node(1222))), 
+    };
+    ASSERT_EQ(to_string(n), R"(
+        1
+   ┌────┴────┐
+  11        12
+┌──┴─┐   ┌───┴───┐
+    112         122
+  ┌──┴──┐     ┌──┴──┐
+1121  1122  1221  1222)");
+}
