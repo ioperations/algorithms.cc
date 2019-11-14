@@ -57,6 +57,15 @@ class Forward_list {
 
         T& front() { return head_->value_; }
         T& back() { return tail_->value_; }
+        T pop_front() {
+            auto node = head_;
+            head_ = head_->next_;
+            if (!head_)
+                tail_ = nullptr;
+            auto t = node->value_;
+            delete node;
+            return t;
+        }
         iterator begin() {
             return Iterator(head_);
         }

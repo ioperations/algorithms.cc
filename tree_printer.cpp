@@ -160,9 +160,11 @@ void Tree_printer_base::print(Lines& lines, A&& appender) {
         }
     };
 
-    for (size_t i = 1; i < lines.size(); ++i) {
+    auto line = lines.begin();
+    ++line;
+    for (; line != lines.end(); ++line) {
         Siblings* previous = nullptr;
-        for (auto& siblings : lines[i]) {
+        for (auto& siblings : *line) {
             siblings.fix_positions(previous);
             previous = &siblings;
         }

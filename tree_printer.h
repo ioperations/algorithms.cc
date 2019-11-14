@@ -78,7 +78,7 @@ class Tree_printer_base {
         };
 
         using Line = Forward_list<Siblings>;
-        using Lines = Array<Line>;
+        using Lines = Forward_list<Line>;
 
         void print(Lines& lines, std::ostream& stream);
         Forward_list<std::string> compose_text_lines(Lines& lines);
@@ -109,44 +109,45 @@ class Tree_printer : protected Tree_printer_base {
         L label_width_calculator_;
 
         Lines compose_lines(const N& node) {
-            auto depth = calculate_depth(node);
-            Lines lines(depth);
-            populate_lines(node, lines);
+            struct Node_info {
+                const N* node_;
+                int level_;
+                Printed_node* parent_;
+                Node_info(const N* node, int level, Printed_node* parent) 
+                    :node_(node), level_(level), parent_(parent) 
+                {}
+            };
+
+            Forward_list<Node_info> queue;
+            queue.emplace_back(&node, 1, nullptr);
+            int level = 0;
+            Lines lines;
+
+            while (!queue.empty()) {
+                auto n = queue.pop_front();
+                if (n.level_ > level) {
+                    lines.emplace_back();
+                    level = n.level_;
+                }
+                auto& line = lines.back();
+                if (line.empty())
+                    line.emplace_back(n.parent_);
+                Siblings* siblings = &line.back();
+                if (siblings->parent_ != n.parent_) {
+                    line.emplace_back(n.parent_);
+                    Siblings* previous = siblings;
+                    siblings = &line.back();
+                    previous->next_ = siblings;
+                }
+                auto label = stringifier_(n.node_->value());
+                auto label_width = label_width_calculator_(*n.node_, label);
+                auto printable_node = siblings->add_node(std::move(label), label_width);
+
+                auto& children = n.node_->children();
+                for (auto child = children.cbegin(); child != children.cend(); ++child)
+                    queue.emplace_back(&*child, n.level_ + 1, printable_node);
+            }
             return lines;
-        }
-
-        int calculate_depth(const N& node, int level = 0) {
-            ++level;
-            int depth = level;
-            auto& children = node.children();
-            for (auto child = children.cbegin(); child != children.cend(); ++child)
-                depth = std::max(depth, calculate_depth(*child, level));
-            return depth;
-        }
-
-        void populate_lines(const N& node, Lines& lines, Printed_node* parent = nullptr, int level = 0) {
-            auto& line = lines[level];
-            if (line.empty())
-                line.emplace_back(parent);
-            Siblings* siblings = &line.back();
-            if (siblings->parent_ != parent) {
-                line.emplace_back(parent);
-                Siblings* previous = siblings;
-                siblings = &line.back();
-                previous->next_ = siblings;
-            }
-            auto label = stringifier_(node.value());
-            auto label_width = label_width_calculator_(node, label);
-            auto printable_node = siblings->add_node(std::move(label), label_width);
-
-            auto child = node.children().cbegin();
-            if (child != node.children().cend()) {
-                ++level;
-                do {
-                    populate_lines(*child, lines, printable_node, level);
-                    ++child;
-                } while (child != node.children().cend());
-            }
         }
 
     public:

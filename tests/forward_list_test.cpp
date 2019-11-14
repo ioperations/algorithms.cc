@@ -5,15 +5,15 @@
 
 #include <sstream>
 
-TEST(Forward_list_test, test_0) {
+template<typename T>
+auto to_string(const Forward_list<T>& l) {
+    std::stringstream ss;
+    for (auto it = l.cbegin(); it != l.cend(); ++it) ss << (*it) << " ";
+    return ss.str();
+}
+
+TEST(Forward_list_test, base) {
     using list = Forward_list<int>;
-
-    auto to_string = [](const list& l) {
-        std::stringstream ss;
-        for (auto it = l.cbegin(); it != l.cend(); ++it) ss << (*it) << " ";
-        return ss.str();
-    };
-
     list l;
     auto fill_list = [&l]() {
         l.push_back(3);
@@ -43,8 +43,26 @@ TEST(Forward_list_test, test_0) {
     ASSERT_EQ("4 5 7 8 ", ss.str());
 }
 
-TEST(Forward_list_test, test_1) {
+TEST(Forward_list_test, pair) {
     Forward_list<Pair<int, int>> list;
     list.emplace_back(1, 2);
     ASSERT_EQ(Pair(1, 2), *list.begin());
 }
+
+TEST(Forward_list_test, pop_front) {
+    Forward_list<int> list;
+    for (int i = 0; i < 10; ++i)
+        list.push_back(i);
+
+    Forward_list<int> list_2;
+    while (!list.empty())
+        list_2.push_back(list.pop_front());
+
+    ASSERT_EQ("0 1 2 3 4 5 6 7 8 9 ", to_string(list_2));
+
+    list.push_back(10);
+    list.push_back(11);
+    list.push_back(12);
+    ASSERT_EQ("10 11 12 ", to_string(list));
+}
+
