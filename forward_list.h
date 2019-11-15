@@ -15,6 +15,10 @@ class Forward_list {
             else head_ = node;
             tail_ = node;
         }
+        void add_all(const Forward_list& o) {
+            for (auto node = o.head_; node; node = node->next_)
+                push_back(node->value_);
+        }
         void remove_nodes() {
             for (Node* node = head_; node; ) {
                 Node* previous = node;
@@ -30,8 +34,14 @@ class Forward_list {
 
         Forward_list() :head_(nullptr), tail_(nullptr) {};
 
-        Forward_list(const Forward_list&) = delete;
-        Forward_list& operator=(const Forward_list&) = delete;
+        Forward_list(const Forward_list& o) :Forward_list() {
+            add_all(o);
+        }
+        Forward_list& operator=(const Forward_list& o) {
+            clear();
+            add_all(o);
+            return *this;
+        }
 
         Forward_list(Forward_list&& o) :head_(o.head_), tail_(o.tail_) {
             o.head_ = nullptr;

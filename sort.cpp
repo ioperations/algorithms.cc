@@ -9,38 +9,66 @@
 #include "string_utils.h"
 
 template<typename It>
-void print_sequence(const It& b, const It& e) {
-    for (auto el = b; el != e; ++el)
-        std::cout << *el << " ";
+void print_sequence(const It& begin, const It& end) {
+    for (auto current = begin; current != end; ++current)
+        std::cout << *current << " ";
 }
 
 template<typename It>
-void buble_sort(It b, It e) {
+void buble_sort(It begin, It end) {
     int iteration = 0;
-    auto print_iteration = [&b, &e, &iteration]() {
-        print_sequence(b, e);
+    auto print_iteration = [&begin, &end, &iteration]() {
+        print_sequence(begin, end);
         std::cout << "[" << iteration << "]" << std::endl;
         ++iteration;
     };
-    print_sequence(b, e);
+    print_sequence(begin, end);
     std::cout << std::endl;
 
-    auto ee = e;
-    for (auto it = b; it != e; ++it) {
-        auto previous = b;
-        auto current = previous;
-        ++current;
-        if (current != ee)
+    auto end_in = end;
+    for (auto current = begin; current != end; ++current) {
+        auto previous_in = begin;
+        auto current_in = previous_in;
+        ++current_in;
+        if (current_in != end_in)
             do {
-                if (current->value_ < previous->value_)
-                    std::swap(current->value_, previous->value_);
-                previous = current;
-                ++current;
-            } while (current != ee);
-        ee = previous;
-        ee->bold_ = true;
+                if (current_in->value_ < previous_in->value_)
+                    std::swap(current_in->value_, previous_in->value_);
+                previous_in = current_in;
+                ++current_in;
+            } while (current_in != end_in);
+        end_in = previous_in;
+        end_in->bold_ = true;
         print_iteration();
     }
+}
+
+template<typename It>
+void selection_sort(It begin, It end) {
+    print_sequence(begin, end);
+    std::cout << std::endl;
+
+    auto swap = [&begin, &end](auto current, auto min) {
+        std::swap(*current, *min);
+        current->bold_ = true;  min->bold_ = true;
+        print_sequence(begin, end);
+        std::cout << std::endl;
+        current->bold_ = false; min->bold_ = false;
+    };
+
+    for (auto current = begin; current != end; ++current) {
+        auto current_in = current;
+        ++current_in;
+        if (current_in != end) {
+            auto min = current;
+            for (; current_in != end; ++current_in)
+                if (current_in->value_ < min->value_)
+                    min = current_in;
+            swap(current, min);
+        }
+    }
+    print_sequence(begin, end);
+    std::cout << std::endl;
 }
 
 using Entry = Rich_text<int>;
@@ -56,9 +84,19 @@ int main() {
         list.emplace_back(value, false);
     }
 
-    std::cout << "array sort" << std::endl;
-    buble_sort(array.begin(), array.end());
+    std::cout << "array bubble sort" << std::endl;
+    auto array_copy = array;
+    buble_sort(array_copy.begin(), array_copy.end());
 
-    std::cout << "forward list sort" << std::endl;
-    buble_sort(list.begin(), list.end());
+    std::cout << "forward list bubble sort" << std::endl;
+    auto list_copy = list;
+    buble_sort(list_copy.begin(), list_copy.end());
+
+    std::cout << "array selection sort" << std::endl;
+    array_copy = array;
+    selection_sort(array_copy.begin(), array_copy.end());
+
+    std::cout << "forward list selection sort" << std::endl;
+    list_copy = list;
+    selection_sort(list_copy.begin(), list_copy.end());
 }
