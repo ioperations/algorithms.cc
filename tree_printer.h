@@ -115,8 +115,9 @@ struct Default_children_iterator {
     }
 };
 
-template<typename N, typename S = Default_stringifier<N>, typename L = Default_label_width_calculator<N>
-, typename Cit = Default_children_iterator<N>>
+template<typename N, 
+    typename S = Default_stringifier<N>, typename L = Default_label_width_calculator<N>,
+    typename Cit = Default_children_iterator<N>>
 class Tree_printer : protected Tree_printer_base {
     private:
         S stringifier_;
@@ -163,7 +164,7 @@ class Tree_printer : protected Tree_printer_base {
                             queue.emplace_back(child, n.level_ + 1, printable_node);
                         });
                 } else
-                    siblings->add_node(" ", 1);
+                    siblings->add_node(" ", 1); // todo add custom empty node rendering to stringifier
 
             }
             return lines;

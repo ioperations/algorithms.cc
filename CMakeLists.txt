@@ -17,5 +17,6 @@ add_executable(quick_find quick_find.cpp)
 add_executable(sort sort.cpp)
 add_executable(complex complex.cpp)
 add_executable(hanoi hanoi.cpp)
+add_executable(other other.cpp)
 
 add_subdirectory(tests)
