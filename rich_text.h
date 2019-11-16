@@ -10,6 +10,9 @@ class Rich_text {
         Rich_text() :value_(), bold_(false) {}
         template<typename TT>
             Rich_text(TT&& value, bool bold): value_(std::forward<TT>(value)), bold_(bold) {}
+        bool operator<(const Rich_text& o) const {
+            return value_ < o.value_;
+        }
         template<typename TT>
             friend std::ostream& operator<<(std::ostream& s, Rich_text<TT> r) {
 #ifdef unix
