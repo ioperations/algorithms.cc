@@ -8,6 +8,7 @@ class Rich_text {
         T value_;
         bool bold_;
         Rich_text() :value_(), bold_(false) {}
+        Rich_text(T&& value): value_(value), bold_(false) {}
         template<typename TT>
             Rich_text(TT&& value, bool bold): value_(std::forward<TT>(value)), bold_(bold) {}
         bool operator<(const Rich_text& o) const {

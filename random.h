@@ -10,8 +10,9 @@ class Random_sequence_generator {
         Random_sequence_generator(unsigned long seed, int b, int e)
             :engine(seed), distribution(b, e)
         {}
-        Array<int> generate_array(size_t size) {
-            Array<int> array(size);
+        template<typename A>
+        auto generate_array(size_t size) {
+            A array(size);
             for (auto& e : array)
                 e = generate();
             return array;
