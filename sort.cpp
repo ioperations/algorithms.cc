@@ -9,6 +9,15 @@
 #include "box_drawing_chars.h"
 #include "string_utils.h"
 
+template<typename T>
+bool compare_and_swap(T& t1, T& t2) {
+    if (t1 < t2) {
+        std::swap(t1, t2);
+        return true;
+    }
+    return false;
+}
+
 template<typename It>
 struct Iteration_printer {
     const It begin_;
@@ -36,11 +45,8 @@ void buble_sort(const It& begin, const It& end, bool verbose = true) {
         auto previous_in = begin;
         auto current_in = previous_in;
         for (++current_in; current_in != end_in; ++current_in) {
-                if (*current_in < *previous_in) {
-                    std::swap(*current_in, *previous_in);
-                    swapped = true;
-                }
-                previous_in = current_in;
+            swapped = compare_and_swap(*current_in, *previous_in);
+            previous_in = current_in;
         }
         end_in = previous_in;
         end_in->bold_ = true;
@@ -66,8 +72,7 @@ void selection_sort(const It& begin, const It& end, bool verbose = true) {
             for (; current_in != end; ++current_in)
                 if (*current_in < *min)
                     min = current_in;
-            if (*min < *current)
-                std::swap(*current, *min);
+            compare_and_swap(*min, *current);
             print_iteration(current, min);
         }
     }
@@ -77,11 +82,9 @@ template<typename It>
 void insertion_sort(const It& begin, const It& end, bool verbose = true) {
     Iteration_printer ip(begin, end, verbose);
 
-    for (auto current = end - 1; current != begin; --current) {
-        if (*current < *(current - 1))
-            std::swap(*(current - 1), *current);
-        ip.print();
-    }
+    for (auto current = end - 1; current != begin; --current)
+        compare_and_swap(*current, *(current - 1));
+    ip.print();
 
     for (auto current = begin + 2; current != end; ++current) {
         auto current_in = current;
@@ -92,11 +95,11 @@ void insertion_sort(const It& begin, const It& end, bool verbose = true) {
         }
         *current_in = std::move(value);
 
-        for (auto current_h = current; current_h != current_in - 1; --current_h)
-            current_h->bold_ = true;
-        ip.print();
-        for (auto current_h = current; current_h != current_in - 1; --current_h)
-            current_h->bold_ = false;
+        auto set_bold = [&current, & current_in](bool bold) {
+            for (auto current_h = current; current_h != current_in - 1; --current_h)
+                current_h->bold_ = bold;
+        };
+        set_bold(true); ip.print(); set_bold(false);
     }
 }
 
@@ -151,6 +154,34 @@ auto sort_and_measure(const C& container, S sorter) {
     return now() - ts;
 }
 
+template<typename A>
+size_t partition(A& a, size_t l, size_t r) {
+    size_t i = l - 1, j = r;
+    auto& v = a[r];
+    for (;;) {
+        while (a[++i] < v);
+        while (v < a[--j])
+            if (j == l) break;
+        if (i >= j) break;
+        std::swap(a[i], a[j]);
+    }
+    std::swap(a[i], a[r]);
+    return i;
+}
+
+template<typename A>
+void quick_sort(A& a, size_t l, size_t r) {
+    std::cout << a << std::endl;
+    if (r <= l) return;
+    auto i = partition(a, l, r);
+    {
+        auto ii = i - 1;
+        if (ii < i)
+            quick_sort(a, l, ii);
+    }
+    quick_sort(a, i + 1, r); 
+}
+
 int main(int argc, const char** argv) {
     Array<Entry> array(15);
     Forward_list<Entry> list;
@@ -183,6 +214,9 @@ int main(int argc, const char** argv) {
 
     std::cout << "array shell sort" << std::endl;
     sort(array, shell_sort<Array_iterator>);
+
+    quick_sort(array, 0, array.size() - 1);
+    std::cout << array << std::endl;
 
     {
         int count = 10'000;
