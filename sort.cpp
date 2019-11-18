@@ -154,32 +154,37 @@ auto sort_and_measure(const C& container, S sorter) {
     return now() - ts;
 }
 
-template<typename A>
-size_t partition(A& a, size_t l, size_t r) {
-    size_t i = l - 1, j = r;
-    auto& v = a[r];
+template<typename It>
+auto partition(const It& begin, const It& end) {
+    const auto& last = end - 1;
+    auto i = begin - 1, j = last;
+    auto& v = *last;
     for (;;) {
-        while (a[++i] < v);
-        while (v < a[--j])
-            if (j == l) break;
+        while (*++i < v);
+        while (v < *--j)
+            if (j == begin) break;
         if (i >= j) break;
-        std::swap(a[i], a[j]);
+        std::swap(*i, *j);
     }
-    std::swap(a[i], a[r]);
+    std::swap(*i, *last);
     return i;
 }
 
-template<typename A>
-void quick_sort(A& a, size_t l, size_t r) {
-    std::cout << a << std::endl;
-    if (r <= l) return;
-    auto i = partition(a, l, r);
-    {
-        auto ii = i - 1;
-        if (ii < i)
-            quick_sort(a, l, ii);
-    }
-    quick_sort(a, i + 1, r); 
+template<typename It>
+void quick_sort(const It& begin, const It& end, bool verbose = true) {
+    Iteration_printer<It> ip(begin, end, verbose);
+    do_quick_sort(begin, end, ip);
+}
+
+template<typename It>
+void do_quick_sort(const It& begin, const It& end, Iteration_printer<It>& ip) {
+    if (end <= begin) return;
+    begin->bold_ = true; (end - 1)->bold_ = true;
+    ip.print();
+    begin->bold_ = false; (end - 1)->bold_ = false;
+    auto i = partition(begin, end);
+    do_quick_sort(begin, i, ip);
+    do_quick_sort(i + 1, end, ip); 
 }
 
 int main(int argc, const char** argv) {
@@ -197,41 +202,34 @@ int main(int argc, const char** argv) {
     using Array_iterator = Array<Entry>::iterator;
     using List_iterator = Forward_list<Entry>::iterator;
 
-    std::cout << "array bubble sort" << std::endl;
-    sort(array, buble_sort<Array_iterator>);
+    auto sort_print = [](std::string&& label, auto& array, auto f) {
+        std::cout << " sort" << std::endl;
+        sort(array, f); };
 
-    std::cout << "forward list bubble sort" << std::endl;
-    sort(list, buble_sort<List_iterator>);
+    sort_print("array bubble", array, buble_sort<Array_iterator>);
+    sort_print("forward list bubble", list, buble_sort<List_iterator>);
 
-    std::cout << "array selection sort" << std::endl;
-    sort(array, selection_sort<Array_iterator>);
+    sort_print("array selection", array, selection_sort<Array_iterator>);
+    sort_print("forward list selection", list, selection_sort<List_iterator>);
 
-    std::cout << "forward list selection sort" << std::endl;
-    sort(list, selection_sort<List_iterator>);
-
-    std::cout << "array insertion sort" << std::endl;
-    sort(array, insertion_sort<Array_iterator>);
-
-    std::cout << "array shell sort" << std::endl;
-    sort(array, shell_sort<Array_iterator>);
-
-    quick_sort(array, 0, array.size() - 1);
-    std::cout << array << std::endl;
+    sort_print("array insertion", array, insertion_sort<Array_iterator>);
+    sort_print("array shell", array, shell_sort<Array_iterator>);
+    sort_print("array quick", array, quick_sort<Array_iterator>);
 
     {
+        auto sort_measure_print = [](std::string&& label, auto& array, auto f) {
+            std::cout << label << " took " << sort_and_measure(array, f) << " mls " << std::endl; 
+        };
         int count = 10'000;
         if (argc > 1)
             count = atoi(argv[1]);
+        auto a = Random_sequence_generator(300, 0, count).generate_array<Array<Entry>>();
 
-        Random_sequence_generator generator(300, 0, count);
-        auto a = generator.generate_array<Array<Entry>>(count);
-
-        auto sort_measure_print = [](const std::string& label, auto mls) {
-            std::cout << label << " took " << mls << "mls " << std::endl; };
-
-        sort_measure_print("buble sort", sort_and_measure(a, buble_sort<Array_iterator>));
-        sort_measure_print("selection sort", sort_and_measure(a, selection_sort<Array_iterator>));
-        sort_measure_print("insertion sort", sort_and_measure(a, insertion_sort<Array_iterator>));
-        sort_measure_print("shell sort", sort_and_measure(a, shell_sort<Array_iterator>));
+        sort_measure_print("buble sort", a, buble_sort<Array_iterator>);
+        sort_measure_print("buble sort", a, buble_sort<Array_iterator>);
+        sort_measure_print("selection sort", a, selection_sort<Array_iterator>);
+        sort_measure_print("insertion sort", a, insertion_sort<Array_iterator>);
+        sort_measure_print("shell sort", a, shell_sort<Array_iterator>);
+        sort_measure_print("quick sort", a, quick_sort<Array_iterator>);
     }
 }
