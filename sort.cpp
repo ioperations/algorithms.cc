@@ -19,19 +19,44 @@ bool compare_and_swap(T& t1, T& t2) {
 }
 
 template<typename It>
-struct Iteration_printer {
-    const It begin_;
-    const It end_;
-    const bool verbose_;
-    int iteration_ = -1;
-    Iteration_printer(const It& begin, const It& end, bool verbose) :begin_(begin), end_(end), verbose_(verbose) {}
-    void print() {
-        if (verbose_) {
+class Iteration_printer {
+    private:
+        const It begin_;
+        const It end_;
+        const bool verbose_;
+        int iteration_ = -1;
+
+        template<typename T, typename... Args>
+            void set_bold(bool bold, T&& t, Args&&... args) {
+                t.bold_ = bold;
+                set_bold(bold, std::forward<Args>(args)...);
+            }
+        void set_bold(bool bold) {}
+    public:
+        Iteration_printer(const It& begin, const It& end, bool verbose) 
+            :begin_(begin), end_(end), verbose_(verbose) 
+        {}
+        void print() {
             for (auto current = begin_; current != end_; ++current)
                 std::cout << *current << " ";
             std::cout << "[" << ++iteration_ << "]" << std::endl;
         }
-    }
+
+        template<typename... Args>
+            void print_bold(Args&&... args) {
+                if (verbose_) {
+                    set_bold(true, std::forward<Args>(args)...);
+                    print();
+                    set_bold(false, std::forward<Args>(args)...);
+                }
+            }
+
+        template<typename F>
+            void print_bold_for_each(F f) {
+                if (verbose_) {
+                    f(true); print(); f(false);
+                }
+            }
 };
 
 template<typename It>
@@ -49,20 +74,13 @@ void buble_sort(const It& begin, const It& end, bool verbose = true) {
             previous_in = current_in;
         }
         end_in = previous_in;
-        end_in->bold_ = true;
-        ip.print();
+        ip.print_bold(*end_in);
     }
 }
 
 template<typename It>
 void selection_sort(const It& begin, const It& end, bool verbose = true) {
     Iteration_printer ip(begin, end, verbose);
-
-    auto print_iteration = [&ip](auto current, auto min) {
-        current->bold_ = true;  min->bold_ = true;
-        ip.print();
-        current->bold_ = false; min->bold_ = false;
-    };
 
     for (auto current = begin; current != end; ++current) {
         auto current_in = current;
@@ -73,7 +91,7 @@ void selection_sort(const It& begin, const It& end, bool verbose = true) {
                 if (*current_in < *min)
                     min = current_in;
             compare_and_swap(*min, *current);
-            print_iteration(current, min);
+            ip.print_bold(*current, *min);
         }
     }
 }
@@ -84,7 +102,7 @@ void insertion_sort(const It& begin, const It& end, bool verbose = true) {
 
     for (auto current = end - 1; current != begin; --current)
         compare_and_swap(*current, *(current - 1));
-    ip.print();
+    ip.print_bold(*begin);
 
     for (auto current = begin + 2; current != end; ++current) {
         auto current_in = current;
@@ -95,11 +113,10 @@ void insertion_sort(const It& begin, const It& end, bool verbose = true) {
         }
         *current_in = std::move(value);
 
-        auto set_bold = [&current, & current_in](bool bold) {
+        ip.print_bold_for_each([&current, & current_in](bool bold) {
             for (auto current_h = current; current_h != current_in - 1; --current_h)
                 current_h->bold_ = bold;
-        };
-        set_bold(true); ip.print(); set_bold(false);
+        });
     }
 }
 
@@ -123,11 +140,7 @@ void shell_sort(const It& begin, const It& end, bool verbose = true) {
             }
             array[j] = std::move(v);
 
-            array[i - h].bold_ = true;
-            array[j].bold_ = true;
-            ip.print();
-            array[i - h].bold_ = false;
-            array[j].bold_ = false;
+            ip.print_bold(array[i - h], array[j]);
         }
     }
 }
@@ -179,9 +192,9 @@ void quick_sort(const It& begin, const It& end, bool verbose = true) {
 template<typename It>
 void do_quick_sort(const It& begin, const It& end, Iteration_printer<It>& ip) {
     if (end <= begin) return;
-    begin->bold_ = true; (end - 1)->bold_ = true;
-    ip.print();
-    begin->bold_ = false; (end - 1)->bold_ = false;
+
+    ip.print_bold(*begin, *(end - 1));
+
     auto i = partition(begin, end);
     do_quick_sort(begin, i, ip);
     do_quick_sort(i + 1, end, ip); 
@@ -203,7 +216,7 @@ int main(int argc, const char** argv) {
     using List_iterator = Forward_list<Entry>::iterator;
 
     auto sort_print = [](std::string&& label, auto& array, auto f) {
-        std::cout << " sort" << std::endl;
+        std::cout << label << " sort" << std::endl;
         sort(array, f); };
 
     sort_print("array bubble", array, buble_sort<Array_iterator>);
@@ -225,7 +238,6 @@ int main(int argc, const char** argv) {
             count = atoi(argv[1]);
         auto a = Random_sequence_generator(300, 0, count).generate_array<Array<Entry>>();
 
-        sort_measure_print("buble sort", a, buble_sort<Array_iterator>);
         sort_measure_print("buble sort", a, buble_sort<Array_iterator>);
         sort_measure_print("selection sort", a, selection_sort<Array_iterator>);
         sort_measure_print("insertion sort", a, insertion_sort<Array_iterator>);
