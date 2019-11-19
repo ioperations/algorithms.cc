@@ -8,6 +8,9 @@
 #include "box_drawing_chars.h"
 #include "string_utils.h"
 
+using Entry = Rich_text::Entry<int>;
+using Style = Rich_text::Style;
+
 template<typename It>
 void print_sequence(const It& b, const It& e) {
     for (auto el = b; el != e; ++el)
@@ -20,15 +23,13 @@ void sequential_search(It b, It e, int value) {
     int index = -1;
     int i = 0;
     for (auto el = b; index == -1 && el != e; ++el, ++i) {
-        el->bold_ = true;
+        el->set_style(Style::bold());
         if (el->value_ == value)
             index = i;
     }
     print_sequence(b, e);
     std::cout << std::endl << "index = " << index << std::endl;
 }
-
-using Entry = Rich_text<int>;
 
 void quick_search(Array<Entry>& array, int value) {
     std::cout << "searching for " << value << std::endl;
@@ -37,9 +38,9 @@ void quick_search(Array<Entry>& array, int value) {
     size_t index = -1;
     while (index == static_cast<size_t>(-1) && i < j) {
         auto middle = i + (j - i) / 2;
-        array[middle].bold_ = true;
+        array[middle].set_style(Style::bold());
         print_sequence(array.cbegin(), array.cend());
-        array[middle].bold_ = false;
+        array[middle].remove_style(Style::bold());
         std::cout << std::endl;
         if (value == array[middle].value_)
             index = middle;
@@ -291,7 +292,7 @@ int main() {
     for (auto& e : array) {
         int value = generator.generate();
         e.value_ = value;
-        list.emplace_back(value, false);
+        list.emplace_back(value);
     }
 
     Array<int> ints(array.size());
@@ -299,16 +300,16 @@ int main() {
         ints[i] = array[i].value_;
 
     std::cout << "array sequential search" << std::endl;
-    clear_rich_text_format(array.begin(), array.end());
+    Rich_text::remove_styles(array.begin(), array.end());
     sequential_search(array.cbegin(), array.cend(), 58);
 
     std::cout << "list sequential search" << std::endl;
-    clear_rich_text_format(list.begin(), list.end());
+    Rich_text::remove_styles(list.begin(), list.end());
     sequential_search(list.begin(), list.end(), 58);
 
     std::cout << "array quick search" << std::endl;
     auto do_quick_search = [&array](int value) {
-        clear_rich_text_format(array.begin(), array.end());
+        Rich_text::remove_styles(array.begin(), array.end());
         quick_search(array, value);
     };
     do_quick_search(58);

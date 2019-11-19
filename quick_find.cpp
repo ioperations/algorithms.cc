@@ -9,7 +9,9 @@
 #include "rich_text.h"
 #include "text_block.h"
 
-using Connections = Array<Rich_text<int>>;
+using Entry = Rich_text::Entry<int>;
+using Style = Rich_text::Style;
+using Connections = Array<Entry>;
 using Connection_pairs = Forward_list<Pair<int, int>>;
 
 void print_links(const Forward_list<int>& links, std::ostream& stream) {
@@ -31,12 +33,12 @@ struct Searcher : A {
     void search(const Connection_pairs& pairs) {
         for (size_t i = 0; i < A::connections_.size(); ++i) {
             A::connections_[i].value_ = i;
-            A::connections_[i].bold_ = false;
+            A::connections_[i].remove_styles();
         }
         for (auto pair = pairs.cbegin(); pair != pairs.cend(); ++pair) {
             if (pair != pairs.cbegin())
                 for (auto& connection : A::connections_)
-                    connection.bold_ = false;
+                    connection.remove_styles();
             A::add(pair, pairs);
         }
     }
@@ -58,7 +60,7 @@ struct Quick_find {
             for (auto& connection : connections_)
                 if (connection.value_ == c) {
                     connection = connections_[pair->second_];
-                    connection.bold_ = true;
+                    connection.add_style(Style::bold());
                 }
         std::cout << connections_ << "  " << pair->first_ << "-" << pair->second_;
         print_links(l, std::cout);
@@ -66,7 +68,7 @@ struct Quick_find {
     };
 };
 
-using Pair_tree_node = Forward_list_tree_node<Pair<Rich_text<int>, int>>;
+using Pair_tree_node = Forward_list_tree_node<Pair<Entry, int>>;
 
 struct Tree_stringifier {
     std::string operator()(const Pair_tree_node& node) {
@@ -109,7 +111,7 @@ struct Quick_union : A {
                     index = connections_[connections_[index].value_].value_;
                     // index = connections_[index].value_;
                 }
-                connections_[index].bold_ = true;
+                connections_[index].add_style(Style::bold());
                 l.push_back(index);
             } while(linked);
         };
@@ -123,8 +125,10 @@ struct Quick_union : A {
         if (f != s) {
             Array<Pair_tree_node> nodes(connections_.size());
             for (size_t i = 0; i < connections_.size(); ++i) {
-                bool bold = (int) i == fi || (int) i == si;
-                nodes.emplace(i, Pair<Rich_text<int>, int>(Rich_text<int>(i, bold), connections_[i].value_));
+                auto style = (int) i == fi || (int) i == si
+                    ? Style::bold()
+                    : Style::normal();
+                nodes.emplace(i, Pair<Entry, int>(Entry(i, style), connections_[i].value_));
             }
 
             std::map<int, Pair_tree_node*> map;

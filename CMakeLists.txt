@@ -9,7 +9,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wno-long-long -pedantic -O0")
 endif()
 
-add_library(common_utils string_utils.cpp tree_printer.cpp text_block.cpp array.cpp)
+add_library(common_utils string_utils.cpp tree_printer.cpp text_block.cpp array.cpp rich_text.cpp)
 link_libraries(common_utils)
 
 add_executable(stack stack.cpp)

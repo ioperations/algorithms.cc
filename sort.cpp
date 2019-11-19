@@ -9,6 +9,8 @@
 #include "string_utils.h"
 #include "stopwatch.h"
 
+using Style = Rich_text::Style;
+
 template<typename T>
 bool compare_and_swap(T& t1, T& t2) {
     if (t1 < t2) {
@@ -28,7 +30,8 @@ class Iteration_printer {
 
         template<typename T, typename... Args>
             void set_bold(bool bold, T&& t, Args&&... args) {
-                t.bold_ = bold;
+                if (bold) t.add_style(Style::bold()); 
+                else t.remove_style(Style::bold());
                 set_bold(bold, std::forward<Args>(args)...);
             }
         void set_bold(bool bold) {}
@@ -115,7 +118,7 @@ void insertion_sort(const It& begin, const It& end, bool verbose = true) {
 
         ip.print_bold_for_each([&current, & current_in](bool bold) {
             for (auto current_h = current; current_h != current_in - 1; --current_h)
-                current_h->bold_ = bold;
+                current_h->set_style(bold ? Style::bold() : Style::normal());
         });
     }
 }
@@ -145,17 +148,15 @@ void shell_sort(const It& begin, const It& end, bool verbose = true) {
     }
 }
 
-using Entry = Rich_text<int>;
-
 template<typename It>
-auto partition(const It& begin, const It& end) {
+auto partition(const It& begin, const It& end, Iteration_printer<It>& ip) {
     const auto& last = end - 1;
     auto i = begin - 1, j = last;
     auto& v = *last;
     for (;;) {
         while (*++i < v);
-        while (v < *--j)
-            if (j == begin) break;
+        while (v < *--j && j != begin);
+        ip.print_bold(*i, *j);
         if (i >= j) break;
         std::swap(*i, *j);
     }
@@ -166,16 +167,17 @@ auto partition(const It& begin, const It& end) {
 template<typename It>
 void quick_sort(const It& begin, const It& end, bool verbose = true) {
     Iteration_printer<It> ip(begin, end, verbose);
+    ip.print();
     do_quick_sort(begin, end, ip);
 }
 
 template<typename It>
 void do_quick_sort(const It& begin, const It& end, Iteration_printer<It>& ip) {
     if (end <= begin) return;
-
+    auto i = partition(begin, end, ip);
+    i->add_style(Style::red_bg());
     ip.print_bold(*begin, *(end - 1));
-
-    auto i = partition(begin, end);
+    i->remove_style(Style::red_bg());
     do_quick_sort(begin, i, ip);
     do_quick_sort(i + 1, end, ip); 
 }
@@ -196,6 +198,7 @@ void sort_and_measure(std::string&& label, const C& container, S sorter) {
 }
 
 int main(int argc, const char** argv) {
+    using Entry = Rich_text::Entry<int>;
     Array<Entry> array(15);
     Forward_list<Entry> list;
     {
@@ -203,7 +206,7 @@ int main(int argc, const char** argv) {
         for (auto& e : array) {
             int value = generator.generate();
             e.value_ = value;
-            list.emplace_back(value, false);
+            list.emplace_back(value);
         }
     }
 
@@ -232,4 +235,5 @@ int main(int argc, const char** argv) {
         sort_and_measure("shell sort", a, shell_sort<Array_iterator>);
         sort_and_measure("quick sort", a, quick_sort<Array_iterator>);
     }
+
 }
