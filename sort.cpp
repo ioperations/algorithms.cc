@@ -1,6 +1,5 @@
 #include <iostream>
 #include <sstream>
-#include <chrono>
 
 #include "random.h"
 #include "array.h"
@@ -8,6 +7,7 @@
 #include "rich_text.h"
 #include "box_drawing_chars.h"
 #include "string_utils.h"
+#include "stopwatch.h"
 
 template<typename T>
 bool compare_and_swap(T& t1, T& t2) {
@@ -147,26 +147,6 @@ void shell_sort(const It& begin, const It& end, bool verbose = true) {
 
 using Entry = Rich_text<int>;
 
-template<typename C, typename S>
-void sort(const C& container, S sorter) {
-    auto container_copy = container;
-    sorter(container_copy.begin(), container_copy.end(), true);
-}
-
-long now() {
-    using namespace std::chrono;
-    return duration_cast<milliseconds>(system_clock::now().time_since_epoch())
-        .count();
-}
-
-template<typename C, typename S>
-auto sort_and_measure(const C& container, S sorter) {
-    auto container_copy = container;
-    auto ts = now();
-    sorter(container_copy.begin(), container_copy.end(), false);
-    return now() - ts;
-}
-
 template<typename It>
 auto partition(const It& begin, const It& end) {
     const auto& last = end - 1;
@@ -200,6 +180,21 @@ void do_quick_sort(const It& begin, const It& end, Iteration_printer<It>& ip) {
     do_quick_sort(i + 1, end, ip); 
 }
 
+template<typename C, typename S>
+void sort(std::string&& label, const C& container, S sorter) {
+    std::cout << label << " sort" << std::endl;
+    auto container_copy = container;
+    sorter(container_copy.begin(), container_copy.end(), true);
+}
+
+template<typename C, typename S>
+void sort_and_measure(std::string&& label, const C& container, S sorter) {
+    auto container_copy = container;
+    Stopwatch stopwatch;
+    sorter(container_copy.begin(), container_copy.end(), false);
+    std::cout << label << " took " << stopwatch.read_out() << " mls " << std::endl; 
+}
+
 int main(int argc, const char** argv) {
     Array<Entry> array(15);
     Forward_list<Entry> list;
@@ -215,33 +210,26 @@ int main(int argc, const char** argv) {
     using Array_iterator = Array<Entry>::iterator;
     using List_iterator = Forward_list<Entry>::iterator;
 
-    auto sort_print = [](std::string&& label, auto& array, auto f) {
-        std::cout << label << " sort" << std::endl;
-        sort(array, f); };
+    sort("array bubble", array, buble_sort<Array_iterator>);
+    sort("forward list bubble", list, buble_sort<List_iterator>);
 
-    sort_print("array bubble", array, buble_sort<Array_iterator>);
-    sort_print("forward list bubble", list, buble_sort<List_iterator>);
+    sort("array selection", array, selection_sort<Array_iterator>);
+    sort("forward list selection", list, selection_sort<List_iterator>);
 
-    sort_print("array selection", array, selection_sort<Array_iterator>);
-    sort_print("forward list selection", list, selection_sort<List_iterator>);
-
-    sort_print("array insertion", array, insertion_sort<Array_iterator>);
-    sort_print("array shell", array, shell_sort<Array_iterator>);
-    sort_print("array quick", array, quick_sort<Array_iterator>);
+    sort("array insertion", array, insertion_sort<Array_iterator>);
+    sort("array shell", array, shell_sort<Array_iterator>);
+    sort("array quick", array, quick_sort<Array_iterator>);
 
     {
-        auto sort_measure_print = [](std::string&& label, auto& array, auto f) {
-            std::cout << label << " took " << sort_and_measure(array, f) << " mls " << std::endl; 
-        };
         int count = 10'000;
         if (argc > 1)
             count = atoi(argv[1]);
         auto a = Random_sequence_generator(300, 0, count).generate_array<Array<Entry>>();
 
-        sort_measure_print("buble sort", a, buble_sort<Array_iterator>);
-        sort_measure_print("selection sort", a, selection_sort<Array_iterator>);
-        sort_measure_print("insertion sort", a, insertion_sort<Array_iterator>);
-        sort_measure_print("shell sort", a, shell_sort<Array_iterator>);
-        sort_measure_print("quick sort", a, quick_sort<Array_iterator>);
+        sort_and_measure("buble sort", a, buble_sort<Array_iterator>);
+        sort_and_measure("selection sort", a, selection_sort<Array_iterator>);
+        sort_and_measure("insertion sort", a, insertion_sort<Array_iterator>);
+        sort_and_measure("shell sort", a, shell_sort<Array_iterator>);
+        sort_and_measure("quick sort", a, quick_sort<Array_iterator>);
     }
 }
