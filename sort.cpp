@@ -28,36 +28,42 @@ class Iteration_printer {
         const bool verbose_;
         int iteration_ = -1;
 
-        template<typename T, typename... Args>
-            void set_bold(bool bold, T&& t, Args&&... args) {
-                if (bold) t.add_style(Style::bold()); 
-                else t.remove_style(Style::bold());
-                set_bold(bold, std::forward<Args>(args)...);
-            }
-        void set_bold(bool bold) {}
-    public:
-        Iteration_printer(const It& begin, const It& end, bool verbose) 
-            :begin_(begin), end_(end), verbose_(verbose) 
-        {}
-        void print() {
+        void do_print() {
             for (auto current = begin_; current != end_; ++current)
                 std::cout << *current << " ";
             std::cout << "[" << ++iteration_ << "]" << std::endl;
         }
+        template<typename F, typename T, typename... Args>
+            void for_each(const Style& style, F f, T&& t, Args&&... args) {
+                f(t, style);
+                for_each(style, f, std::forward<Args>(args)...);
+            }
+        template<typename F>
+        void for_each(const Style& style, F f) {}
 
+    public:
+        Iteration_printer(const It& begin, const It& end, bool verbose) 
+            :begin_(begin), end_(end), verbose_(verbose) 
+        {}
+
+        void print() {
+            if (verbose_)
+                do_print();
+        }
         template<typename... Args>
             void print_bold(Args&&... args) {
                 if (verbose_) {
-                    set_bold(true, std::forward<Args>(args)...);
-                    print();
-                    set_bold(false, std::forward<Args>(args)...);
+                    for_each(Style::bold(), [](auto& t, auto& style) { t.add_style(style); },
+                              std::forward<Args>(args)...);
+                    do_print();
+                    for_each(Style::bold(), [](auto& t, auto& style) { t.remove_style(style); },
+                              std::forward<Args>(args)...);
                 }
             }
-
         template<typename F>
             void print_bold_for_each(F f) {
                 if (verbose_) {
-                    f(true); print(); f(false);
+                    f(true); do_print(); f(false);
                 }
             }
 };
@@ -175,9 +181,11 @@ template<typename It>
 void do_quick_sort(const It& begin, const It& end, Iteration_printer<It>& ip) {
     if (end <= begin) return;
     auto i = partition(begin, end, ip);
+
     i->add_style(Style::red_bg());
     ip.print_bold(*begin, *(end - 1));
     i->remove_style(Style::red_bg());
+
     do_quick_sort(begin, i, ip);
     do_quick_sort(i + 1, end, ip); 
 }

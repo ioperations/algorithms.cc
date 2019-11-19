@@ -23,7 +23,7 @@ namespace Rich_text {
     }
 
     Style Style::operator-=(const Style& o) {
-        code_ ^= o.code_;
+        code_ &= ~o.code_;
         return *this;
     }
 

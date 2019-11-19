@@ -23,11 +23,18 @@ TEST(Rich_text, test_1) {
     r.remove_style(Style::red_bg());
     ss << r << std::endl;
 
+    r.add_style(Style::bold());
+    r.add_style(Style::bold());
+    r.remove_style(Style::bold());
+    r.remove_style(Style::bold());
+    ss << r << std::endl;
+
     ASSERT_EQ(ss.str(), R"(
 12
 [1m12[0m
 [1m[41m12[0m
 [41m12[0m
+12
 12
 )");
 }
