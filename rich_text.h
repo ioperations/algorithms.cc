@@ -3,6 +3,9 @@
 #include <iostream>
 #include <bitset>
 #include <climits>
+#include <array>
+
+#include "std_ext.h"
 
 namespace Rich_text {
 
@@ -70,4 +73,46 @@ namespace Rich_text {
                 it->remove_styles();
         }
 
+    template<typename T, std::size_t SZ>
+        struct Styled_entries {
+            Style style_;
+            std::array<T*, SZ> entries_;
+            Styled_entries(Style style, std::array<T*, SZ>&& entries) 
+                :style_(style), entries_(entries) 
+            {
+                Std_ext::for_each(entries_, [this](auto e) {
+                    e->add_style(style_); });
+            }
+            ~Styled_entries() {
+                Std_ext::for_each(entries_, [this](auto e) {
+                    e->remove_style(style_); });
+            }
+        };
+
+    template<typename T, std::size_t SZ, std::size_t I>
+        inline void fill_styled_entries(std::array<T*, SZ>& entries, T& t) {
+            entries[I] = &t;
+        }
+
+    template<typename T, std::size_t SZ, std::size_t I, typename... Args>
+        inline void fill_styled_entries(std::array<T*, SZ>& entries, T& t, Args&... args) {
+            entries[I] = &t;
+            fill_styled_entries<T, SZ, I + 1>(entries, args...);
+        }
+
+    template<typename T, typename... Args, std::size_t SZ = sizeof...(Args) + 1>
+        inline auto styled_entries(const Style&& style, T& t, Args&... args) {
+            std::array<T*, SZ> entries;
+            fill_styled_entries<T, SZ, 0>(entries, t, args...);
+            return Styled_entries<T, SZ>(std::move(style), std::move(entries));
+        }
+
+    template<typename It, typename... SES>
+        void print(std::ostream& stream, const It& begin, const It& end, SES&&... styled_entries) {
+            auto el = begin;
+            stream << *el;
+            for (++el; el != end; ++el) {
+                stream << " " << *el;
+            }
+        }
 }

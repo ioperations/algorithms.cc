@@ -6,36 +6,6 @@
 #include "std_ext.h"
 #include "rich_text.h"
 
-namespace Rich_text {
-
-    template<typename T, std::size_t SZ>
-        struct Styled_entries {
-            Style style_;
-            std::array<T, SZ> entries_;
-            Styled_entries(Style style, std::array<T, SZ>&& entries) :style_(style), entries_(entries) {
-                Std_ext::for_each(entries_, [this](auto e) {
-                    e->add_style(style_); });
-            }
-            ~Styled_entries() {
-                Std_ext::for_each(entries_, [this](auto e) {
-                    e->remove_style(style_); });
-            }
-        };
-
-    template<typename T, typename... Args, std::size_t SZ = sizeof...(Args) + 1>
-        auto styled_entries(const Style&& style, T&& t, Args&&... args) {
-            std::array<T, SZ> entries;
-            Std_ext::fill_array(entries, std::forward<T>(t), std::forward<Args>(args)...);
-            return Styled_entries<T, SZ>(std::move(style), std::move(entries));
-        }
-
-    template<typename It, typename... SES>
-        void print(std::ostream& stream, const It& begin, const It& end, SES&&... styled_entries) {
-            for (auto el = begin; el != end; ++el)
-                stream << *el << " ";
-        }
-}
-
 TEST(Rich_text, test_1) {
     using namespace Rich_text;
 
@@ -74,11 +44,14 @@ TEST(Rich_text, test_1) {
 TEST(Rich_text, test_2) {
     using namespace Rich_text;
 
-    Array<Rich_text::Entry<int>> array;
+    Array<Rich_text::Entry<int>> array(4);
 
-    print(std::cout, array.begin(), array.end(),
-          styled_entries(Style::bold(), &*array.begin()),
-          styled_entries(Style::red_bg(), &*(array.begin() + 1))
+    styled_entries(Style::bold(), *array.begin(), *(array.begin() + 1));
+
+    std::stringstream ss;
+    print(ss, array.begin(), array.end(),
+          styled_entries(Style::bold(), *array.begin(), *(array.begin() + 1)),
+          styled_entries(Style::red_bg(), *(array.begin() + 1), *(array.begin() + 2))
           );
-    std::cout << std::endl;
+    ASSERT_EQ(ss.str(), "[1m0[0m [1m[41m0[0m [41m0[0m 0");
 }
