@@ -21,58 +21,42 @@ bool compare_and_swap(T& t1, T& t2) {
 }
 
 template<typename It>
-class Iteration_printer { // extend Rich_text::Sequence
+class Iteration_printer : protected Rich_text::Sequence<It> {
     private:
-        const It begin_;
-        const It end_;
+        using Base = Rich_text::Sequence<It>;
         const bool verbose_;
         int iteration_ = -1;
 
-        void do_print() {
-            for (auto current = begin_; current != end_; ++current)
-                std::cout << *current << " ";
-            std::cout << "[" << ++iteration_ << "]" << std::endl;
+        void print_index() {
+            std::cout << " [" << ++iteration_ << "]" << std::endl;
         }
-        template<typename F, typename T, typename... Args>
-            void for_each(const Style& style, F f, T&& t, Args&&... args) {
-                f(t, style);
-                for_each(style, f, std::forward<Args>(args)...);
-            }
-        template<typename F>
-        void for_each(const Style& style, F f) {}
-
     public:
         Iteration_printer(const It& begin, const It& end, bool verbose) 
-            :begin_(begin), end_(end), verbose_(verbose) 
+            :Base(begin, end), verbose_(verbose)
         {}
-
-        void print() {
-            if (verbose_)
-                do_print();
-        }
-        template<typename... Args>
-            void print_bold(Args&&... args) {
+        template<typename... ES>
+            void print_with_styled_entry(const Style& style, ES&... entries) {
                 if (verbose_) {
-                    for_each(Style::bold(), [](auto& t, auto& style) { t.add_style(style); },
-                              std::forward<Args>(args)...);
-                    do_print();
-                    for_each(Style::bold(), [](auto& t, auto& style) { t.remove_style(style); },
-                              std::forward<Args>(args)...);
+                    Base::print_with_styled_entry(style, entries...);
+                    print_index();
+                }
+            }
+        template<typename... SES>
+            void print_with_styled_entries(SES&&... styled_entries) {
+                if (verbose_) {
+                    Base::print_with_styled_entries(std::forward<SES>(styled_entries)...);
+                    print_index();
                 }
             }
         template<typename F>
-            void print_bold_for_each(F f) {
+            void print(F f) {
                 if (verbose_) {
-                    f(true); do_print(); f(false);
+                    f(true);
+                    Base::print(std::cout);
+                    print_index();
+                    f(false);
                 }
             }
-
-        template<typename... SE>
-            void foo(SE&&... styled_entries) { // todo rename
-                if (verbose_)
-                    do_print();
-            }
-
 };
 
 template<typename It>
@@ -90,7 +74,7 @@ void buble_sort(const It& begin, const It& end, bool verbose = true) {
             previous_in = current_in;
         }
         end_in = previous_in;
-        ip.print_bold(*end_in);
+        ip.print_with_styled_entry(Style::bold(), *end_in);
     }
 }
 
@@ -107,7 +91,7 @@ void selection_sort(const It& begin, const It& end, bool verbose = true) {
                 if (*current_in < *min)
                     min = current_in;
             compare_and_swap(*min, *current);
-            ip.print_bold(*current, *min);
+            ip.print_with_styled_entry(Style::bold(), *current, *min);
         }
     }
 }
@@ -118,7 +102,7 @@ void insertion_sort(const It& begin, const It& end, bool verbose = true) {
 
     for (auto current = end - 1; current != begin; --current)
         compare_and_swap(*current, *(current - 1));
-    ip.print_bold(*begin);
+    ip.print_with_styled_entry(Style::bold(), *begin);
 
     for (auto current = begin + 2; current != end; ++current) {
         auto current_in = current;
@@ -129,7 +113,7 @@ void insertion_sort(const It& begin, const It& end, bool verbose = true) {
         }
         *current_in = std::move(value);
 
-        ip.print_bold_for_each([&current, & current_in](bool bold) {
+        ip.print([&current, & current_in](bool bold) {
             for (auto current_h = current; current_h != current_in - 1; --current_h)
                 current_h->set_style(bold ? Style::bold() : Style::normal());
         });
@@ -156,7 +140,7 @@ void shell_sort(const It& begin, const It& end, bool verbose = true) {
             }
             array[j] = std::move(v);
 
-            ip.print_bold(array[i - h], array[j]);
+            ip.print_with_styled_entry(Style::bold(), array[i - h], array[j]);
         }
     }
 }
@@ -169,7 +153,7 @@ auto partition(const It& begin, const It& end, Iteration_printer<It>& ip) {
     for (;;) {
         while (*++i < v);
         while (v < *--j && j != begin);
-        ip.print_bold(*i, *j);
+        ip.print_with_styled_entry(Style::bold(), *i, *j);
         if (i >= j) break;
         std::swap(*i, *j);
     }
@@ -180,7 +164,7 @@ auto partition(const It& begin, const It& end, Iteration_printer<It>& ip) {
 template<typename It>
 void quick_sort(const It& begin, const It& end, bool verbose = true) {
     Iteration_printer<It> ip(begin, end, verbose);
-    ip.print();
+    ip.print_with_styled_entries();
     do_quick_sort(begin, end, ip);
 }
 
@@ -189,12 +173,9 @@ void do_quick_sort(const It& begin, const It& end, Iteration_printer<It>& ip) {
     if (end <= begin) return;
     auto i = partition(begin, end, ip);
 
-    i->add_style(Style::red_bg());
-    ip.print_bold(*begin, *(end - 1));
-    i->remove_style(Style::red_bg());
-
-    ip.foo(Rich_text::styled_entries(Style::bold(), *begin, *(end - 1)),
-           Rich_text::styled_entries(Style::red_bg(), *i));
+    ip.print_with_styled_entries(
+        Rich_text::styled_entries(Style::bold(), *begin, *(end - 1)),
+        Rich_text::styled_entries(Style::red_bg(), *i));
 
     do_quick_sort(begin, i, ip);
     do_quick_sort(i + 1, end, ip); 

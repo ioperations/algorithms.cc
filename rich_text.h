@@ -110,6 +110,14 @@ namespace Rich_text {
             private:
                 const It begin_;
                 const It end_;
+            protected:
+                void print(std::ostream& stream) {
+                    auto el = begin_;
+                    stream << *el;
+                    for (++el; el != end_; ++el) {
+                        stream << " " << *el;
+                    }
+                }
             public:
                 Sequence(const It& begin, const It& end) 
                     :begin_(begin), end_(end) 
@@ -117,20 +125,19 @@ namespace Rich_text {
                 template<typename... ES>
                     void print_with_styled_entry(std::ostream& stream, const Style& style, ES&... entries) {
                         auto se = styled_entries(style, entries...);
-                        stream << *this;
+                        print(stream);
+                    }
+                template<typename... ES>
+                    void print_with_styled_entry(const Style& style, ES&... entries) {
+                        print_with_styled_entry(std::cout, style, entries...);
                     }
                 template<typename... SES>
                     void print_with_styled_entries(std::ostream& stream, SES&&... styled_entries) {
-                        stream << *this;
+                        print(stream);
                     }
-                template<typename IIt>
-                    friend std::ostream& operator<<(std::ostream& stream, Sequence<IIt> seq) {
-                        auto el = seq.begin_;
-                        stream << *el;
-                        for (++el; el != seq.end_; ++el) {
-                            stream << " " << *el;
-                        }
-                        return stream;
+                template<typename... SES>
+                    void print_with_styled_entries(SES&&... styled_entries) {
+                        print_with_styled_entries(std::cout, std::forward<SES>(styled_entries)...);
                     }
         };
 }
