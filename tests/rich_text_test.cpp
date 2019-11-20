@@ -43,15 +43,23 @@ TEST(Rich_text, test_1) {
 
 TEST(Rich_text, test_2) {
     using namespace Rich_text;
+    Array<Entry<int>> array(4);
 
-    Array<Rich_text::Entry<int>> array(4);
-
-    styled_entries(Style::bold(), *array.begin(), *(array.begin() + 1));
-
+    Sequence s(array.begin(), array.end());
     std::stringstream ss;
-    print(ss, array.begin(), array.end(),
+    ss << std::endl;
+    s.print_with_styled_entry(ss, Style::bold(), *array.begin(), *(array.begin() + 1));
+    ss << std::endl;
+
+    s.print_with_styled_entries(ss, 
           styled_entries(Style::bold(), *array.begin(), *(array.begin() + 1)),
           styled_entries(Style::red_bg(), *(array.begin() + 1), *(array.begin() + 2))
           );
-    ASSERT_EQ(ss.str(), "[1m0[0m [1m[41m0[0m [41m0[0m 0");
+    ss << std::endl;
+
+    ASSERT_EQ(ss.str(), R"(
+[1m0[0m [1m0[0m 0 0
+[1m0[0m [1m[41m0[0m [41m0[0m 0
+)");
 }
+

@@ -21,7 +21,7 @@ bool compare_and_swap(T& t1, T& t2) {
 }
 
 template<typename It>
-class Iteration_printer {
+class Iteration_printer { // extend Rich_text::Sequence
     private:
         const It begin_;
         const It end_;
@@ -66,6 +66,13 @@ class Iteration_printer {
                     f(true); do_print(); f(false);
                 }
             }
+
+        template<typename... SE>
+            void foo(SE&&... styled_entries) { // todo rename
+                if (verbose_)
+                    do_print();
+            }
+
 };
 
 template<typename It>
@@ -185,6 +192,9 @@ void do_quick_sort(const It& begin, const It& end, Iteration_printer<It>& ip) {
     i->add_style(Style::red_bg());
     ip.print_bold(*begin, *(end - 1));
     i->remove_style(Style::red_bg());
+
+    ip.foo(Rich_text::styled_entries(Style::bold(), *begin, *(end - 1)),
+           Rich_text::styled_entries(Style::red_bg(), *i));
 
     do_quick_sort(begin, i, ip);
     do_quick_sort(i + 1, end, ip); 

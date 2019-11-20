@@ -67,6 +67,7 @@ namespace Rich_text {
                     }
         };
 
+    // todo move to Sequence class
     template<typename It>
         void remove_styles(It b, It e) {
             for (auto it = b; it != e; ++it)
@@ -75,9 +76,9 @@ namespace Rich_text {
 
     template<typename T, std::size_t SZ>
         struct Styled_entries {
-            Style style_;
-            std::array<T*, SZ> entries_;
-            Styled_entries(Style style, std::array<T*, SZ>&& entries) 
+            const Style style_;
+            const std::array<T*, SZ> entries_;
+            Styled_entries(const Style& style, std::array<T*, SZ>&& entries) 
                 :style_(style), entries_(entries) 
             {
                 Std_ext::for_each(entries_, [this](auto e) {
@@ -89,24 +90,12 @@ namespace Rich_text {
             }
         };
 
-    template<typename T, std::size_t SZ, std::size_t I>
-        inline void fill_styled_entries(std::array<T*, SZ>& entries, T& t) {
-            entries[I] = &t;
+    template<typename... Args>
+        inline auto styled_entries(const Style& style, Args&... args) {
+            return Styled_entries(style, Std_ext::make_pointers_array(args...));
         }
 
-    template<typename T, std::size_t SZ, std::size_t I, typename... Args>
-        inline void fill_styled_entries(std::array<T*, SZ>& entries, T& t, Args&... args) {
-            entries[I] = &t;
-            fill_styled_entries<T, SZ, I + 1>(entries, args...);
-        }
-
-    template<typename T, typename... Args, std::size_t SZ = sizeof...(Args) + 1>
-        inline auto styled_entries(const Style&& style, T& t, Args&... args) {
-            std::array<T*, SZ> entries;
-            fill_styled_entries<T, SZ, 0>(entries, t, args...);
-            return Styled_entries<T, SZ>(std::move(style), std::move(entries));
-        }
-
+    // todo remove
     template<typename It, typename... SES>
         void print(std::ostream& stream, const It& begin, const It& end, SES&&... styled_entries) {
             auto el = begin;
@@ -115,4 +104,33 @@ namespace Rich_text {
                 stream << " " << *el;
             }
         }
+
+    template<typename It>
+        class Sequence {
+            private:
+                const It begin_;
+                const It end_;
+            public:
+                Sequence(const It& begin, const It& end) 
+                    :begin_(begin), end_(end) 
+                {}
+                template<typename... ES>
+                    void print_with_styled_entry(std::ostream& stream, const Style& style, ES&... entries) {
+                        auto se = styled_entries(style, entries...);
+                        stream << *this;
+                    }
+                template<typename... SES>
+                    void print_with_styled_entries(std::ostream& stream, SES&&... styled_entries) {
+                        stream << *this;
+                    }
+                template<typename IIt>
+                    friend std::ostream& operator<<(std::ostream& stream, Sequence<IIt> seq) {
+                        auto el = seq.begin_;
+                        stream << *el;
+                        for (++el; el != seq.end_; ++el) {
+                            stream << " " << *el;
+                        }
+                        return stream;
+                    }
+        };
 }
