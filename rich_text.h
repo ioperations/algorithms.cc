@@ -95,16 +95,6 @@ namespace Rich_text {
             return Styled_entries(style, Std_ext::make_pointers_array(args...));
         }
 
-    // todo remove
-    template<typename It, typename... SES>
-        void print(std::ostream& stream, const It& begin, const It& end, SES&&... styled_entries) {
-            auto el = begin;
-            stream << *el;
-            for (++el; el != end; ++el) {
-                stream << " " << *el;
-            }
-        }
-
     template<typename It>
         class Sequence {
             private:

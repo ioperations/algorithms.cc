@@ -4,10 +4,10 @@ template<typename T>
 class Stack {
     private:
         struct Node {
-            T data_;
             Node* next_;
+            T data_;
             template<typename TT>
-                Node(TT& data, Node* next) :data_(data), next_(next) {}
+                Node(Node* next, TT&& data) :next_(next), data_(std::forward<TT>(data))  {}
         };
         Node* head_;
         template<typename TT>
@@ -25,7 +25,11 @@ class Stack {
         }
         template<typename TT>
             void push(TT&& data) {
-                head_ = new Node(data, head_);
+                head_ = new Node(head_, std::forward<TT>(data));
+            }
+        template<typename... Args>
+            void emplace(Args&&... args) {
+                head_ = new Node(head_, T(std::forward<Args>(args)...));
             }
         T pop() {
             Node* node = head_;

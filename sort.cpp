@@ -5,9 +5,9 @@
 #include "array.h"
 #include "forward_list.h"
 #include "rich_text.h"
-#include "box_drawing_chars.h"
-#include "string_utils.h"
 #include "stopwatch.h"
+#include "stack.h"
+#include "pair.h"
 
 using Style = Rich_text::Style;
 
@@ -181,6 +181,48 @@ void do_quick_sort(const It& begin, const It& end, Iteration_printer<It>& ip) {
     do_quick_sort(i + 1, end, ip); 
 }
 
+template<typename It>
+void quick_sort_stack(const It& begin, const It& end, bool verbose = true) {
+    Iteration_printer<It> ip(begin, end, verbose);
+    ip.print_with_styled_entries();
+
+    struct Interval {
+        It begin_;
+        It end_;
+        int depth_;
+        Interval(const It& begin, const It& end, int depth) 
+            :begin_(begin), end_(end), depth_(depth) 
+        {}
+        bool operator<(const Interval& o) {
+            return end_ - begin_ < o.end_ - o.begin_;
+        }
+    };
+
+    Stack<Interval> stack;
+    auto push = [&stack](auto interval) {
+        if (interval.begin_ < interval.end_)
+            stack.push(interval);
+    };
+    push(Interval(begin, end, 1));
+    int max_depth = 0;
+    while (!stack.empty()) {
+        auto interval = stack.pop();
+        auto i = partition(interval.begin_, interval.end_, ip);
+
+        ip.print_with_styled_entries(
+            Rich_text::styled_entries(Style::bold(), *interval.begin_, *(interval.end_ - 1)),
+            Rich_text::styled_entries(Style::red_bg(), *i));
+
+        Interval i1(interval.begin_, i, interval.depth_ + 1);
+        Interval i2(i + 1, interval.end_, interval.depth_ + 1);
+        compare_and_swap(i1, i2);
+        push(i2);
+        push(i1);
+        max_depth = std::max(max_depth, interval.depth_);
+    };
+    std::cout << "stack depth: " << max_depth << std::endl;
+}
+
 template<typename C, typename S>
 void sort(std::string&& label, const C& container, S sorter) {
     std::cout << label << " sort" << std::endl;
@@ -221,18 +263,30 @@ int main(int argc, const char** argv) {
     sort("array insertion", array, insertion_sort<Array_iterator>);
     sort("array shell", array, shell_sort<Array_iterator>);
     sort("array quick", array, quick_sort<Array_iterator>);
+    sort("array stack quick", array, quick_sort_stack<Array_iterator>);
 
     {
         int count = 10'000;
         if (argc > 1)
             count = atoi(argv[1]);
+        std::cout << "items cout: " << count << std::endl;
         auto a = Random_sequence_generator(300, 0, count).generate_array<Array<Entry>>();
 
+        auto sorted = a;
+        quick_sort_stack(sorted.begin(), sorted.end(), false);
+
         sort_and_measure("buble sort", a, buble_sort<Array_iterator>);
+        sort_and_measure("buble sort (sorted)", sorted, buble_sort<Array_iterator>);
         sort_and_measure("selection sort", a, selection_sort<Array_iterator>);
         sort_and_measure("insertion sort", a, insertion_sort<Array_iterator>);
+        sort_and_measure("insertion sort (sorted)", sorted, insertion_sort<Array_iterator>);
         sort_and_measure("shell sort", a, shell_sort<Array_iterator>);
+        
         sort_and_measure("quick sort", a, quick_sort<Array_iterator>);
+        sort_and_measure("quick sort (sorted)", sorted, quick_sort<Array_iterator>);
+        
+        sort_and_measure("stack quick sort", a, quick_sort_stack<Array_iterator>);
+        sort_and_measure("stack quick sort (sorted)", sorted, quick_sort_stack<Array_iterator>);
     }
 
 }
