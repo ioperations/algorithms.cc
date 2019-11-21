@@ -182,28 +182,28 @@ void do_quick_sort(const It& begin, const It& end, Iteration_printer<It>& ip) {
 }
 
 template<typename It>
+struct Quick_sort_frame {
+    It begin_;
+    It end_;
+    int depth_;
+    Quick_sort_frame(const It& begin, const It& end, int depth) 
+        :begin_(begin), end_(end), depth_(depth) 
+    {}
+    bool operator<(const Quick_sort_frame& o) {
+        return end_ - begin_ < o.end_ - o.begin_;
+    }
+};
+
+template<typename It>
 void quick_sort_stack(const It& begin, const It& end, bool verbose = true) {
     Iteration_printer<It> ip(begin, end, verbose);
     ip.print_with_styled_entries();
-
-    struct Interval {
-        It begin_;
-        It end_;
-        int depth_;
-        Interval(const It& begin, const It& end, int depth) 
-            :begin_(begin), end_(end), depth_(depth) 
-        {}
-        bool operator<(const Interval& o) {
-            return end_ - begin_ < o.end_ - o.begin_;
-        }
-    };
-
-    Stack<Interval> stack;
+    Stack<Quick_sort_frame<It>> stack;
     auto push = [&stack](auto interval) {
         if (interval.begin_ < interval.end_)
             stack.push(interval);
     };
-    push(Interval(begin, end, 1));
+    push(Quick_sort_frame<It>(begin, end, 1));
     int max_depth = 0;
     while (!stack.empty()) {
         auto interval = stack.pop();
@@ -213,14 +213,66 @@ void quick_sort_stack(const It& begin, const It& end, bool verbose = true) {
             Rich_text::styled_entries(Style::bold(), *interval.begin_, *(interval.end_ - 1)),
             Rich_text::styled_entries(Style::red_bg(), *i));
 
-        Interval i1(interval.begin_, i, interval.depth_ + 1);
-        Interval i2(i + 1, interval.end_, interval.depth_ + 1);
-        compare_and_swap(i1, i2);
-        push(i2);
-        push(i1);
+        Quick_sort_frame<It> f1(interval.begin_, i, interval.depth_ + 1);
+        Quick_sort_frame<It> f2(i + 1, interval.end_, interval.depth_ + 1);
+        compare_and_swap(f1, f2);
+        push(f2);
+        push(f1);
         max_depth = std::max(max_depth, interval.depth_);
     };
     std::cout << "stack depth: " << max_depth << std::endl;
+}
+
+template<typename It>
+void median_of_three_quick_sort(const It& begin, const It& end, Iteration_printer<It>& ip) {
+    if (end - begin > 11) {
+        ip.print_with_styled_entries();
+        std::swap(*(begin + (end - begin) / 2), *(end - 2));
+        compare_and_swap(*begin, *(end - 2));
+        compare_and_swap(*begin, *(end - 1));
+        compare_and_swap(*(end - 1), *(end - 2));
+
+        auto i = partition(begin + 1, end, ip);
+        median_of_three_quick_sort(begin, i, ip);
+        median_of_three_quick_sort(i + 1, end, ip);
+    }
+}
+
+template<typename It>
+void hybrid_sort(const It& begin, const It& end, bool verbose = false) {
+    Iteration_printer ip(begin, end, verbose);
+    median_of_three_quick_sort(begin, end, ip);
+    insertion_sort(begin, end, verbose);
+}
+
+template<typename It>
+void non_recursive_hybrid_sort(const It& begin, const It& end, bool verbose = false) {
+    Iteration_printer ip(begin, end, verbose);
+    Stack<Quick_sort_frame<It>> stack;
+    auto push = [&stack](auto f) {
+        if (f.end_ - f.begin_ > 11)
+            stack.push(f);
+    };
+    push(Quick_sort_frame<It>(begin, end, 1));
+    int max_depth = 0;
+    while (!stack.empty()) {
+        ip.print_with_styled_entries();
+        auto interval = stack.pop();
+        std::swap(*(interval.begin_ + (interval.end_ - interval.begin_) / 2), *(interval.end_ - 2));
+        compare_and_swap(*interval.begin_, *(interval.end_ - 2));
+        compare_and_swap(*interval.begin_, *(interval.end_ - 1));
+        compare_and_swap(*(interval.end_ - 1), *(interval.end_ - 2));
+
+        auto i = partition(interval.begin_ + 1, interval.end_, ip);
+        Quick_sort_frame<It> f1(interval.begin_, i, interval.depth_ + 1);
+        Quick_sort_frame<It> f2(i + 1, interval.end_, interval.depth_ + 1);
+        compare_and_swap(f1, f2);
+        push(f2);
+        push(f1);
+        max_depth = std::max(max_depth, interval.depth_);
+    }
+    std::cout << "stack depth: " << max_depth << std::endl;
+    insertion_sort(begin, end, verbose);
 }
 
 template<typename C, typename S>
@@ -264,6 +316,8 @@ int main(int argc, const char** argv) {
     sort("array shell", array, shell_sort<Array_iterator>);
     sort("array quick", array, quick_sort<Array_iterator>);
     sort("array stack quick", array, quick_sort_stack<Array_iterator>);
+    sort("hybrid", array, hybrid_sort<Array_iterator>);
+    sort("non-recursive hybrid", array, non_recursive_hybrid_sort<Array_iterator>);
 
     {
         int count = 10'000;
@@ -277,9 +331,12 @@ int main(int argc, const char** argv) {
 
         sort_and_measure("buble sort", a, buble_sort<Array_iterator>);
         sort_and_measure("buble sort (sorted)", sorted, buble_sort<Array_iterator>);
+
         sort_and_measure("selection sort", a, selection_sort<Array_iterator>);
+
         sort_and_measure("insertion sort", a, insertion_sort<Array_iterator>);
         sort_and_measure("insertion sort (sorted)", sorted, insertion_sort<Array_iterator>);
+
         sort_and_measure("shell sort", a, shell_sort<Array_iterator>);
         
         sort_and_measure("quick sort", a, quick_sort<Array_iterator>);
@@ -287,6 +344,12 @@ int main(int argc, const char** argv) {
         
         sort_and_measure("stack quick sort", a, quick_sort_stack<Array_iterator>);
         sort_and_measure("stack quick sort (sorted)", sorted, quick_sort_stack<Array_iterator>);
+
+        sort_and_measure("hybrid sort", a, hybrid_sort<Array_iterator>);
+        sort_and_measure("hybrid quick sort (sorted)", sorted, hybrid_sort<Array_iterator>);
+
+        sort_and_measure("non-recursive hybrid sort", a, non_recursive_hybrid_sort<Array_iterator>);
+        sort_and_measure("non-recurseve hybrid quick sort (sorted)", sorted, non_recursive_hybrid_sort<Array_iterator>);
     }
 
 }
