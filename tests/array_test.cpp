@@ -59,3 +59,8 @@ TEST(Array_test, bool_specialization) {
     ASSERT_EQ("0 1 0 1 ", to_string_const(a));
 }
 
+TEST(Array_test, initializer_list) {
+    Array<int> a{1, 2, 3, 4, 5};
+    ASSERT_EQ("1 2 3 4 5 ", to_string(a));
+}
+

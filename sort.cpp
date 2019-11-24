@@ -169,13 +169,19 @@ void quick_sort(const It& begin, const It& end, bool verbose = true) {
 }
 
 template<typename It>
+void print_quick_sort_partition_points(Iteration_printer<It>& ip, 
+                                       const It& begin, const It& end, const It& i) {
+    ip.print_with_styled_entries(
+        Rich_text::styled_entries(Style::bold(), *begin, *(end - 1)),
+        Rich_text::styled_entries(Style::red_bg(), *i));
+}
+
+template<typename It>
 void do_quick_sort(const It& begin, const It& end, Iteration_printer<It>& ip) {
     if (end <= begin) return;
     auto i = partition(begin, end, ip);
 
-    ip.print_with_styled_entries(
-        Rich_text::styled_entries(Style::bold(), *begin, *(end - 1)),
-        Rich_text::styled_entries(Style::red_bg(), *i));
+    print_quick_sort_partition_points(ip, begin, end, i);
 
     do_quick_sort(begin, i, ip);
     do_quick_sort(i + 1, end, ip); 
@@ -209,9 +215,7 @@ void quick_sort_stack(const It& begin, const It& end, bool verbose = true) {
         auto interval = stack.pop();
         auto i = partition(interval.begin_, interval.end_, ip);
 
-        ip.print_with_styled_entries(
-            Rich_text::styled_entries(Style::bold(), *interval.begin_, *(interval.end_ - 1)),
-            Rich_text::styled_entries(Style::red_bg(), *i));
+        print_quick_sort_partition_points(ip, interval.begin_, interval.end_, i);
 
         Quick_sort_frame<It> f1(interval.begin_, i, interval.depth_ + 1);
         Quick_sort_frame<It> f2(i + 1, interval.end_, interval.depth_ + 1);
@@ -258,12 +262,24 @@ void non_recursive_hybrid_sort(const It& begin, const It& end, bool verbose = fa
     while (!stack.empty()) {
         ip.print_with_styled_entries();
         auto interval = stack.pop();
-        std::swap(*(interval.begin_ + (interval.end_ - interval.begin_) / 2), *(interval.end_ - 2));
-        compare_and_swap(*interval.begin_, *(interval.end_ - 2));
-        compare_and_swap(*interval.begin_, *(interval.end_ - 1));
-        compare_and_swap(*(interval.end_ - 1), *(interval.end_ - 2));
+        auto first = interval.begin_ + 1;
+        auto middle = interval.begin_ + (interval.end_ - interval.begin_) / 2;
+        auto last_but_one = interval.end_ - 2;
+        auto last = interval.end_ - 1;
+        auto print_ = [&ip, &first, &middle, &last_but_one, &last]() {
+            ip.print_with_styled_entry(Style::red_bg(), *first, *middle,
+                                       *last_but_one, *last);
+        };
+        print_();
 
-        auto i = partition(interval.begin_ + 1, interval.end_, ip);
+        std::swap(*middle, *last_but_one);
+        compare_and_swap(*interval.begin_, *last_but_one);
+        compare_and_swap(*interval.begin_, *last);
+        compare_and_swap(*last, *last_but_one);
+        print_();
+
+        auto i = partition(first, interval.end_, ip);
+        print_quick_sort_partition_points(ip, first, last, i);
         Quick_sort_frame<It> f1(interval.begin_, i, interval.depth_ + 1);
         Quick_sort_frame<It> f2(i + 1, interval.end_, interval.depth_ + 1);
         compare_and_swap(f1, f2);
@@ -294,6 +310,41 @@ void sort_and_measure(std::string&& label, const C& container, S sorter) {
     sort(label + " (sorted)");
 }
 
+template<typename It>
+void merge(const It& b, const It& m, const It& e, const It& b_aux) {
+    using index_type = decltype(e - b);
+    index_type i, j, r = e - b - 1, middle = m - b;
+    for (i = middle + 1; i > 0; --i)
+        *(b_aux + i - 1) = std::move(*(b + i - 1));
+    for (j = middle; j < r; ++j)
+        *(b_aux + r + middle - j) = std::move(*(b + j + 1));
+
+    for (auto it = b; it != e; ++it)
+        if (*(b_aux + i) < *(b_aux + j))
+            *it = std::move(*(b_aux + i++));
+        else
+            *it = std::move(*(b_aux + j--));
+}
+
+template<typename It>
+void do_merge_sort(const It& b, const It& e, const It& b_aux) {
+    if (e > b + 1) {
+        auto m = b + ((e - b - 1) / 2);
+        do_merge_sort(b, m + 1, b_aux);
+        do_merge_sort(m + 1, e, b_aux);
+        merge(b, m, e, b_aux);
+    }
+}
+
+template<typename It>
+void merge_sort(const It& b, const It& e, bool verbose = false) {
+    Array<typename std::iterator_traits<It>::value_type> aux(e - b);
+    Iteration_printer ip(b, e, verbose);
+    ip.print_with_styled_entries();
+    do_merge_sort(b, e, aux.begin());
+    ip.print_with_styled_entries();
+}
+
 int main(int argc, const char** argv) {
     using Entry = Rich_text::Entry<int>;
     Array<Entry> array(15);
@@ -322,7 +373,7 @@ int main(int argc, const char** argv) {
     sort("array stack quick", array, quick_sort_stack<Array_iterator>);
     sort("hybrid", array, hybrid_sort<Array_iterator>);
     sort("non-recursive hybrid", array, non_recursive_hybrid_sort<Array_iterator>);
-
+    sort("merge", array, merge_sort<Array_iterator>);
     {
         int count = 10'000;
         if (argc > 1)
@@ -338,6 +389,7 @@ int main(int argc, const char** argv) {
         sort_and_measure("stack quick sort", a, quick_sort_stack<Array_iterator>);
         sort_and_measure("hybrid sort", a, hybrid_sort<Array_iterator>);
         sort_and_measure("non-recursive hybrid sort", a, non_recursive_hybrid_sort<Array_iterator>);
+        sort_and_measure("merge sort", a, merge_sort<Array_iterator>);
     }
 
 }
