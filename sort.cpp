@@ -320,18 +320,19 @@ void merge(const It& b, const It& m, const It& e, const It& b_aux) {
         *(b_aux + r + middle - j) = std::move(*(b + j + 1));
 
     for (auto it = b; it != e; ++it)
-        if (*(b_aux + i) < *(b_aux + j))
-            *it = std::move(*(b_aux + i++));
-        else
+        if (*(b_aux + j) < *(b_aux + i))
             *it = std::move(*(b_aux + j--));
+        else
+            *it = std::move(*(b_aux + i++));
 }
 
 template<typename It>
-void do_merge_sort(const It& b, const It& e, const It& b_aux) {
+void do_merge_sort(const It& b, const It& e, const It& b_aux, Iteration_printer<It>& ip) {
     if (e > b + 1) {
         auto m = b + ((e - b - 1) / 2);
-        do_merge_sort(b, m + 1, b_aux);
-        do_merge_sort(m + 1, e, b_aux);
+        print_quick_sort_partition_points(ip, b, e, m);
+        do_merge_sort(b, m + 1, b_aux, ip);
+        do_merge_sort(m + 1, e, b_aux, ip);
         merge(b, m, e, b_aux);
     }
 }
@@ -340,8 +341,75 @@ template<typename It>
 void merge_sort(const It& b, const It& e, bool verbose = false) {
     Array<typename std::iterator_traits<It>::value_type> aux(e - b);
     Iteration_printer ip(b, e, verbose);
+    do_merge_sort(b, e, aux.begin(), ip);
     ip.print_with_styled_entries();
-    do_merge_sort(b, e, aux.begin());
+}
+
+template<typename It>
+void print_seq(const It& b, const It& e) {
+    for (auto item = b; item != e; ++item)
+        std::cout << *item << " ";
+    std::cout << std::endl;
+}
+
+template<typename It>
+void stable_merge(const It& b, const It& m, const It& e, const It& b_aux, Iteration_printer<It>& ip) {
+    using index_type = decltype(e - b);
+    for (index_type i = 0; i < e - b; ++i)
+        *(b_aux + i) = std::move(*(b + i));
+
+    auto item = b, l_aux = b_aux, m_aux = b_aux + (m - b), r_aux = m_aux, e_aux = b_aux + (e - b);
+
+    while (item != e) {
+        if (l_aux == m_aux)
+            *item = std::move(*r_aux++);
+        else if (r_aux == e_aux)
+            *item = std::move(*l_aux++);
+        else {
+            if (*r_aux < *l_aux)
+                *item = std::move(*r_aux++);
+            else
+                *item = std::move(*l_aux++);
+        }
+        ++item;
+    }
+}
+
+template<typename It>
+void do_stable_merge_sort(const It& b, const It& e, const It& b_aux, Iteration_printer<It>& ip) {
+    if (e > b + 1) {
+        auto m = b + (e - b) / 2;
+        print_quick_sort_partition_points(ip, b, e, m);
+        do_stable_merge_sort(b, m, b_aux, ip);
+        do_stable_merge_sort(m, e, b_aux, ip);
+        stable_merge(b, m, e, b_aux, ip);
+    }
+}
+
+template<typename It>
+void stable_merge_sort(const It& b, const It& e, bool verbose = false) {
+    Array<typename std::iterator_traits<It>::value_type> aux(e - b);
+    Iteration_printer ip(b, e, verbose);
+    do_stable_merge_sort(b, e, aux.begin(), ip);
+    ip.print_with_styled_entries();
+}
+
+template<typename It>
+void non_recursive_merge_sort(const It& begin, const It& end, bool verbose = false) {
+    using index_type = decltype(end - begin);
+    Array<typename std::iterator_traits<It>::value_type> aux(end - begin);
+    Iteration_printer ip(begin, end, verbose);
+    ip.print_with_styled_entries();
+    auto r = end - begin - 1;
+    for (index_type mm = 1; mm <= r; mm += mm)
+        for (index_type i = 0; i <= r - mm; i += mm + mm) {
+            auto b = begin + i;
+            auto m = begin + i + mm;
+            auto e = begin + std::min(i + mm + mm, r + 1);
+            print_quick_sort_partition_points(ip, b, e, m);
+            stable_merge(b, m, e, aux.begin(), ip);
+        }
+
     ip.print_with_styled_entries();
 }
 
@@ -374,6 +442,9 @@ int main(int argc, const char** argv) {
     sort("hybrid", array, hybrid_sort<Array_iterator>);
     sort("non-recursive hybrid", array, non_recursive_hybrid_sort<Array_iterator>);
     sort("merge", array, merge_sort<Array_iterator>);
+    sort("stable merge", array, stable_merge_sort<Array_iterator>);
+    sort("non-recursive merge", array, non_recursive_merge_sort<Array_iterator>);
+
     {
         int count = 10'000;
         if (argc > 1)
@@ -390,6 +461,8 @@ int main(int argc, const char** argv) {
         sort_and_measure("hybrid sort", a, hybrid_sort<Array_iterator>);
         sort_and_measure("non-recursive hybrid sort", a, non_recursive_hybrid_sort<Array_iterator>);
         sort_and_measure("merge sort", a, merge_sort<Array_iterator>);
+        sort_and_measure("stable merge sort", a, stable_merge_sort<Array_iterator>);
+        sort_and_measure("non-recursive merge sort", a, non_recursive_merge_sort<Array_iterator>);
     }
 
 }
