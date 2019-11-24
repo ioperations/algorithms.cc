@@ -98,9 +98,16 @@ namespace Rich_text {
     template<typename It>
         class Sequence {
             private:
-                const It begin_;
-                const It end_;
-            protected:
+                It begin_;
+                It end_;
+            public:
+                Sequence(const It& begin, const It& end) 
+                    :begin_(begin), end_(end) 
+                {}
+                void reset(const It& begin, const It& end) {
+                    begin_ = begin;
+                    end_ = end;
+                }
                 void print(std::ostream& stream) {
                     auto el = begin_;
                     stream << *el;
@@ -108,10 +115,6 @@ namespace Rich_text {
                         stream << " " << *el;
                     }
                 }
-            public:
-                Sequence(const It& begin, const It& end) 
-                    :begin_(begin), end_(end) 
-                {}
                 template<typename... ES>
                     void print_with_styled_entry(std::ostream& stream, const Style& style, ES&... entries) {
                         auto se = styled_entries(style, entries...);
@@ -129,5 +132,7 @@ namespace Rich_text {
                     void print_with_styled_entries(SES&&... styled_entries) {
                         print_with_styled_entries(std::cout, std::forward<SES>(styled_entries)...);
                     }
+                const It& begin() { return begin_; }
+                const It& end() { return end_; }
         };
 }

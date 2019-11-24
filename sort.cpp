@@ -34,6 +34,9 @@ class Iteration_printer : protected Rich_text::Sequence<It> {
         Iteration_printer(const It& begin, const It& end, bool verbose) 
             :Base(begin, end), verbose_(verbose)
         {}
+        void reset(const It& begin) {
+            Base::reset(begin, begin + (Base::end() - Base::begin()));
+        }
         template<typename... ES>
             void print_with_styled_entry(const Style& style, ES&... entries) {
                 if (verbose_) {
@@ -352,64 +355,69 @@ void print_seq(const It& b, const It& e) {
     std::cout << std::endl;
 }
 
-template<typename It>
-void stable_merge(const It& b, const It& m, const It& e, const It& b_aux, Iteration_printer<It>& ip) {
-    using index_type = decltype(e - b);
-    for (index_type i = 0; i < e - b; ++i)
-        *(b_aux + i) = std::move(*(b + i));
-
-    auto item = b, l_aux = b_aux, m_aux = b_aux + (m - b), r_aux = m_aux, e_aux = b_aux + (e - b);
-
-    while (item != e) {
-        if (l_aux == m_aux)
-            *item = std::move(*r_aux++);
-        else if (r_aux == e_aux)
-            *item = std::move(*l_aux++);
-        else {
-            if (*r_aux < *l_aux)
-                *item = std::move(*r_aux++);
-            else
-                *item = std::move(*l_aux++);
-        }
-        ++item;
+template<typename It, typename In>
+void stable_merge(const It& b, const It& b_aux, In l, In m, In r) {
+    In i = l, j = m + 1;
+    for (In k = l; k <= r; ++k) {
+        auto add = [&](auto& index) { *(b + k) = std::move(*(b_aux + index++)); };
+        if (i == m + 1)
+            add(j);
+        else if (j == r + 1)
+            add(i);
+        else if (*(b_aux + j) < *(b_aux + i))
+            add(j);
+        else
+            add(i);
     }
 }
 
-template<typename It>
-void do_stable_merge_sort(const It& b, const It& e, const It& b_aux, Iteration_printer<It>& ip) {
-    if (e > b + 1) {
-        auto m = b + (e - b) / 2;
-        print_quick_sort_partition_points(ip, b, e, m);
-        do_stable_merge_sort(b, m, b_aux, ip);
-        do_stable_merge_sort(m, e, b_aux, ip);
-        stable_merge(b, m, e, b_aux, ip);
+template<typename It, typename In>
+void do_stable_merge_sort(const It& b, const It& b_aux, In l, In r,
+                          Iteration_printer<It>& ip) {
+    if (l < r) {
+        In m = (l + r) / 2;
+        ip.reset(b);
+        print_quick_sort_partition_points(ip, b + l, b + r + 1, b + m);
+        do_stable_merge_sort(b_aux, b, l, m, ip);
+        do_stable_merge_sort(b_aux, b, m + 1, r, ip);
+        stable_merge(b, b_aux, l, m, r);
     }
 }
 
 template<typename It>
 void stable_merge_sort(const It& b, const It& e, bool verbose = false) {
     Array<typename std::iterator_traits<It>::value_type> aux(e - b);
+    for (decltype(e - b) i = 0; i < e - b; ++i)
+        aux[i] = std::move(*(b + i));
     Iteration_printer ip(b, e, verbose);
-    do_stable_merge_sort(b, e, aux.begin(), ip);
+    ip.print_with_styled_entries();
+    do_stable_merge_sort(b, aux.begin(), static_cast<decltype(e - b)>(0), e - b - 1, ip);
     ip.print_with_styled_entries();
 }
 
 template<typename It>
-void non_recursive_merge_sort(const It& begin, const It& end, bool verbose = false) {
-    using index_type = decltype(end - begin);
-    Array<typename std::iterator_traits<It>::value_type> aux(end - begin);
-    Iteration_printer ip(begin, end, verbose);
-    ip.print_with_styled_entries();
-    auto r = end - begin - 1;
-    for (index_type mm = 1; mm <= r; mm += mm)
-        for (index_type i = 0; i <= r - mm; i += mm + mm) {
-            auto b = begin + i;
-            auto m = begin + i + mm;
-            auto e = begin + std::min(i + mm + mm, r + 1);
-            print_quick_sort_partition_points(ip, b, e, m);
-            stable_merge(b, m, e, aux.begin(), ip);
-        }
+void non_recursive_merge_sort(const It& b, const It& e, bool verbose = false) {
+    Array<typename std::iterator_traits<It>::value_type> aux(e - b);
+    for (decltype(e - b) i = 0; i < e - b; ++i)
+        aux[i] = std::move(*(b + i));
+    auto bb = b;
+    auto b_aux = aux.begin();
 
+    Iteration_printer ip(b, e, verbose);
+
+    using index_type = decltype(e - b);
+    auto r = e - b - 1;
+    for (index_type step = 2; step <= r; step *= 2) {
+        for (index_type l = 0; l <= r; l += step) {
+            auto rr = std::min(r, l + step - 1);
+            auto m = (l + rr) / 2;
+            print_quick_sort_partition_points(ip, bb + l, bb + rr + 1, bb + m);
+            stable_merge(bb, b_aux, l, m, rr);
+        }
+        std::swap(bb, b_aux);
+        ip.reset(bb);
+    }
+    ip.reset(b);
     ip.print_with_styled_entries();
 }
 
