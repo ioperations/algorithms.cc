@@ -69,12 +69,10 @@ class Forward_list {
                 List(Node* head, size_t length) :head_(head), length_(length) {}
             };
             List l(head_, 0);
-            head_ = nullptr;
-            tail_ = nullptr;
             for (Node* node = l.head_; node; node = node->next_)
                 ++l.length_;
 
-            struct {
+            static struct {
                 List merge(const List& l1, const List& l2) {
                     Node* n1 = l1.head_;
                     Node* n2 = l2.head_;

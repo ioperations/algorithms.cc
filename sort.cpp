@@ -7,7 +7,6 @@
 #include "rich_text.h"
 #include "stopwatch.h"
 #include "stack.h"
-#include "pair.h"
 
 using Style = Rich_text::Style;
 
@@ -155,7 +154,7 @@ auto partition(const It& begin, const It& end, Iteration_printer<It>& ip) {
     auto& v = *last;
     for (;;) {
         while (*++i < v);
-        while (v < *--j && j != begin);
+        while (j != begin && v < *--j);
         ip.print_with_styled_entry(Style::bold(), *i, *j);
         if (i >= j) break;
         std::swap(*i, *j);
@@ -437,7 +436,6 @@ int main(int argc, const char** argv) {
                 list.emplace_back(value);
             }
         }
-
 
         sort("array bubble", array, buble_sort<Array_iterator>);
         sort("forward list bubble", list, buble_sort<List_iterator>);
