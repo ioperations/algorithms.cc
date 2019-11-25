@@ -66,3 +66,18 @@ TEST(Forward_list_test, pop_front) {
     ASSERT_EQ("10 11 12 ", to_string(list));
 }
 
+TEST(Forward_list_test, merge_sort) {
+    Forward_list<int> list{5, 3, 1, 4, 2};
+    ASSERT_EQ("5 3 1 4 2 ", to_string(list));
+    list.merge_sort();
+    ASSERT_EQ("1 2 3 4 5 ", to_string(list));
+
+    list = {1};
+    list.merge_sort();
+    ASSERT_EQ("1 ", to_string(list));
+
+    list = {};
+    list.merge_sort();
+    ASSERT_EQ("", to_string(list));
+}
+

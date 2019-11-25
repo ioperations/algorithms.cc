@@ -34,6 +34,11 @@ class Forward_list {
 
         Forward_list() :head_(nullptr), tail_(nullptr) {};
 
+        Forward_list(const std::initializer_list<T>& i_list) :Forward_list() {
+            for (auto& item : i_list)
+                push_back(item);
+        }
+
         Forward_list(const Forward_list& o) :Forward_list() {
             add_all(o);
         }
@@ -54,6 +59,63 @@ class Forward_list {
         }
 
         ~Forward_list() { remove_nodes(); }
+
+        void merge_sort() {
+            if (!head_ || head_ == tail_)
+                return;
+            struct List {
+                Node* head_;
+                size_t length_ = 0;
+                List(Node* head, size_t length) :head_(head), length_(length) {}
+            };
+            List l(head_, 0);
+            head_ = nullptr;
+            tail_ = nullptr;
+            for (Node* node = l.head_; node; node = node->next_)
+                ++l.length_;
+
+            struct {
+                List merge(const List& l1, const List& l2) {
+                    Node* n1 = l1.head_;
+                    Node* n2 = l2.head_;
+                    auto append_node = [&n1, &n2]() {
+                        Node* n;
+                        if (n2->value_ < n1->value_) {
+                            n = n2; n2 = n2->next_;
+                        } else {
+                            n = n1; n1 = n1->next_;
+                        }
+                        return n;
+                    };
+                    List l(append_node(), l1.length_ + l2.length_);
+                    Node* n = l.head_;
+                    while (n1 && n2)
+                        n = (n->next_ = append_node());
+                    if (n1)
+                        n->next_ = n1;
+                    else
+                        n->next_ = n2;
+                    return l;
+                }
+                List merge_sort(List& l1) {
+                    if (l1.length_ > 1) {
+                        size_t length = 0;
+                        Node* node = l1.head_;
+                        for (; length < l1.length_ / 2 - 1; ++length)
+                            node = node->next_;
+                        ++length;
+                        List l2(node->next_, l1.length_ - length);
+                        node->next_ = nullptr;
+                        l1.length_ = length;
+                        l1 = merge(merge_sort(l1), merge_sort(l2));
+                    }
+                    return l1;
+                }
+            } helper;
+            l = helper.merge_sort(l);
+            head_ = l.head_;
+            for (tail_ = l.head_; tail_->next_; tail_ = tail_->next_);
+        }
 
         template<typename... Args>
             void emplace_back(Args&&... args) {

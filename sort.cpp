@@ -423,54 +423,66 @@ void non_recursive_merge_sort(const It& b, const It& e, bool verbose = false) {
 
 int main(int argc, const char** argv) {
     using Entry = Rich_text::Entry<int>;
-    Array<Entry> array(15);
-    Forward_list<Entry> list;
-    {
-        Random_sequence_generator generator(300, 10, 99);
-        for (auto& e : array) {
-            int value = generator.generate();
-            e.value_ = value;
-            list.emplace_back(value);
-        }
-    }
-
     using Array_iterator = Array<Entry>::iterator;
     using List_iterator = Forward_list<Entry>::iterator;
 
-    sort("array bubble", array, buble_sort<Array_iterator>);
-    sort("forward list bubble", list, buble_sort<List_iterator>);
+    {
+        Array<Entry> array(15);
+        Forward_list<Entry> list;
+        {
+            Random_sequence_generator generator(300, 10, 99);
+            for (auto& e : array) {
+                int value = generator.generate();
+                e.value_ = value;
+                list.emplace_back(value);
+            }
+        }
 
-    sort("array selection", array, selection_sort<Array_iterator>);
-    sort("forward list selection", list, selection_sort<List_iterator>);
 
-    sort("array insertion", array, insertion_sort<Array_iterator>);
-    sort("array shell", array, shell_sort<Array_iterator>);
-    sort("array quick", array, quick_sort<Array_iterator>);
-    sort("array stack quick", array, quick_sort_stack<Array_iterator>);
-    sort("hybrid", array, hybrid_sort<Array_iterator>);
-    sort("non-recursive hybrid", array, non_recursive_hybrid_sort<Array_iterator>);
-    sort("merge", array, merge_sort<Array_iterator>);
-    sort("stable merge", array, stable_merge_sort<Array_iterator>);
-    sort("non-recursive merge", array, non_recursive_merge_sort<Array_iterator>);
+        sort("array bubble", array, buble_sort<Array_iterator>);
+        sort("forward list bubble", list, buble_sort<List_iterator>);
+
+        sort("array selection", array, selection_sort<Array_iterator>);
+        sort("forward list selection", list, selection_sort<List_iterator>);
+
+        sort("array insertion", array, insertion_sort<Array_iterator>);
+        sort("array shell", array, shell_sort<Array_iterator>);
+        sort("array quick", array, quick_sort<Array_iterator>);
+        sort("array stack quick", array, quick_sort_stack<Array_iterator>);
+        sort("hybrid", array, hybrid_sort<Array_iterator>);
+        sort("non-recursive hybrid", array, non_recursive_hybrid_sort<Array_iterator>);
+        sort("merge", array, merge_sort<Array_iterator>);
+        sort("stable merge", array, stable_merge_sort<Array_iterator>);
+        sort("non-recursive merge", array, non_recursive_merge_sort<Array_iterator>);
+    }
 
     {
         int count = 10'000;
         if (argc > 1)
             count = atoi(argv[1]);
         std::cout << "items cout: " << count << std::endl;
-        auto a = Random_sequence_generator(300, 0, count).generate_array<Array<Entry>>();
+        auto array = Random_sequence_generator(300, 0, count).generate_array<Array<Entry>>();
+        Forward_list<Entry> list;
+        for (const auto& item : array)
+            list.push_back(item);
 
-        sort_and_measure("buble sort", a, buble_sort<Array_iterator>);
-        sort_and_measure("selection sort", a, selection_sort<Array_iterator>);
-        sort_and_measure("insertion sort", a, insertion_sort<Array_iterator>);
-        sort_and_measure("shell sort", a, shell_sort<Array_iterator>);
-        sort_and_measure("quick sort", a, quick_sort<Array_iterator>);
-        sort_and_measure("stack quick sort", a, quick_sort_stack<Array_iterator>);
-        sort_and_measure("hybrid sort", a, hybrid_sort<Array_iterator>);
-        sort_and_measure("non-recursive hybrid sort", a, non_recursive_hybrid_sort<Array_iterator>);
-        sort_and_measure("merge sort", a, merge_sort<Array_iterator>);
-        sort_and_measure("stable merge sort", a, stable_merge_sort<Array_iterator>);
-        sort_and_measure("non-recursive merge sort", a, non_recursive_merge_sort<Array_iterator>);
+        sort_and_measure("buble sort", array, buble_sort<Array_iterator>);
+        sort_and_measure("selection sort", array, selection_sort<Array_iterator>);
+        sort_and_measure("insertion sort", array, insertion_sort<Array_iterator>);
+        sort_and_measure("shell sort", array, shell_sort<Array_iterator>);
+        sort_and_measure("quick sort", array, quick_sort<Array_iterator>);
+        sort_and_measure("stack quick sort", array, quick_sort_stack<Array_iterator>);
+        sort_and_measure("hybrid sort", array, hybrid_sort<Array_iterator>);
+        sort_and_measure("non-recursive hybrid sort", array, non_recursive_hybrid_sort<Array_iterator>);
+        sort_and_measure("merge sort", array, merge_sort<Array_iterator>);
+        sort_and_measure("stable merge sort", array, stable_merge_sort<Array_iterator>);
+        sort_and_measure("non-recursive merge sort", array, non_recursive_merge_sort<Array_iterator>);
+
+        {
+            Stopwatch stopwatch;
+            list.merge_sort();
+            std::cout << "list merge sort took " << stopwatch.read_out() << " mls" << std::endl;
+        }
     }
 
 }
