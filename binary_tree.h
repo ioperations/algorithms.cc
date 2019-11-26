@@ -13,6 +13,10 @@ struct Binary_tree_node {
         :value_(value), l_(l), r_(r) 
     {}
     T value() const { return value_; }
+    Binary_tree_node(Binary_tree_node&& o) :l_(o.l_), r_(o.r_) {
+        o.l_ = nullptr;
+        o.r_ = nullptr;
+    }
     Binary_tree_node& operator=(Binary_tree_node&& o) {
         value_ = o.value_;
         std::swap(l_, o.l_);
