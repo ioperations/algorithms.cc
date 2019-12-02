@@ -120,17 +120,9 @@ namespace Rich_text {
                         auto se = styled_entries(style, entries...);
                         print(stream);
                     }
-                template<typename... ES>
-                    void print_with_styled_entry(const Style& style, ES&... entries) {
-                        print_with_styled_entry(std::cout, style, entries...);
-                    }
                 template<typename... SES>
                     void print_with_styled_entries(std::ostream& stream, SES&&... styled_entries) {
                         print(stream);
-                    }
-                template<typename... SES>
-                    void print_with_styled_entries(SES&&... styled_entries) {
-                        print_with_styled_entries(std::cout, std::forward<SES>(styled_entries)...);
                     }
                 const It& begin() { return begin_; }
                 const It& end() { return end_; }

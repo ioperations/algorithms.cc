@@ -39,14 +39,14 @@ class Iteration_printer : protected Rich_text::Sequence<It> {
         template<typename... ES>
             void print_with_styled_entry(const Style& style, ES&... entries) {
                 if (verbose_) {
-                    Base::print_with_styled_entry(style, entries...);
+                    Base::print_with_styled_entry(std::cout, style, entries...);
                     print_index();
                 }
             }
         template<typename... SES>
             void print_with_styled_entries(SES&&... styled_entries) {
                 if (verbose_) {
-                    Base::print_with_styled_entries(std::forward<SES>(styled_entries)...);
+                    Base::print_with_styled_entries(std::cout, std::forward<SES>(styled_entries)...);
                     print_index();
                 }
             }
