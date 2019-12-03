@@ -10,26 +10,18 @@ class Vector {
 
         T* array_;
         size_t array_size_;
-        size_t size_;
+        size_t size_; // todo size or current max index?
 
         Vector(size_t array_size, size_t size) 
             :array_(new T[array_size]), array_size_(array_size), size_(size) 
         {}
-
-        void grow(size_t size) {
-            array_size_ = size;
-            T* old_array = array_;
-            array_ = new T[array_size_];
-            for (size_t i = 0; i < size_; ++i)
-                array_[i] = std::move(old_array[i]);
-            delete[] old_array;
-        }
     public:
-        Vector(size_t size) :Vector(size, 0) {}
+        Vector(size_t size) :Vector(size, size) {}
         Vector() : Vector(DEFAULT_SIZE) {}
         Vector(std::initializer_list<T> i_list) :Vector(i_list.size()) {
+            size_t i = 0;
             for (auto& el : i_list)
-                array_[size_++] = std::move(el);
+                array_[i++] = std::move(el);
         }
         Vector(const Vector& o) :Vector(o.array_size_, o.size_) {
             for (size_t i = 0; i < size_; ++i)
@@ -61,7 +53,7 @@ class Vector {
 
         ~Vector() { delete[] array_; }
 
-        inline size_t size() { return size_; }
+        inline size_t size() const { return size_; }
 
         inline T* begin() { return array_; }
         inline T* end() { return array_ + size_; }
@@ -70,17 +62,22 @@ class Vector {
 
         template<typename TT>
         void push_back(TT&& t) {
-            if (size_ + 1 > array_size_)
-                grow(array_size_ * SIZE_MULTIPLIER);
+            if (size_ + 1 > array_size_) {
+                array_size_ *= SIZE_MULTIPLIER;
+                T* old_array = array_;
+                array_ = new T[array_size_];
+                for (size_t i = 0; i < size_; ++i)
+                    array_[i] = std::move(old_array[i]);
+                delete[] old_array;
+            }
             array_[size_++] = std::forward<TT>(t);
         }
 
         T& operator[](size_t i) {
-            if (i >= array_size_)
-                grow(i + DEFAULT_SIZE);
-            for (size_t j = size_; j < i + 1; ++j) 
-                array_[j] = T();
-            size_ = std::max(i + 1, size_);
+            return array_[i];
+        }
+
+        const T& operator[](size_t i) const {
             return array_[i];
         }
 
