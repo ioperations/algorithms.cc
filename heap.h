@@ -10,26 +10,40 @@ class Incomplete_tree_exception : public std::invalid_argument{
         Incomplete_tree_exception() :std::invalid_argument("incomplete tree") {}
 };
 
+template<typename A>
+void heap_fix_up(A& array_, size_t i) {
+    ++i;
+    for (; i > 1 && array_[i / 2 - 1] < array_[i - 1]; i /= 2)
+        std::swap(array_[i - 1], array_[i / 2 - 1]);
+}
+
+template<typename A>
+void heap_fix_down(A& a, size_t i, size_t size_) {
+    ++i;
+    while (i * 2 <= size_) {
+        size_t j = 2 * i;
+        if (j < size_ && a[j - 1] < a[j]) ++j;
+        if (a[i - 1] < a[j - 1])
+            std::swap(a[i - 1], a[j - 1]);
+        i = j;
+    }
+}
+
+template<typename It>
+void heap_sort(const It& begin, const It& end) {
+    for (size_t i = (end - begin) / 2 + 1; i > 0;) {
+        heap_fix_down(begin, i - 1, end - begin);
+        --i;
+    }
+    for (int n = end - begin - 1; n > 0; --n) {
+        std::swap(begin[0], begin[n]);
+        heap_fix_down(begin, 0, n);
+    }
+}
+
 template<typename T>
 class Heap {
     private:
-        void fix_up(size_t i) {
-            ++i;
-            for (; i > 1 && array_[i / 2 - 1] < array_[i - 1]; i /= 2)
-                std::swap(array_[i - 1], array_[i / 2 - 1]);
-        }
-        void fix_down(size_t i) {
-            ++i;
-            auto& a = array_;
-            while (i * 2 < size_) {
-                size_t j = 2 * i;
-                if (j <= size_ && a[j - 1] < a[j]) ++j;
-                if (a[i - 1] < a[j - 1]) {
-                    std::swap(a[i - 1], a[j - 1]);
-                    i = j;
-                }
-            }
-        }
 
         size_t array_size_;
         size_t size_;
@@ -41,6 +55,12 @@ class Heap {
             delete[] array_;
         }
 
+        Heap(const Heap&) = delete;
+        Heap& operator=(const Heap&) = delete;
+
+        Heap(Heap&& o) :array_size_(o.array_size_), size_(o.size_), array_(o.array_) {
+            o.array_ = nullptr;
+        }
         Heap& operator=(Heap&& o) {
             std::swap(array_size_, o.array_size_);
             std::swap(size_, o.size_);
@@ -62,17 +82,20 @@ class Heap {
                     array_ = new_array;
                 }
                 array_[size_] = std::forward<TT>(t);
-                fix_up(size_);
+                heap_fix_up(array_, size_);
                 ++size_;
             }
         T pop() {
             --size_;
             std::swap(array_[0], array_[size_]);
-            fix_down(0);
-            return array_[size_];
+            heap_fix_down(array_, 0, size_);
+            return std::move(array_[size_]);
         }
         inline bool empty() const {
             return size_ == 0;
+        }
+        inline size_t size() const {
+            return size_;
         }
 };
 
@@ -103,7 +126,7 @@ Heap<T>::Heap(const Binary_tree_node<T>& root) :array_size_(0), size_(0) {
     for (size_t index = 0; !queue.empty(); ++index) {
         auto node = queue.pop_front();
         array_[index] = node->value_;
-        fix_up(index);
+        heap_fix_up(array_, index);
         if (node->l_)
             queue.push_back(node->l_);
         if (node->r_)
@@ -134,3 +157,4 @@ template<typename T>
 std::ostream& operator<<(std::ostream& stream, const Heap<T>& heap) {
     return stream << heap.to_tree() << std::endl;
 }
+

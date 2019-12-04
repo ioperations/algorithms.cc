@@ -108,6 +108,16 @@ class Array {
 };
 
 template<typename T>
+bool operator==(const Array<T>& a1, const Array<T>& a2) {
+    if (a1.size() != a2.size())
+        return false;
+    for (size_t i = 0; i < a1.size(); ++i)
+        if (a1[i] != a2[i])
+            return false;
+    return true;
+}
+
+template<typename T>
 std::ostream& operator<<(std::ostream& stream, const Array<T>& a) {
     stream << "[";
     auto it = a.cbegin();

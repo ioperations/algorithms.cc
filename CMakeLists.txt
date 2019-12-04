@@ -18,6 +18,5 @@ add_executable(sort sort.cpp)
 add_executable(complex complex.cpp)
 add_executable(hanoi hanoi.cpp)
 add_executable(other other.cpp)
-add_executable(heap heap.cpp)
 
 add_subdirectory(tests)
