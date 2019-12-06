@@ -2,13 +2,14 @@
 
 #include "array.h"
 
+template<typename T>
 class Random_sequence_generator {
     private:
         std::mt19937 engine;
         std::uniform_int_distribution<std::mt19937::result_type> distribution;
         int size_;
     public:
-        Random_sequence_generator(unsigned long seed, int b, int e)
+        Random_sequence_generator(unsigned long seed, T b, T e)
             :engine(seed), distribution(b, e), size_(e - b)
         {}
 
@@ -23,7 +24,7 @@ class Random_sequence_generator {
             return array;
         }
 
-        int generate() {
+        T generate() {
             return distribution(engine);
         }
 };
