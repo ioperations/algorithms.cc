@@ -142,6 +142,62 @@ void msd_radix_sort(const It& begin, const It& end) {
     }
 }
 
+template<typename It>
+void quick_sort_three_part(const It& begin, const It& end) {
+    std::cout << std::endl;
+    auto print = [begin, end]() {
+        for (auto el = begin; el != end; ++el)
+            std::cout << *el << " ";
+        std::cout << std::endl;
+    };
+    print();
+
+    struct Frame {
+        const It begin_;
+        const It end_;
+        Frame(const It& begin, const It& end)
+            :begin_(begin), end_(end)
+        {}
+    };
+    struct : public Stack<Frame> {
+        void emplace_if_required(const It& begin, const It& end) {
+            if (end - begin > 1)
+                Stack<Frame>::emplace(begin, end);
+        }
+    } stack; 
+    stack.emplace_if_required(begin, end);
+
+    while (!stack.empty()) {
+        auto f = stack.pop();
+        auto i = f.begin_ - 1, p = f.begin_ - 1, j = f.end_ - 1, q = f.end_ - 1;
+        auto v = *(f.end_ - 1);
+
+        while (true) {
+            while (*(++i) < v);
+            while (*(--j) > v)
+                if (j == f.begin_)
+                    break;
+            if (i >= j)
+                break;
+            std::swap(*i, *j);
+            if (*i == v) 
+                std::swap(*i, *(++p));
+            if (*j == v)
+                std::swap(*j, *(--q));
+        }
+        std::swap(*i, *(f.end_ - 1));
+        j = i;
+
+        for (auto el = f.begin_; el <= p; ++el)
+            std::swap(*(--i), *el);
+        for (auto el = q; el != f.end_ - 1; ++el)
+            std::swap(*(++j), *el);
+
+        stack.emplace_if_required(f.begin_, i);
+        stack.emplace_if_required(j + 1, f.end_);
+    }
+}
+
 int main() {
     {
         auto array = Random_sequence_generator<int>(300, 10, 99).generate_array<Array<int>>(15);
@@ -151,17 +207,21 @@ int main() {
         for (size_t i = 0; i < array.size(); ++i)
             ids[array[i]] = array[i];
         std::cout << ids << std::endl;
-        index_sort(array.begin(), array.end());
-        std::cout << array << std::endl;
+        auto array_copy = array;
+        index_sort(array_copy.begin(), array_copy.end());
+        std::cout << array_copy << std::endl;
     }
-
+    {
+        Array<int> array{50, 29, 29, 46, 58, 43, 24, 36, 38, 31, 73, 80, 48, 82, 99, 46, 48, 82, 99, 46};
+        std::cout << array.size() << std::endl;
+        quick_sort_three_part(array.begin(), array.end());
+    }
     {
         using type = unsigned char;
         Random_sequence_generator<type> generator(400, 'A', 'Z');
         auto array = generator.generate_array<Array<type>>(15);
         radix_quick_sort(array.begin(), array.end());
     }
-
     {
         Array<std::string> text{"to", "achieve", "good", "performance", "using", "radix", "sort", "for",
             "a", "particular", "application", "we", "need", "to", "limit", "the", "number", "of", "empty",
@@ -170,5 +230,4 @@ int main() {
         msd_radix_sort(text.begin(), text.end());
         std::cout << text << std::endl;
     }
-
 }
