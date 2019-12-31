@@ -70,19 +70,17 @@ struct Quick_find {
 
 using Pair_tree_node = Forward_list_tree_node<Pair<Entry, int>>;
 
-struct Tree_stringifier {
-    std::string operator()(const Pair_tree_node& node) {
+struct Pair_tree_printer_node_handler : public Tree_printer_node_handler<Pair_tree_node> {
+    std::string node_to_string(const Pair_tree_node& node) {
         std::stringstream ss;
         ss << node.value().first_;
         return ss.str();
     }
-};
-struct Tree_label_width_calculator {
-    size_t operator()(const Pair_tree_node& node, const std::string& label) {
+    size_t label_width(const Pair_tree_node& node, const std::string& label) {
         return string_actual_printed_length(label);
     }
 };
-auto pair_tree_printer = Tree_printer<Pair_tree_node, Tree_stringifier, Tree_label_width_calculator>();
+auto pair_tree_printer = Tree_printer<Pair_tree_node, Pair_tree_printer_node_handler>();
 
 template<typename A>
 struct Quick_union : A {

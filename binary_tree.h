@@ -30,20 +30,20 @@ struct Binary_tree_node {
 };
 
 template<typename T>
-struct Node_children_iterator {
-    template<typename F>
-        void iterate(const Binary_tree_node<T>& n, F f) {
-            f(static_cast<const Binary_tree_node<T>*>(n.l_));
-            f(static_cast<const Binary_tree_node<T>*>(n.r_));
+class Binary_tree_printer_node_handler : public Tree_printer_node_handler<Binary_tree_node<T>> {
+    protected:
+        template<typename F>
+            void iterate_node_children(const Binary_tree_node<T>& n, F f) {
+                f(static_cast<const Binary_tree_node<T>*>(n.l_));
+                f(static_cast<const Binary_tree_node<T>*>(n.r_));
+            }
+        bool node_is_empty(const Binary_tree_node<T>& n) {
+            return !n.l_ && !n.r_;
         }
-    bool empty(const Binary_tree_node<T>& n) {
-        return !n.l_ && !n.r_;
-    }
 };
 
 template<typename T>
-using Binary_tree_printer = Tree_printer<Binary_tree_node<T>, Default_stringifier<Binary_tree_node<T>>,
-      Default_label_width_calculator<Binary_tree_node<T>>, Node_children_iterator<T>>;
+using Binary_tree_printer = Tree_printer<Binary_tree_node<T>, Binary_tree_printer_node_handler<T>>;
 
 template<typename T>
 std::ostream& operator<<(std::ostream& stream, const Binary_tree_node<T>& node) {

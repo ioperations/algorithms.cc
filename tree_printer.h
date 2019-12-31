@@ -87,43 +87,30 @@ class Tree_printer_base {
 };
 
 template<typename N>
-struct Default_stringifier {
-    std::string operator()(const N& node) {
-        std::stringstream ss;
-        ss << node.value();
-        return ss.str();
-    }
-};
-
-template<typename N>
-struct Default_label_width_calculator {
-    size_t operator()(const N& node, const std::string& label) {
-        return label.size();
-    }
-};
-
-template<typename N>
-struct Default_children_iterator {
-    template<typename F>
-        void iterate(const N& n, F f) {
-            auto& children = n.children();
-            for (auto child = children.cbegin(); child != children.cend(); ++child)
-                f(&*child);
+class Tree_printer_node_handler {
+    protected:
+        std::string node_to_string(const N& node) {
+            std::stringstream ss;
+            ss << node.value();
+            return ss.str();
         }
-    bool empty(const N& n) {
-        return false;
-    }
+        size_t label_width(const N& node, const std::string& label) {
+            return label.size();
+        }
+        template<typename F>
+            void iterate_node_children(const N& n, F f) {
+                auto& children = n.children();
+                for (auto child = children.cbegin(); child != children.cend(); ++child)
+                    f(&*child);
+            }
+        bool node_is_empty(const N& n) {
+            return false;
+        }
 };
 
-template<typename N, 
-    typename S = Default_stringifier<N>, typename L = Default_label_width_calculator<N>,
-    typename Cit = Default_children_iterator<N>>
-class Tree_printer : protected Tree_printer_base {
+template<typename N, typename NH = Tree_printer_node_handler<N>>
+class Tree_printer : protected NH, protected Tree_printer_base {
     private:
-        S stringifier_;
-        L label_width_calculator_;
-        Cit children_iterator_;
-
         Lines compose_lines(const N& node) {
             struct Node_info {
                 const N* node_;
@@ -156,11 +143,11 @@ class Tree_printer : protected Tree_printer_base {
                     previous->next_ = siblings;
                 }
                 if (n.node_) {
-                    auto label = stringifier_(n.node_->value());
-                    auto label_width = label_width_calculator_(*n.node_, label);
+                    auto label = NH::node_to_string(n.node_->value());
+                    auto label_width = NH::label_width(*n.node_, label);
                     auto printable_node = siblings->add_node(std::move(label), label_width);
-                    if (!children_iterator_.empty(*n.node_))
-                        children_iterator_.iterate(*n.node_, [&queue, n, printable_node](auto child) {
+                    if (!NH::node_is_empty(*n.node_))
+                        NH::iterate_node_children(*n.node_, [&queue, n, printable_node](auto child) {
                             queue.emplace_back(child, n.level_ + 1, printable_node);
                         });
                 } else
