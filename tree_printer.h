@@ -88,7 +88,7 @@ class Tree_printer_base {
 
 template<typename N>
 class Tree_printer_node_handler {
-    protected:
+    public:
         std::string node_to_string(const N& node) {
             std::stringstream ss;
             ss << node.value();

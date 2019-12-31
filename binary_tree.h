@@ -31,7 +31,7 @@ struct Binary_tree_node {
 
 template<typename T>
 class Binary_tree_printer_node_handler : public Tree_printer_node_handler<Binary_tree_node<T>> {
-    protected:
+    public:
         template<typename F>
             void iterate_node_children(const Binary_tree_node<T>& n, F f) {
                 f(static_cast<const Binary_tree_node<T>*>(n.l_));
