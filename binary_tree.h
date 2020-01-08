@@ -10,10 +10,10 @@ struct Binary_tree_node {
     Binary_tree_node* l_;
     Binary_tree_node* r_;
     Binary_tree_node(T value, Binary_tree_node* l = nullptr, Binary_tree_node* r = nullptr) 
-        :value_(value), l_(l), r_(r) 
+        :value_(value), l_(l), r_(r)
     {}
     T value() const { return value_; }
-    Binary_tree_node(Binary_tree_node&& o) :l_(o.l_), r_(o.r_) {
+    Binary_tree_node(Binary_tree_node&& o) :value_(o.value_), l_(o.l_), r_(o.r_) {
         o.l_ = nullptr;
         o.r_ = nullptr;
     }

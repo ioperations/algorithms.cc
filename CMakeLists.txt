@@ -15,9 +15,20 @@ link_libraries(common_utils)
 add_executable(stack stack.cpp)
 add_executable(quick_find quick_find.cpp)
 add_executable(sort sort.cpp)
-add_executable(complex complex.cpp)
+add_executable(complex_numbers complex_numbers.cpp)
 add_executable(hanoi hanoi.cpp)
 add_executable(other other.cpp)
 add_executable(radix radix.cpp)
+
+if(MSVC)
+    # have to find and link additional modules for VC
+    find_package(wxWidgets COMPONENTS core base adv xml html REQUIRED)
+else()
+    find_package(wxWidgets COMPONENTS core base REQUIRED)
+endif()
+
+include("${wxWidgets_USE_FILE}")
+add_executable(fr_layout_main fr_layout_main.cpp fr_layout.cpp)
+target_link_libraries(fr_layout_main ${wxWidgets_LIBRARIES})
 
 add_subdirectory(tests)

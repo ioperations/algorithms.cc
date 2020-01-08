@@ -38,11 +38,46 @@ class Map {
                 }
             }
             if (!found) {
+                auto n = new node_type({key, value}, nullptr, nullptr);
                 if (key < node->value_.key_)
-                    node->l_ = new node_type({key, value});
+                    node->l_ = n;
                 else
-                    node->r_ = new node_type({key, value});
+                    node->r_ = n;
             }
+        }
+
+        void rotate_right(node_type*& node) {
+            auto x = node->l_;
+            node->l_ = x->r_;
+            x->r_ = node;
+            node = x;
+        }
+
+        void rotate_left(node_type*& node) {
+            auto x = node->r_;
+            node->r_ = x->l_;
+            x->l_ = node;
+            node = x;
+        }
+
+        void insert_root(node_type*& node, const K& key, const V& value) {
+            if (!node) {
+                node = new node_type({key, value});
+                return;
+            }
+            if (key == node->value_.key_) {
+                node->value_.value_ = value;
+            } else if (key < node->value_.key_) {
+                insert_root(node->l_, key, value);
+                rotate_right(node);
+            } else {
+                insert_root(node->r_, key, value);
+                rotate_left(node);
+            }
+        }
+
+        void insert_root(const K& key, const V& value) {
+            insert_root(root_, key, value);
         }
 
         void iterate(node_type* node) {

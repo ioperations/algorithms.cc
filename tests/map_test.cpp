@@ -1,20 +1,27 @@
 #include "gtest/gtest.h"
 
 #include "map.h"
+#include "array.h"
 
 TEST(Binary_tree, binary_tree) {
+
+    Array<int> a{10, 20, 50, 40, 5, 21, 21};
     Map<int, int> map;
-    map.insert(10, 1);
-    map.insert(20, 2);
-    map.insert(50, 3);
-    map.insert(40, 4);
-    map.insert(5, 5);
-    map.insert(21, 6);
-    map.insert(21, 7);
+    int i = 0;
+    for (auto& key : a) {
+        map.insert(key, ++i);
+    }
 
     Map_printer<int, int> printer;
     printer.print(map, std::cout);
+    std::cout << std::endl;
 
+    map = {};
+    i = 0;
+    for (auto& key : a) {
+        map.insert_root(key, ++i);
+    }
+    printer.print(map, std::cout);
     std::cout << std::endl;
 
     map.iterate();
