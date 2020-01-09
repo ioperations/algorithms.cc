@@ -50,7 +50,7 @@ class Graph_widget : public Canvas_widget {
                 wxCoord text_w;
                 wxCoord text_h;
                 dc.GetTextExtent(v.label_, &text_w, &text_h);
-                draw_rect(dc, v.x_, v.y_, text_w + 7, text_h);
+                draw_rect(dc, v.x_, v.y_, text_w + 8, text_h);
                 draw_text(dc, v.label_, v.x_ - text_w / 2, v.y_ - text_h / 2);
             };
             graph_.positions().iterate_edges([this, &dc, draw_r](const auto& edge) {

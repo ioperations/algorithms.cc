@@ -32,7 +32,18 @@ class Canvas_widget : public wxWindow {
 class Application : public wxApp {
     private:
         bool OnInit() override;
+        struct Properties {
+            int x_;
+            int y_;
+            int width_;
+            int height_;
+            Properties(int x, int y, int width, int height)
+                :x_(x), y_(y), width_(width), height_(height)
+            {}
+            Properties() :Properties(0, 0, 600, 800) {}
+        };
     public:
+        void write_properties(const Properties& properties);
         virtual wxWindow* create_canvas_widget(wxWindow* parent) = 0;
 };
 
