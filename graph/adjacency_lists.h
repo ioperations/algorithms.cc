@@ -2,51 +2,43 @@
 
 #include <iostream>
 
-#include "vector.h"
+#include "vector"
+#include "forward_list.h"
 
 template<typename T>
-class Adjacency_matrix {
+class Adjacency_lists {
     public:
         class Vertex {
             private:
-                friend class Adjacency_matrix;
+                friend class Adjacency_lists;
                 friend class Vector<Vertex>;
 
                 T value_;
                 size_t index_;
+                Forward_list<size_t> links_;
 
-                Vertex(const T& value, size_t index) :value_(value), index_(index) {}
+                Vertex(T value, size_t index) :value_(value), index_(index) {}
                 Vertex() {}
 
                 Vertex(const Vertex&) = delete;
                 Vertex& operator=(const Vertex&) = delete;
                 Vertex(Vertex&&) = default;
                 Vertex& operator=(Vertex&&) = default;
-
-                T value() const {
-                    return value_;
-                }
             public:
                 friend std::ostream& operator<<(std::ostream& stream, const Vertex& v) {
-                    return stream << v.value(); 
+                    return stream;
                 }
         };
     private:
-        friend class Vertex;
         Vector<Vertex> vertices_;
-        Vector<Vector<bool>> edges_;
     public:
-        Adjacency_matrix() :edges_(100) {
-            for (auto& l : edges_)
-                l = Vector<bool>(100);
-        }
         Vertex& create_vertex(const T& t) {
-            vertices_.push_back(Vertex(t, vertices_.size())); // todo add emplace back method
+            vertices_.push_back(Vertex(t, vertices_.size()));
             return vertices_[vertices_.size() - 1];
         }
         void add_edge(const Vertex& v1, const Vertex& v2) {
-            edges_[v1.index_][v2.index_] = true;
-            edges_[v2.index_][v1.index_] = true;
+            // todo
         }
 };
+
 
