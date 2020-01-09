@@ -50,5 +50,12 @@ TEST(Vector_test, test_1) {
     v_move = std::move(v_copy);
     ASSERT_EQ(to_string(v_move), "[1, 2, 3]");
     ASSERT_EQ(to_string(v_copy), "[2, 2, 3]");
+
+    v = {};
+    ASSERT_EQ(to_string(v), "[]");
+    ASSERT_EQ(v.size(), 0);
+    v.push_back(1);
+    ASSERT_EQ(to_string(v), "[1]");
+    ASSERT_EQ(v.size(), 1);
 }
 

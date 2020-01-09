@@ -12,18 +12,24 @@ class Vector {
         size_t array_size_;
         size_t size_; // todo size or current max index?
 
-        Vector(size_t array_size, size_t size) 
-            :array_(new T[array_size]), array_size_(array_size), size_(size) 
-        {}
+        void fill_defaults() {
+            for (size_t i = 0; i < array_size_; ++i)
+                array_[i] = T();
+        }
     public:
-        Vector(size_t size) :Vector(size, size) {}
-        Vector() : Vector(DEFAULT_SIZE) {}
+        Vector(size_t size) :array_(new T[size]), array_size_(size), size_(size) { 
+            fill_defaults();
+        }
+        Vector() :array_(new T[DEFAULT_SIZE]), array_size_(DEFAULT_SIZE), size_(0) { 
+            fill_defaults();
+        }
         Vector(std::initializer_list<T> i_list) :Vector(i_list.size()) {
             size_t i = 0;
             for (auto& el : i_list)
                 array_[i++] = std::move(el);
         }
-        Vector(const Vector& o) :Vector(o.array_size_, o.size_) {
+
+        Vector(const Vector& o) :array_(new T[o.array_size_]), array_size_(o.array_size_), size_(o.size_) {
             for (size_t i = 0; i < size_; ++i)
                 array_[i] = o.array_[i];
         }

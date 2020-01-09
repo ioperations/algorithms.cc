@@ -12,6 +12,8 @@ endif()
 add_library(common_utils string_utils.cpp tree_printer.cpp text_block.cpp array.cpp rich_text.cpp)
 link_libraries(common_utils)
 
+include_directories(PRIVATE ${CMAKE_SOURCE_DIR})
+
 add_executable(stack stack.cpp)
 add_executable(quick_find quick_find.cpp)
 add_executable(sort sort.cpp)

@@ -1,7 +1,7 @@
 #pragma once
 
+#include "vector.h"
 #include <iostream>
-#include <vector>
 
 template<typename T>
 class Adjacency_matrix {
@@ -24,12 +24,12 @@ class Adjacency_matrix {
         };
     private:
         friend class Vertex;
-        std::vector<T> vertices_;
-        std::vector<std::vector<bool>> edges_;
+        Vector<T> vertices_;
+        Vector<Vector<bool>> edges_;
     public:
         Adjacency_matrix() :edges_(100) {
             for (auto& l : edges_)
-                l = std::vector<bool>(100);
+                l = Vector<bool>(100);
         }
         Vertex create_vectex(const T& t) {
             vertices_.push_back(t);
