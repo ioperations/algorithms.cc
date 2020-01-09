@@ -56,5 +56,8 @@ class Adjacency_lists {
                 stream << std::endl;
             }
         }
+        bool has_simple_path(const Vertex& v1, const Vertex& v2) {
+            return false;
+        }
 };
 
