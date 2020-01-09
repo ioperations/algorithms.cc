@@ -24,9 +24,17 @@ class Adjacency_lists {
                 Vertex& operator=(const Vertex&) = delete;
                 Vertex(Vertex&&) = default;
                 Vertex& operator=(Vertex&&) = default;
+
+                void add_link(const Vertex& v) {
+                    bool found = false;
+                    for (auto link = links_.begin(); link != links_.end() && !found; ++link)
+                        found = *link == v.index_;
+                    if (!found)
+                        links_.push_back(v.index_);
+                }
             public:
                 friend std::ostream& operator<<(std::ostream& stream, const Vertex& v) {
-                    return stream;
+                    return stream << v.value_;
                 }
         };
     private:
@@ -36,9 +44,17 @@ class Adjacency_lists {
             vertices_.push_back(Vertex(t, vertices_.size()));
             return vertices_[vertices_.size() - 1];
         }
-        void add_edge(const Vertex& v1, const Vertex& v2) {
-            // todo
+        void add_edge(Vertex& v1, Vertex& v2) {
+            v1.add_link(v2);
+            v2.add_link(v1);
+        }
+        void print_internal(std::ostream& stream) {
+            for (auto& v : vertices_) {
+                stream << v.index_ << ": ";
+                for (auto& i : v.links_)
+                    stream << i << " ";
+                stream << std::endl;
+            }
         }
 };
-
 

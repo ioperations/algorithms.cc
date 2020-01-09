@@ -48,5 +48,14 @@ class Adjacency_matrix {
             edges_[v1.index_][v2.index_] = true;
             edges_[v2.index_][v1.index_] = true;
         }
+        void print_internal(std::ostream& stream) {
+            auto size = vertices_.size();
+            for (size_t r = 0; r < size; ++r) {
+                for (size_t c = 0; c < size; ++c) {
+                    stream << edges_[r][c] << " ";
+                }
+                stream << std::endl;
+            }
+        }
 };
 
