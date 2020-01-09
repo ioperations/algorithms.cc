@@ -17,6 +17,9 @@ class Vector {
                 array_[i] = T();
         }
     public:
+        using iterator = T*;
+        using const_iterator = const iterator;
+
         Vector(size_t size) :array_(new T[size]), array_size_(size), size_(size) { 
             fill_defaults();
         }
@@ -61,10 +64,10 @@ class Vector {
 
         inline size_t size() const { return size_; }
 
-        inline T* begin() { return array_; }
-        inline T* end() { return array_ + size_; }
-        inline const T* cbegin() const { return array_; }
-        inline const T* cend() const { return array_ + size_; }
+        inline iterator begin() { return array_; }
+        inline iterator end() { return array_ + size_; }
+        inline const_iterator cbegin() const { return array_; }
+        inline const_iterator cend() const { return array_ + size_; }
 
         template<typename TT>
         void push_back(TT&& t) {
