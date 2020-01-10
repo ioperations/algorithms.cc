@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-#include "vector.h"
 #include "array.h"
+#include "vector.h"
 
 template<typename T>
 class Adjacency_matrix {
@@ -30,9 +30,6 @@ class Adjacency_matrix {
                 T value() const {
                     return value_;
                 }
-                size_t index() const {
-                    return index_;
-                }
             public:
                 class Iterator {
                     private:
@@ -43,11 +40,11 @@ class Adjacency_matrix {
                         void move_to_non_empty() const {
                             for (; it_ != edges_.end() && !*it_; ++it_);
                         }
-                    public:
                         Iterator(const Vertex& vertex, const Vector<bool>::iterator& it) 
                             :vertices_(vertex.matrix_->vertices_),
                             edges_(vertex.matrix_->edges_[vertex.index_]),
                             it_(it) {}
+                    public:
                         const Iterator& operator++() const {
                             ++it_;
                             move_to_non_empty();
@@ -72,6 +69,12 @@ class Adjacency_matrix {
                             return const_cast<Vertex&>(*static_cast<const Iterator&>(*this));
                         }
                 };
+                size_t index() const {
+                    return index_;
+                }
+                bool operator==(const Vertex& o) const {
+                    return index_ == o.index_;
+                }
                 const Iterator cbegin() const {
                     auto& e = matrix_->edges_[index_];
                     auto it = Iterator(*this, e.begin());
@@ -88,9 +91,6 @@ class Adjacency_matrix {
                 Iterator end() {
                     return const_cast<Iterator>(static_cast<const Iterator&>(*this).cend());
                 }
-                bool operator==(const Vertex& o) const {
-                    return index_ == o.index_;
-                }
                 friend std::ostream& operator<<(std::ostream& stream, const Vertex& v) {
                     return stream << v.value(); 
                 }
@@ -99,17 +99,6 @@ class Adjacency_matrix {
         friend class Vertex;
         Vector<Vertex> vertices_;
         Vector<Vector<bool>> edges_;
-
-        bool has_simple_path(const Vertex& v1, const Vertex& v2, Array<bool>& visited) {
-            if (v1 == v2)
-                return true;
-            visited[v1.index_] = true;
-            for (const auto v = v1.cbegin(); v != v1.cend(); ++v)
-                if (!visited[v->index()])
-                    if (has_simple_path(*v, v2, visited))
-                        return true;
-            return false;
-        }
     public:
         Adjacency_matrix() :edges_(100) {
             for (auto& l : edges_)
@@ -123,6 +112,9 @@ class Adjacency_matrix {
             edges_[v1.index_][v2.index_] = true;
             edges_[v2.index_][v1.index_] = true;
         }
+        size_t vertices_count() const {
+            return vertices_.size();
+        }
         void print_internal(std::ostream& stream) {
             auto size = vertices_.size();
             for (size_t r = 0; r < size; ++r) {
@@ -131,10 +123,6 @@ class Adjacency_matrix {
                 }
                 stream << std::endl;
             }
-        }
-        bool has_simple_path(const Vertex& v1, const Vertex& v2) {
-            Array<bool> visited(vertices_.size());
-            return has_simple_path(v1, v2, visited);
         }
 };
 

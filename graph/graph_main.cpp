@@ -1,3 +1,4 @@
+#include "graph.h"
 #include "adjacency_matrix.h"
 #include "adjacency_lists.h"
 
@@ -38,7 +39,7 @@ void test_graph(G& graph) {
 
     auto has_simple_path = [&graph, get_vertex](const std::string& l1, const std::string& l2) {
         std::cout << l1 << " - " << l2 << ": ";
-        if (graph.has_simple_path(get_vertex(l1), get_vertex(l2)))
+        if (Graph::has_simple_path(graph, get_vertex(l1), get_vertex(l2)))
             std::cout << "simple path found";
         else
             std::cout << "no simple path";
