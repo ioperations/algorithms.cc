@@ -10,57 +10,7 @@ namespace Graph {
     template<typename T>
         class Adjacency_lists {
             public:
-                class Vertex : public Vertex_base<T> {
-                    private:
-                        friend class Adjacency_lists;
-                        friend class Vector<Vertex>;
-
-                        Adjacency_lists* adjacency_lists_;
-                        Forward_list<size_t> links_;
-
-                        Vertex(T value, size_t index, Adjacency_lists* adjacency_lists)
-                            :Vertex_base<T>(value, index), adjacency_lists_(adjacency_lists)
-                        {}
-                        Vertex() :adjacency_lists_(nullptr) {}
-
-                        void add_link(const Vertex& v) {
-                            bool found = false;
-                            for (auto link = links_.begin(); link != links_.end() && !found; ++link)
-                                found = *link == v.index_;
-                            if (!found)
-                                links_.push_back(v.index_);
-                        }
-                    public:
-                        class Iterator {
-                            private:
-                                friend class Vertex;
-                                const Vertex& vertex_;
-                                mutable Forward_list<size_t>::const_iterator it_;
-                                Iterator(const Vertex& vertex, const Forward_list<size_t>::const_iterator& it)
-                                    :vertex_(vertex), it_(it)
-                                {}
-                            public:
-                                const Iterator& operator++() const {
-                                    ++it_;
-                                    return *this;
-                                }
-                                bool operator!=(const Iterator& o) const {
-                                    return it_ != o.it_;
-                                }
-                                const Vertex* operator->() const {
-                                    return &operator*();
-                                }
-                                const Vertex& operator*() const {
-                                    return vertex_.adjacency_lists_->vertices_[*it_];
-                                }
-                        };
-                        const Iterator cbegin() const {
-                            return Iterator(*this, links_.cbegin());
-                        }
-                        const Iterator cend() const {
-                            return Iterator(*this, links_.cend());
-                        }
-                };
+                class Vertex;
             private:
                 Vector<Vertex> vertices_;
             public:
@@ -83,9 +33,61 @@ namespace Graph {
                         stream << std::endl;
                     }
                 }
-                bool has_simple_path(const Vertex& v1, const Vertex& v2) {
-                    return false;
+        };
+
+    template<typename T>
+        class Adjacency_lists<T>::Vertex : public Vertex_base<T> {
+            private:
+                friend class Adjacency_lists;
+                friend class Vector<Vertex>;
+
+                Adjacency_lists* adjacency_lists_;
+                Forward_list<size_t> links_;
+
+                Vertex(T value, size_t index, Adjacency_lists* adjacency_lists)
+                    :Vertex_base<T>(value, index), adjacency_lists_(adjacency_lists)
+                {}
+                Vertex() :adjacency_lists_(nullptr) {}
+
+                void add_link(const Vertex& v) {
+                    bool found = false;
+                    for (auto link = links_.begin(); link != links_.end() && !found; ++link)
+                        found = *link == v.index_;
+                    if (!found)
+                        links_.push_back(v.index_);
+                }
+            public:
+                class Iterator;
+                const Iterator cbegin() const {
+                    return Iterator(*this, links_.cbegin());
+                }
+                const Iterator cend() const {
+                    return Iterator(*this, links_.cend());
                 }
         };
 
+    template<typename T>
+        class Adjacency_lists<T>::Vertex::Iterator {
+            private:
+                friend class Vertex;
+                const Vertex& vertex_;
+                mutable Forward_list<size_t>::const_iterator it_;
+                Iterator(const Vertex& vertex, const Forward_list<size_t>::const_iterator& it)
+                    :vertex_(vertex), it_(it)
+                {}
+            public:
+                const Iterator& operator++() const {
+                    ++it_;
+                    return *this;
+                }
+                bool operator!=(const Iterator& o) const {
+                    return it_ != o.it_;
+                }
+                const Vertex* operator->() const {
+                    return &operator*();
+                }
+                const Vertex& operator*() const {
+                    return vertex_.adjacency_lists_->vertices_[*it_];
+                }
+        };
 }
