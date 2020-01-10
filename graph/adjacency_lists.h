@@ -10,6 +10,7 @@ namespace Graph {
     template<typename T>
         class Adjacency_lists {
             public:
+                using value_type = T;
                 class Vertex;
             private:
                 Vector<Vertex> vertices_;
@@ -24,6 +25,9 @@ namespace Graph {
                 }
                 size_t vertices_count() const {
                     return vertices_.size();
+                }
+                const Vertex& vertex_at(size_t index) const {
+                    return vertices_[index];
                 }
                 void print_internal(std::ostream& stream) {
                     for (auto& v : vertices_) {

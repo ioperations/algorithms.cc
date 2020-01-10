@@ -10,6 +10,7 @@ namespace Graph {
     template<typename T>
         class Adjacency_matrix {
             public:
+                using value_type = T;
                 class Vertex;
             private:
                 friend class Vertex;
@@ -31,7 +32,10 @@ namespace Graph {
                 size_t vertices_count() const {
                     return vertices_.size();
                 }
-                void print_internal(std::ostream& stream) {
+                const Vertex& vertex_at(size_t index) const {
+                    return vertices_[index];
+                }
+                void print_internal(std::ostream& stream) const {
                     auto size = vertices_.size();
                     for (size_t r = 0; r < size; ++r) {
                         for (size_t c = 0; c < size; ++c) {

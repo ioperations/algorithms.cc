@@ -5,40 +5,64 @@
 #include <map>
 #include <stdexcept>
 
-template<typename G>
-void test_graph(G& graph) {
-    std::map<std::string, typename G::Vertex&> map;
-    auto add_edge = [&map, &graph](const std::string& l1, const std::string& l2) {
-        auto get_vertex = [&map, &graph](const std::string& l) -> typename G::Vertex& {
-            auto it = map.find(l);
-            if (it == map.end()) {
-                auto& v = graph.create_vertex(l);
-                map.insert({l, v});
+template<typename G, typename T = typename G::value_type>
+class Graph_constructor {
+    private:
+        using Vertex = typename G::Vertex;
+        G& graph_;
+        std::map<T, typename G::Vertex&> vertices_;
+    public:
+        Graph_constructor(G& graph) :graph_(graph) {}
+        Graph_constructor& add_edge(const T& l1, const T& l2) {
+            auto& v1 = get_or_create_vertex(l1);
+            auto& v2 = get_or_create_vertex(l2);
+            graph_.add_edge(v1, v2);
+            return *this;
+        }
+        Vertex& get_or_create_vertex(const T& l) {
+            auto it = vertices_.find(l);
+            if (it == vertices_.end()) {
+                auto& v = graph_.create_vertex(l);
+                vertices_.insert({l, v});
                 return v;
             } else
                 return it->second;
+        }
+        Vertex& get_vertex(const T& label) {
+            auto it = vertices_.find(label);
+            if (it == vertices_.end())
+                throw std::runtime_error(std::string("vertex ") + label + " not found");
+            return it->second;
         };
-        auto& v1 = get_vertex(l1);
-        auto& v2 = get_vertex(l2);
-        graph.add_edge(v1, v2);
-    };
+};
 
-    auto get_vertex = [&map](const std::string& label) -> typename G::Vertex& {
-        auto it = map.find(label);
-        if (it == map.end())
-            throw std::runtime_error(std::string("vertex ") + label + " not found");
-        return it->second;
-    };
+template<typename G>
+void print_hamilton_path(const G& graph) {
+    auto path = Graph::compose_hamilton_path(graph);
+    auto it = path.cbegin();
+    if (it == path.end()) {
+        std::cout << "hamilton path not found" << std::endl;
+        return;
+    }
+    std::cout << **it;
+    for (++it; it != path.cend(); ++it)
+        std::cout << " - " << **it;
+    std::cout << " - " << **path.begin() << std::endl;
+}
 
-    add_edge("1", "2");
-    add_edge("2", "3");
-    add_edge("2", "4");
-    add_edge("3", "4");
-    map.insert({"5", graph.create_vertex("5")});
+template<typename G>
+void test_graph(G& graph) {
+    Graph_constructor constructor(graph);
 
-    auto has_simple_path = [&graph, get_vertex](const std::string& l1, const std::string& l2) {
+    constructor.add_edge("1", "2")
+        .add_edge("2", "3")
+        .add_edge("2", "4")
+        .add_edge("3", "4");
+    constructor.get_or_create_vertex("5");
+
+    auto has_simple_path = [&graph, &constructor](const std::string& l1, const std::string& l2) {
         std::cout << l1 << " - " << l2 << ": ";
-        if (Graph::has_simple_path(graph, get_vertex(l1), get_vertex(l2)))
+        if (Graph::has_simple_path(graph, constructor.get_vertex(l1), constructor.get_vertex(l2)))
             std::cout << "simple path found";
         else
             std::cout << "no simple path";
@@ -46,6 +70,8 @@ void test_graph(G& graph) {
     };
     has_simple_path("1", "4");
     has_simple_path("1", "5");
+
+    print_hamilton_path(graph);
 
     std::cout << "internal structure: " << std::endl;
     graph.print_internal(std::cout);
@@ -62,5 +88,24 @@ int main() {
         std::cout << "adjacency lists:" << std::endl;
         Graph::Adjacency_lists<std::string> graph;
         test_graph(graph);
+    }
+    {
+        std::cout << "graph with hamilton path" << std::endl;
+        Graph::Adjacency_matrix<int> graph;
+        Graph_constructor constructor(graph);
+        constructor
+            .add_edge(0, 1)
+            .add_edge(0, 2)
+            .add_edge(0, 5)
+            .add_edge(0, 6)
+            .add_edge(1, 2)
+            .add_edge(1, 3)
+            .add_edge(2, 3)
+            .add_edge(2, 4)
+            .add_edge(3, 4)
+            .add_edge(3, 5)
+            .add_edge(4, 5)
+            .add_edge(4, 6);
+        print_hamilton_path(graph);
     }
 }
