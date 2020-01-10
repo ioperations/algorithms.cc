@@ -2,34 +2,23 @@
 
 #include <iostream>
 
-#include "array.h"
+#include "graph.h"
 #include "vector.h"
 
 template<typename T>
 class Adjacency_matrix {
     public:
-        class Vertex {
+        class Vertex : public Graph::Vertex_base<T> {
             private:
                 friend class Adjacency_matrix;
                 friend class Vector<Vertex>;
 
-                T value_;
-                size_t index_;
                 Adjacency_matrix* matrix_;
 
                 Vertex(const T& value, size_t index, Adjacency_matrix* matrix) 
-                    :value_(value), index_(index), matrix_(matrix) 
+                    :Graph::Vertex_base<T>(value, index), matrix_(matrix) 
                 {}
                 Vertex() :matrix_(nullptr) {}
-
-                Vertex(const Vertex&) = delete;
-                Vertex& operator=(const Vertex&) = delete;
-                Vertex(Vertex&&) = default;
-                Vertex& operator=(Vertex&&) = default;
-
-                T value() const {
-                    return value_;
-                }
             public:
                 class Iterator {
                     private:
@@ -42,7 +31,7 @@ class Adjacency_matrix {
                         }
                         Iterator(const Vertex& vertex, const Vector<bool>::iterator& it) 
                             :vertices_(vertex.matrix_->vertices_),
-                            edges_(vertex.matrix_->edges_[vertex.index_]),
+                            edges_(vertex.matrix_->edges_[vertex.index()]),
                             it_(it) {}
                     public:
                         const Iterator& operator++() const {
@@ -69,20 +58,14 @@ class Adjacency_matrix {
                             return const_cast<Vertex&>(*static_cast<const Iterator&>(*this));
                         }
                 };
-                size_t index() const {
-                    return index_;
-                }
-                bool operator==(const Vertex& o) const {
-                    return index_ == o.index_;
-                }
                 const Iterator cbegin() const {
-                    auto& e = matrix_->edges_[index_];
+                    auto& e = matrix_->edges_[this->index()];
                     auto it = Iterator(*this, e.begin());
                     it.move_to_non_empty();
                     return it;
                 }
                 const Iterator cend() const {
-                    auto& e = matrix_->edges_[index_];
+                    auto& e = matrix_->edges_[this->index()];
                     return Iterator(*this, e.end());
                 }
                 Iterator begin() {
@@ -90,9 +73,6 @@ class Adjacency_matrix {
                 }
                 Iterator end() {
                     return const_cast<Iterator>(static_cast<const Iterator&>(*this).cend());
-                }
-                friend std::ostream& operator<<(std::ostream& stream, const Vertex& v) {
-                    return stream << v.value(); 
                 }
         };
     private:

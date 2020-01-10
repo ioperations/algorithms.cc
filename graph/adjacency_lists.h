@@ -8,25 +8,18 @@
 template<typename T>
 class Adjacency_lists {
     public:
-        class Vertex {
+        class Vertex : public Graph::Vertex_base<T> {
             private:
                 friend class Adjacency_lists;
                 friend class Vector<Vertex>;
 
                 Adjacency_lists* adjacency_lists_;
-                T value_;
-                size_t index_;
                 Forward_list<size_t> links_;
 
-                Vertex(Adjacency_lists* adjacency_lists, T value, size_t index) 
-                    :adjacency_lists_(adjacency_lists), value_(value), index_(index) 
+                Vertex(T value, size_t index, Adjacency_lists* adjacency_lists)
+                    :Graph::Vertex_base<T>(value, index), adjacency_lists_(adjacency_lists)
                 {}
                 Vertex() :adjacency_lists_(nullptr) {}
-
-                Vertex(const Vertex&) = delete;
-                Vertex& operator=(const Vertex&) = delete;
-                Vertex(Vertex&&) = default;
-                Vertex& operator=(Vertex&&) = default;
 
                 void add_link(const Vertex& v) {
                     bool found = false;
@@ -59,27 +52,18 @@ class Adjacency_lists {
                             return vertex_.adjacency_lists_->vertices_[*it_];
                         }
                 };
-                size_t index() const {
-                    return index_;
-                }
-                bool operator==(const Vertex& o) const {
-                    return index_ == o.index_;
-                }
                 const Iterator cbegin() const {
                     return Iterator(*this, links_.cbegin());
                 }
                 const Iterator cend() const {
                     return Iterator(*this, links_.cend());
                 }
-                friend std::ostream& operator<<(std::ostream& stream, const Vertex& v) {
-                    return stream << v.value_;
-                }
         };
     private:
         Vector<Vertex> vertices_;
     public:
         Vertex& create_vertex(const T& t) {
-            vertices_.push_back(Vertex(this, t, vertices_.size()));
+            vertices_.push_back(Vertex(t, vertices_.size(), this));
             return vertices_[vertices_.size() - 1];
         }
         void add_edge(Vertex& v1, Vertex& v2) {

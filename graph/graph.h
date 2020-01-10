@@ -6,6 +6,35 @@
 
 namespace Graph {
 
+    template<typename T>
+        class Vertex_base {
+            protected:
+                T value_;
+                size_t index_;
+
+                Vertex_base(const T& value, size_t index) 
+                    :value_(value), index_(index) 
+                {}
+                Vertex_base() = default;
+                Vertex_base(const Vertex_base&) = delete;
+                Vertex_base& operator=(const Vertex_base&) = delete;
+                Vertex_base(Vertex_base&&) = default;
+                Vertex_base& operator=(Vertex_base&&) = default;
+            public:
+                T value() const {
+                    return value_;
+                }
+                size_t index() const {
+                    return index_;
+                }
+                bool operator==(const Vertex_base& o) const {
+                    return index_ == o.index_;
+                }
+                friend std::ostream& operator<<(std::ostream& stream, const Vertex_base& v) {
+                    return stream << v.value_;
+                }
+        };
+
     template<typename G, typename V = typename G::Vertex>
         bool has_simple_path(const G& graph, const V& v1, const V& v2) {
 
