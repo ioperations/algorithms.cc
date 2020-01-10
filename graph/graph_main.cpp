@@ -55,12 +55,12 @@ int main() {
     std::cout << std::endl;
     {
         std::cout << "adjacency matrix:" << std::endl;
-        Adjacency_matrix<std::string> graph;
+        Graph::Adjacency_matrix<std::string> graph;
         test_graph(graph);
     }
     {
         std::cout << "adjacency lists:" << std::endl;
-        Adjacency_lists<std::string> graph;
+        Graph::Adjacency_lists<std::string> graph;
         test_graph(graph);
     }
 }
