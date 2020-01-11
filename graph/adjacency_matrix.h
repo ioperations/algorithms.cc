@@ -16,24 +16,46 @@ namespace Graph {
                 friend class Vertex;
                 Vector<Vertex> vertices_;
                 Vector<Vector<bool>> edges_;
+                void set_edge(const Vertex& v1, const Vertex& v2, bool is_set) {
+                    edges_[v1.index_][v2.index_] = is_set;
+                    edges_[v2.index_][v1.index_] = is_set;
+                }
             public:
                 Adjacency_matrix() :edges_(100) {
                     for (auto& l : edges_)
                         l = Vector<bool>(100);
                 }
+
+                Adjacency_matrix(const Adjacency_matrix& o) :vertices_(o.vertices_), edges_(o.edges_) {
+                    for (auto& v : vertices_)
+                        v.matrix_ = this;
+                }
+                Adjacency_matrix& operator=(const Adjacency_matrix&) = delete;
+                Adjacency_matrix(Adjacency_matrix&& o) = delete;
+                Adjacency_matrix& operator=(Adjacency_matrix&&) = delete;
+
                 Vertex& create_vertex(const T& t) {
                     vertices_.push_back(Vertex(t, vertices_.size(), this)); // todo add emplace back method
                     return vertices_[vertices_.size() - 1];
                 }
                 void add_edge(const Vertex& v1, const Vertex& v2) {
-                    edges_[v1.index_][v2.index_] = true;
-                    edges_[v2.index_][v1.index_] = true;
+                    set_edge(v1, v2, true);
                 }
                 size_t vertices_count() const {
+
                     return vertices_.size();
                 }
                 const Vertex& vertex_at(size_t index) const {
                     return vertices_[index];
+                }
+                void remove_edge(const Vertex& v1, const Vertex& v2) {
+                    set_edge(v1, v2, false);
+                }
+                auto cbegin() const {
+                    return vertices_.cbegin();
+                }
+                auto cend() const {
+                    return vertices_.cend();
                 }
                 void print_internal(std::ostream& stream) const {
                     auto size = vertices_.size();
@@ -101,8 +123,11 @@ namespace Graph {
                 Iterator& operator++() {
                     return const_cast<Iterator&>(++static_cast<const Iterator&>(*this));
                 }
+                bool operator==(const Iterator& o) const {
+                    return it_ == o.it_;
+                }
                 bool operator!=(const Iterator& o) const {
-                    return it_ != o.it_;
+                    return !operator==(o);
                 }
                 const Vertex* operator->() const {
                     return &operator*();

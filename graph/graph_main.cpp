@@ -4,6 +4,24 @@
 #include <string>
 #include <map>
 #include <stdexcept>
+#include <sstream>
+
+class String_builder {
+    private:
+        std::stringstream ss;
+    public:
+        template<typename T>
+        String_builder& operator+(T&& t) {
+            ss << std::forward<T>(t);
+            return *this;
+        }
+        operator std::string() {
+            return ss.str();
+        }
+};
+String_builder operator""_str(const char* s, long unsigned int) {
+    return std::move(String_builder() + s);
+}
 
 template<typename G, typename T = typename G::value_type>
 class Graph_constructor {
@@ -31,7 +49,7 @@ class Graph_constructor {
         Vertex& get_vertex(const T& label) {
             auto it = vertices_.find(label);
             if (it == vertices_.end())
-                throw std::runtime_error(std::string("vertex ") + label + " not found");
+                throw std::runtime_error("vertex "_str + label + " not found");
             return it->second;
         };
 };
@@ -90,7 +108,7 @@ int main() {
         test_graph(graph);
     }
     {
-        std::cout << "graph with hamilton path" << std::endl;
+        std::cout << "graph with Euler tour" << std::endl;
         Graph::Adjacency_matrix<int> graph;
         Graph_constructor constructor(graph);
         constructor
@@ -99,13 +117,19 @@ int main() {
             .add_edge(0, 5)
             .add_edge(0, 6)
             .add_edge(1, 2)
-            .add_edge(1, 3)
             .add_edge(2, 3)
             .add_edge(2, 4)
             .add_edge(3, 4)
-            .add_edge(3, 5)
             .add_edge(4, 5)
             .add_edge(4, 6);
+
+        Graph::compose_euler_tour(graph, graph.vertex_at(0), graph.vertex_at(0));
+        // std::cout << "has: " << h << std::endl;
+
+        std::cout << "graph with hamilton path" << std::endl;
+        constructor
+            .add_edge(1, 3)
+            .add_edge(3, 5);
         print_hamilton_path(graph);
     }
 }
