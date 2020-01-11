@@ -7,6 +7,22 @@
 
 namespace Graph {
 
+    template<typename It, typename F>
+        void print_collection(const It& b, const It& e, const char* del, F f, std::ostream& stream) {
+            if (b == e)
+                return;
+            auto item = b;
+            stream << f(*item);
+            for (++item; item != e; ++item)
+                stream << del << f(*item);
+        }
+
+    template<typename It>
+        void print_collection(const It& b, const It& e, const char* del, std::ostream& stream) {
+            print_collection(b, e, del, [](auto& v) { return v; }, stream);
+        }
+
+
     template<typename T>
         class Fixed_size_stack {
             private:
@@ -120,7 +136,7 @@ namespace Graph {
         }
 
     template<typename G, typename V = typename G::Vertex>
-        bool compose_euler_tour(const G& g, const V& v1, const V& v2) {
+        auto compose_euler_tour(const G& g, const V& v1, const V& v2) {
             Array<size_t> degrees(g.vertices_count());
             {
                 auto e = degrees.begin();
@@ -128,65 +144,50 @@ namespace Graph {
                     *e = count_vertex_edges(*v);
             }
             auto degree = degrees[v1.index()] + degrees[v2.index()];
-            if (degree % 2 != 0) {
-                return false;
+
+            using Path = Forward_list<const V*>;
+            Path path;
+
+            if (degree % 2 == 0) {
+                bool found = true;
+                for (auto v = g.cbegin(); v != g.cend() && found; ++v)
+                    if (*v != v1 && *v != v2 && degrees[v->index()] % 2 != 0)
+                        found = false;
+                if (found) {
+                    using Stack = Stack<const V*>;
+                    struct Helper {
+                        const G& original_g_;
+                        G& g_;
+                        Stack stack_;
+                        Helper(const G& original_graph, G& g) :original_g_(original_graph), g_(g) {}
+                        const V* tour(const V* v) {
+                            while (true) {
+                                auto w = v->cbegin();
+                                if (w == v->cend())
+                                    break;
+                                stack_.push(v);
+                                g_.remove_edge(*v, *w);
+                                v = &*w;
+                            }
+                            return v;
+                        }
+                        void compose(const V* v, Path& path) {
+                            auto push_original_v = [this, &path](const V* v) {
+                                auto& original_v = original_g_.vertex_at(v->index());
+                                path.push_back(&original_v);
+                            };
+                            push_original_v(v);
+                            while (tour(v) == v && !stack_.empty()) {
+                                v = stack_.pop();
+                                push_original_v(v);
+                            }
+                        }
+                    };
+                    auto gg = g;
+                    Helper(g, gg).compose(&gg.vertex_at(0), path);
+                }
             }
-
-            for (auto v = g.cbegin(); v != g.cend(); ++v)
-                if (*v != v1 && *v != v2)
-                    if (degrees[v->index()] % 2 != 0)
-                        return false;
-
-            using Stack = Stack<const V*>;
-            struct Helper {
-                G& g_;
-                Stack stack_;
-                Helper(G& g) :g_(g) {}
-                const V* tour(const V* v) {
-                    while (true) {
-                        auto w = v->cbegin();
-                        if (w == v->cend())
-                            break;
-                        stack_.push(v);
-                        g_.remove_edge(*v, *w);
-                        v = &*w;
-                    }
-                    return v;
-                }
-                void show(const V* v) {
-                    Forward_list<const V*> path;
-                    path.push_back(v);
-                    while (tour(v) == v && !stack_.empty()) {
-                        v = stack_.pop();
-                        path.push_back(v);
-                    }
-                    for (auto p : path)
-                        std::cout << *p << " - ";
-                    std::cout << std::endl;
-                }
-            };
-
-            auto gg = g;
-            Helper(gg).show(&gg.vertex_at(0));
-
-            return true;
+            return path;
         }
-
-    template<typename It, typename F>
-        void print_collection(const It& b, const It& e, const char* del, F f, std::ostream& stream) {
-            if (b == e)
-                return;
-            auto item = b;
-            stream << f(*item);
-            for (++item; item != e; ++item)
-                stream << del << *item;
-        }
-
-    template<typename It>
-        void print_collection(const It& b, const It& e, const char* del, std::ostream& stream) {
-            print_collection(b, e, del, [](auto& v) { return v; }, stream);
-        }
-
-
 }
 

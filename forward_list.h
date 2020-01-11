@@ -27,10 +27,10 @@ class Forward_list {
             }
         }
     public:
-        class Iterator;
-        class Const_iterator;
-        using iterator = Iterator;
-        using const_iterator = Const_iterator;
+        template<bool T_is_const>
+            class Iterator;
+        using iterator = Iterator<false>;
+        using const_iterator = Iterator<true>;
 
         Forward_list() :head_(nullptr), tail_(nullptr) {};
 
@@ -60,60 +60,7 @@ class Forward_list {
 
         ~Forward_list() { remove_nodes(); }
 
-        void merge_sort() {
-            if (!head_ || head_ == tail_)
-                return;
-            struct List {
-                Node* head_;
-                size_t length_ = 0;
-                List(Node* head, size_t length) :head_(head), length_(length) {}
-            };
-            List l(head_, 0);
-            for (Node* node = l.head_; node; node = node->next_)
-                ++l.length_;
-
-            static struct {
-                List merge(const List& l1, const List& l2) {
-                    Node* n1 = l1.head_;
-                    Node* n2 = l2.head_;
-                    auto append_node = [&n1, &n2]() {
-                        Node* n;
-                        if (n2->value_ < n1->value_) {
-                            n = n2; n2 = n2->next_;
-                        } else {
-                            n = n1; n1 = n1->next_;
-                        }
-                        return n;
-                    };
-                    List l(append_node(), l1.length_ + l2.length_);
-                    Node* n = l.head_;
-                    while (n1 && n2)
-                        n = (n->next_ = append_node());
-                    if (n1)
-                        n->next_ = n1;
-                    else
-                        n->next_ = n2;
-                    return l;
-                }
-                List merge_sort(List& l1) {
-                    if (l1.length_ > 1) {
-                        size_t length = 0;
-                        Node* node = l1.head_;
-                        for (; length < l1.length_ / 2 - 1; ++length)
-                            node = node->next_;
-                        ++length;
-                        List l2(node->next_, l1.length_ - length);
-                        node->next_ = nullptr;
-                        l1.length_ = length;
-                        l1 = merge(merge_sort(l1), merge_sort(l2));
-                    }
-                    return l1;
-                }
-            } helper;
-            l = helper.merge_sort(l);
-            head_ = l.head_;
-            for (tail_ = l.head_; tail_->next_; tail_ = tail_->next_);
-        }
+        void merge_sort();
 
         template<typename... Args>
             void emplace_back(Args&&... args) {
@@ -137,21 +84,21 @@ class Forward_list {
             return t;
         }
         iterator begin() {
-            return Iterator(head_);
+            return iterator(head_);
         }
         iterator end() {
-            static Iterator it(nullptr);
+            static iterator it(nullptr);
             return it;
         }
         const_iterator cbegin() const {
-            return Const_iterator(head_);
+            return const_iterator(head_);
         }
         const_iterator cend() const {
-            static Const_iterator it(nullptr);
+            static const_iterator it(nullptr);
             return it;
         }
         iterator before_end() {
-            return Iterator(tail_);
+            return iterator(tail_);
         }
         bool empty() const {
             return head_ == nullptr;
@@ -173,41 +120,37 @@ struct Forward_list<T>::Node {
         Node(Args&&... args) :value_(std::forward<Args>(args)...), next_(nullptr) {}
 };
 
-template<typename N>
-class Base_iterator {
-    protected:
-        N node_;
+template<bool T_is_true, typename T_true_type, typename T_false_type>
+struct Choose_type;
+
+template<typename T_true_type, typename T_false_type>
+struct Choose_type<true, T_true_type, T_false_type> {
+    using type = T_true_type;
+};
+
+template<typename T_true_type, typename T_false_type>
+struct Choose_type<false, T_true_type, T_false_type> {
+    using type = T_false_type;
+};
+
+template<typename T>
+template<bool T_is_const>
+class Forward_list<T>::Iterator {
+    private:
+        using node_type = typename Choose_type<T_is_const, const Node, Node>::type;
+        using value_type = typename Choose_type<T_is_const, const T, T>::type;
+        node_type* node_;
     public:
-        Base_iterator(N node) :node_(node) {}
+        Iterator(node_type* node) :node_(node) {}
         bool empty() const { return node_ == nullptr; }
-        Base_iterator& operator++() { 
+        Iterator& operator++() { 
             node_ = node_->next_; 
             return *this;
         }
-        bool operator==(const Base_iterator& o) { return node_ == o.node_; }
-        bool operator!=(const Base_iterator& o) { return node_ != o.node_; }
-        bool operator==(Base_iterator&& o) { return node_ == o.node_; }
-        bool operator!=(Base_iterator&& o) { return node_ != o.node_; }
-};
-
-template<typename T>
-class Forward_list<T>::Iterator : public Base_iterator<Node*> {
-    private:
-        using Base = Base_iterator<Node*>;
-    public:
-        Iterator(Node* node) :Base(node) {}
-        T& operator*() { return Base::node_->value_; }
-        T* operator->() { return &Base::node_->value_; }
-};
-
-template<typename T>
-class Forward_list<T>::Const_iterator : public Base_iterator<const Node*> {
-    private:
-        using Base = Base_iterator<const Node*>;
-    public:
-        Const_iterator(Node* node) :Base(node) {}
-        const T& operator*() { return Base::node_->value_; }
-        const T* operator->() { return &Base::node_->value_; }
+        bool operator==(const Iterator& o) const { return node_ == o.node_; }
+        bool operator!=(const Iterator& o) const { return !operator==(o); }
+        value_type& operator*() const { return node_->value_; }
+        value_type* operator->() const { return &operator*(); }
 };
 
 template<typename T>
@@ -220,4 +163,60 @@ std::ostream& operator<<(std::ostream& stream, const Forward_list<T>& a) {
             stream << ", " << *it;
     }
     return stream << "]";
+}
+
+template<typename T>
+void Forward_list<T>::merge_sort() {
+    if (!head_ || head_ == tail_)
+        return;
+    struct List {
+        Node* head_;
+        size_t length_ = 0;
+        List(Node* head, size_t length) :head_(head), length_(length) {}
+    };
+    List l(head_, 0);
+    for (Node* node = l.head_; node; node = node->next_)
+        ++l.length_;
+
+    static struct {
+        List merge(const List& l1, const List& l2) {
+            Node* n1 = l1.head_;
+            Node* n2 = l2.head_;
+            auto append_node = [&n1, &n2]() {
+                Node* n;
+                if (n2->value_ < n1->value_) {
+                    n = n2; n2 = n2->next_;
+                } else {
+                    n = n1; n1 = n1->next_;
+                }
+                return n;
+            };
+            List l(append_node(), l1.length_ + l2.length_);
+            Node* n = l.head_;
+            while (n1 && n2)
+                n = (n->next_ = append_node());
+            if (n1)
+                n->next_ = n1;
+            else
+                n->next_ = n2;
+            return l;
+        }
+        List merge_sort(List& l1) {
+            if (l1.length_ > 1) {
+                size_t length = 0;
+                Node* node = l1.head_;
+                for (; length < l1.length_ / 2 - 1; ++length)
+                    node = node->next_;
+                ++length;
+                List l2(node->next_, l1.length_ - length);
+                node->next_ = nullptr;
+                l1.length_ = length;
+                l1 = merge(merge_sort(l1), merge_sort(l2));
+            }
+            return l1;
+        }
+    } helper;
+    l = helper.merge_sort(l);
+    head_ = l.head_;
+    for (tail_ = l.head_; tail_->next_; tail_ = tail_->next_);
 }

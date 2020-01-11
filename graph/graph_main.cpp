@@ -123,8 +123,9 @@ int main() {
             .add_edge(4, 5)
             .add_edge(4, 6);
 
-        Graph::compose_euler_tour(graph, graph.vertex_at(0), graph.vertex_at(0));
-        // std::cout << "has: " << h << std::endl;
+        auto path = Graph::compose_euler_tour(graph, graph.vertex_at(0), graph.vertex_at(0));
+        Graph::print_collection(path.cbegin(), path.cend(), " - ", [](auto p) { return *p; }, std::cout);
+        std::cout << std::endl;
 
         std::cout << "graph with hamilton path" << std::endl;
         constructor
