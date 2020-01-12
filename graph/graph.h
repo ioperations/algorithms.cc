@@ -189,5 +189,31 @@ namespace Graph {
             }
             return path;
         }
+
+    template<typename G, typename V = typename G::Vertex, typename T_v_visitor, typename T_e_visitor>
+        void dfs(const G& g, T_v_visitor v_visitor, T_e_visitor e_visitor) {
+            if (g.vertices_count() < 1)
+                return;
+            struct Helper {
+                Array<bool> visited_;
+                Helper(size_t size) :visited_(size) {
+                    for (auto& v : visited_)
+                        v = false;
+                }
+                void search(const V& v, T_v_visitor v_visitor, T_e_visitor e_visitor) {
+                    auto& visited = visited_[v.index()];
+                    if (visited)
+                        return;
+                    v_visitor(v);
+                    visited = true;
+                    for (auto w = v.cbegin(); w != v.cend(); ++w) {
+                        search(*w, v_visitor, e_visitor);
+                        e_visitor(v, *w);
+                    }
+                }
+            };
+            Helper(g.vertices_count()).search(*g.cbegin(), v_visitor, e_visitor);
+        }
+
 }
 

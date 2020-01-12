@@ -127,5 +127,15 @@ int main() {
         auto h_path = Graph::compose_hamilton_path(graph);
         print_path(h_path.begin(), h_path.end());
         std::cout << std::endl;
+
+        Graph::dfs(graph,
+                   [](const auto& v) {
+                       std::cout << v << std::endl;
+                   },
+                   [](const auto& v, const auto& w) {
+                       if (v.index() < w.index())
+                           std::cout << v << " - " << w << std::endl;
+                   }
+                  );
     }
 }
