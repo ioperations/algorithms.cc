@@ -11,10 +11,10 @@ class String_builder {
         std::stringstream ss;
     public:
         template<typename T>
-        String_builder& operator+(T&& t) {
-            ss << std::forward<T>(t);
-            return *this;
-        }
+            String_builder& operator+(T&& t) {
+                ss << std::forward<T>(t);
+                return *this;
+            }
         operator std::string() {
             return ss.str();
         }
@@ -54,18 +54,9 @@ class Graph_constructor {
         };
 };
 
-template<typename G>
-void print_hamilton_path(const G& graph) {
-    auto path = Graph::compose_hamilton_path(graph);
-    auto it = path.cbegin();
-    if (it == path.end()) {
-        std::cout << "hamilton path not found" << std::endl;
-        return;
-    }
-    std::cout << **it;
-    for (++it; it != path.cend(); ++it)
-        std::cout << " - " << **it;
-    std::cout << " - " << **path.begin() << std::endl;
+template<typename It>
+void print_path(const It& b, const It& e) {
+    Graph::print_collection(b, e, " - ", [](auto p) { return *p; }, std::cout);
 }
 
 template<typename G>
@@ -89,9 +80,11 @@ void test_graph(G& graph) {
     has_simple_path("1", "4");
     has_simple_path("1", "5");
 
-    print_hamilton_path(graph);
+    std::cout << "Hamilton path: ";
+    auto h_path = Graph::compose_hamilton_path(graph);
+    print_path(h_path.begin(), h_path.end());
 
-    std::cout << "internal structure: " << std::endl;
+    std::cout << std::endl << "internal structure: " << std::endl;
     graph.print_internal(std::cout);
 }
 
@@ -123,14 +116,16 @@ int main() {
             .add_edge(4, 5)
             .add_edge(4, 6);
 
-        auto path = Graph::compose_euler_tour(graph, graph.vertex_at(0), graph.vertex_at(0));
-        Graph::print_collection(path.cbegin(), path.cend(), " - ", [](auto p) { return *p; }, std::cout);
+        auto path = Graph::compose_euler_tour(graph, graph.vertex_at(0));
+        print_path(path.begin(), path.end());
         std::cout << std::endl;
 
         std::cout << "graph with hamilton path" << std::endl;
         constructor
             .add_edge(1, 3)
             .add_edge(3, 5);
-        print_hamilton_path(graph);
+        auto h_path = Graph::compose_hamilton_path(graph);
+        print_path(h_path.begin(), h_path.end());
+        std::cout << std::endl;
     }
 }

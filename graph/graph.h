@@ -136,22 +136,22 @@ namespace Graph {
         }
 
     template<typename G, typename V = typename G::Vertex>
-        auto compose_euler_tour(const G& g, const V& v1, const V& v2) {
+        auto compose_euler_tour(const G& g, const V& v) {
             Array<size_t> degrees(g.vertices_count());
             {
                 auto e = degrees.begin();
                 for (auto v = g.cbegin(); v != g.cend(); ++v, ++e)
                     *e = count_vertex_edges(*v);
             }
-            auto degree = degrees[v1.index()] + degrees[v2.index()];
+            auto degree = degrees[v.index()] + degrees[v.index()];
 
             using Path = Forward_list<const V*>;
             Path path;
 
             if (degree % 2 == 0) {
                 bool found = true;
-                for (auto v = g.cbegin(); v != g.cend() && found; ++v)
-                    if (*v != v1 && *v != v2 && degrees[v->index()] % 2 != 0)
+                for (auto w = g.cbegin(); w != g.cend() && found; ++w)
+                    if (*w != v && degrees[w->index()] % 2 != 0)
                         found = false;
                 if (found) {
                     using Stack = Stack<const V*>;
@@ -183,8 +183,8 @@ namespace Graph {
                             }
                         }
                     };
-                    auto gg = g;
-                    Helper(g, gg).compose(&gg.vertex_at(0), path);
+                    auto g_copy = g;
+                    Helper(g, g_copy).compose(&g_copy.vertex_at(v.index()), path);
                 }
             }
             return path;
