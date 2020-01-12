@@ -25,7 +25,7 @@
 
 class Graph_widget : public Canvas_widget {
     private:
-        Graph graph_;
+        Graph::Layout::Calculator graph_;
     public:
         Graph_widget(wxWindow *parent) :Canvas_widget(parent) {
             auto v1 = graph_.add_vertex("1");
