@@ -30,7 +30,7 @@ else()
 endif()
 
 include("${wxWidgets_USE_FILE}")
-add_executable(fr_layout_main fr_layout_main.cpp fr_layout.cpp canvas_app.cpp)
+add_executable(fr_layout_main graph/fr_layout_main.cpp graph/fr_layout.cpp graph/canvas_app.cpp)
 target_link_libraries(fr_layout_main ${wxWidgets_LIBRARIES})
 
 add_executable(graph_main graph/graph_main.cpp)
