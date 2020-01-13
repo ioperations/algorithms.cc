@@ -5,13 +5,8 @@
 #include <wx/wx.h>
 #endif
 
-class Canvas_widget : public wxWindow {
+class Painter {
     public:
-        Canvas_widget(wxWindow *parent, const wxPoint &pos=wxDefaultPosition,
-                     const wxSize &size=wxDefaultSize, long style=0, const wxString &name=wxPanelNameStr);
-    protected:
-        virtual void do_draw(wxDC& dc) = 0;
-
         wxCoord x(double x) {
             return x + 10;
         }
@@ -27,6 +22,15 @@ class Canvas_widget : public wxWindow {
         void draw_line(wxDC& dc, wxCoord x1, wxCoord y1, wxCoord x2, wxCoord y2) {
             dc.DrawLine(x(x1), y(y1), x(x2), y(y2));
         }
+};
+
+class Canvas_widget : public wxWindow {
+    protected:
+        Painter painter_;
+        virtual void do_draw(wxDC& dc) = 0;
+    public:
+        Canvas_widget(wxWindow *parent, const wxPoint &pos=wxDefaultPosition,
+                     const wxSize &size=wxDefaultSize, long style=0, const wxString &name=wxPanelNameStr);
 };
 
 class Application : public wxApp {

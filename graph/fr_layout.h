@@ -7,6 +7,8 @@
 
 #include <boost/graph/adjacency_list.hpp>
 
+#include "forward_list.h"
+
 namespace Graph {
 
     namespace Layout {
@@ -15,6 +17,7 @@ namespace Graph {
             std::string label_;
             double x_;
             double y_;
+            Vertex_position() = default;
             Vertex_position(const std::string& label, double x, double y)
                 :label_(label), x_(x), y_(y)
             {}
@@ -33,6 +36,41 @@ namespace Graph {
                 void iterate_edges(std::function<void(const std::pair<Vertex_position, Vertex_position>&)>);
         };
 
+        class Layout {
+            public:
+                using Edges = Forward_list<std::pair<Vertex_position* const, Vertex_position* const>>;
+            private:
+                std::vector<Vertex_position> positions_;
+                Edges edges_;
+                size_t edges_count_;
+            public:
+                Layout(std::vector<Vertex_position>&& positions, Edges&& edges, size_t edges_count) 
+                    :positions_(std::move(positions)), edges_(std::move(edges)), edges_count_(edges_count) 
+                {}
+                Layout(const Layout&) = delete;
+                Layout& operator=(const Layout&) = delete;
+                Layout(Layout&& o) 
+                    :positions_(std::move(o.positions_)), edges_(std::move(o.edges_)), edges_count_(o.edges_count_) 
+                {}
+
+                auto edges_cbegin() const {
+                    return edges_.cbegin();
+                }
+                auto edges_cend() const {
+                    return edges_.cend();
+                }
+                auto vertices_cbegin() const {
+                    return positions_.cbegin();
+                }
+                auto vertices_cend() const {
+                    return positions_.cend();
+                }
+                auto edges_count() {
+                    return edges_count_;
+                }
+        };
+
+
         class Vertex;
         class Calculator {
             private:
@@ -48,6 +86,8 @@ namespace Graph {
                 Calculator& add_edge(const vertex_descriptor& v1, const vertex_descriptor& v2);
                 void calculate_layout(double width, double height, int iterations = 100);
                 Vertex_positions& positions();
+
+                Layout calculate_layout_2(double width, double height, int iterations = 100);
         };
 
     }
