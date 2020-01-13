@@ -2,57 +2,8 @@
 #include "adjacency_lists.h"
 
 #include <string>
-#include <map>
 #include <stdexcept>
 #include <sstream>
-
-class String_builder {
-    private:
-        std::stringstream ss;
-    public:
-        template<typename T>
-            String_builder& operator+(T&& t) {
-                ss << std::forward<T>(t);
-                return *this;
-            }
-        operator std::string() {
-            return ss.str();
-        }
-};
-String_builder operator""_str(const char* s, long unsigned int) {
-    return std::move(String_builder() + s);
-}
-
-template<typename G, typename T = typename G::value_type>
-class Graph_constructor {
-    private:
-        using Vertex = typename G::Vertex;
-        G& graph_;
-        std::map<T, typename G::Vertex&> vertices_;
-    public:
-        Graph_constructor(G& graph) :graph_(graph) {}
-        Graph_constructor& add_edge(const T& l1, const T& l2) {
-            auto& v1 = get_or_create_vertex(l1);
-            auto& v2 = get_or_create_vertex(l2);
-            graph_.add_edge(v1, v2);
-            return *this;
-        }
-        Vertex& get_or_create_vertex(const T& l) {
-            auto it = vertices_.find(l);
-            if (it == vertices_.end()) {
-                auto& v = graph_.create_vertex(l);
-                vertices_.insert({l, v});
-                return v;
-            } else
-                return it->second;
-        }
-        Vertex& get_vertex(const T& label) {
-            auto it = vertices_.find(label);
-            if (it == vertices_.end())
-                throw std::runtime_error("vertex "_str + label + " not found");
-            return it->second;
-        };
-};
 
 template<typename It>
 void print_path(const It& b, const It& e) {
@@ -61,7 +12,7 @@ void print_path(const It& b, const It& e) {
 
 template<typename G>
 void test_graph(G& graph) {
-    Graph_constructor constructor(graph);
+    Graph::Constructor constructor(graph);
 
     constructor.add_edge("1", "2")
         .add_edge("2", "3")
@@ -103,7 +54,7 @@ int main() {
     {
         std::cout << "graph with Euler tour" << std::endl;
         Graph::Adjacency_matrix<int> graph;
-        Graph_constructor constructor(graph);
+        Graph::Constructor constructor(graph);
         constructor
             .add_edge(0, 1)
             .add_edge(0, 2)
@@ -135,7 +86,6 @@ int main() {
                    [](const auto& v, const auto& w) {
                        if (v.index() < w.index())
                            std::cout << v << " - " << w << std::endl;
-                   }
-                  );
+                   });
     }
 }

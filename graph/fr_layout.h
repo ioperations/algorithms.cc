@@ -52,6 +52,7 @@ namespace Graph {
                 Layout(Layout&& o) 
                     :positions_(std::move(o.positions_)), edges_(std::move(o.edges_)), edges_count_(o.edges_count_) 
                 {}
+                Layout& operator=(Layout&&) = delete;
 
                 auto edges_cbegin() const {
                     return edges_.cbegin();
@@ -67,6 +68,9 @@ namespace Graph {
                 }
                 auto edges_count() {
                     return edges_count_;
+                }
+                auto vertices_count() {
+                    return positions_.size();
                 }
         };
 

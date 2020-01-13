@@ -11,3 +11,7 @@ size_t string_actual_printed_length(const std::string& str) {
     }
     return length;
 }
+
+String_builder operator""_str(const char* s, long unsigned int) {
+    return std::move(String_builder() + s);
+}

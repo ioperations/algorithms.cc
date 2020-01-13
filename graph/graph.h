@@ -2,10 +2,43 @@
 
 #include "array.h"
 #include "stack.h"
+#include "string_utils.h"
 
+#include <map>
 #include <iostream>
 
 namespace Graph {
+
+    template<typename G, typename T = typename G::value_type>
+        class Constructor {
+            private:
+                using Vertex = typename G::Vertex;
+                G& graph_;
+                std::map<T, typename G::Vertex&> vertices_;
+            public:
+                Constructor(G& graph) :graph_(graph) {}
+                Constructor& add_edge(const T& l1, const T& l2) {
+                    auto& v1 = get_or_create_vertex(l1);
+                    auto& v2 = get_or_create_vertex(l2);
+                    graph_.add_edge(v1, v2);
+                    return *this;
+                }
+                Vertex& get_or_create_vertex(const T& l) {
+                    auto it = vertices_.find(l);
+                    if (it == vertices_.end()) {
+                        auto& v = graph_.create_vertex(l);
+                        vertices_.insert({l, v});
+                        return v;
+                    } else
+                        return it->second;
+                }
+                Vertex& get_vertex(const T& label) {
+                    auto it = vertices_.find(label);
+                    if (it == vertices_.end())
+                        throw std::runtime_error("vertex "_str + label + " not found");
+                    return it->second;
+                };
+        };
 
     template<typename It, typename F>
         void print_collection(const It& b, const It& e, const char* del, F f, std::ostream& stream) {
@@ -51,7 +84,7 @@ namespace Graph {
                 {}
                 Vertex_base() = default;
             public:
-                T value() const {
+                const T& value() const {
                     return value_;
                 }
                 size_t index() const {
