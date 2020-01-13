@@ -32,14 +32,45 @@ class Drawable {
         wxCoord height_;
         wxCoord width_;
     public:
+        Drawable() :height_(0), width_(0) {}
         virtual void draw(wxDC& dc, Painter& painter) = 0;
         virtual ~Drawable() {}
+        wxCoord height() { return height_; }
+        wxCoord width() { return width_; }
+};
+
+class Vertical_drawable_block : public Drawable {
+    private:
+        std::vector<Drawable*> drawables_;
+    public:
+        Vertical_drawable_block(const std::initializer_list<Drawable*>& l)
+            :drawables_(l)
+        {}
+        ~Vertical_drawable_block() {
+            for (auto d : drawables_)
+                delete d;
+        }
+        void draw(wxDC& dc, Painter& painter) override {
+            for (auto d : drawables_) {
+                d->draw(dc, painter);
+                painter.shift_y_offset(d->height());
+            }
+        }
 };
 
 class Drawable_text : public Drawable {
-    void draw(wxDC& dc, Painter& painter) override {
-        painter.draw_text(dc, "test", 0, 0);
-    }
+    private:
+        wxString text_;
+        bool sizes_calculated_;
+    public:
+        Drawable_text(const char* text) :text_(text), sizes_calculated_(false) {}
+        void draw(wxDC& dc, Painter& painter) override {
+            if (!sizes_calculated_) {
+                dc.GetTextExtent(text_, &width_, &height_);
+                sizes_calculated_ = true;
+            }
+            painter.draw_text(dc, text_, 0, 0);
+        }
 };
 
 class Drawable_graph : public Drawable {
@@ -55,6 +86,7 @@ class Drawable_graph : public Drawable {
             Text_block(const Graph::Layout::Vertex_position* v)
                 :vertex_position_(v)
             {}
+            Text_block() = default;
             void calculate_sizes(wxDC& dc) {
                 dc.GetTextExtent(vertex_position_->label_, &half_width_, &half_height_);
                 rect_width_ = half_width_ + 8;
@@ -62,35 +94,38 @@ class Drawable_graph : public Drawable {
                 half_width_ /= 2;
                 half_height_ /= 2;
             }
-            Text_block() = default;
         };
         using Layout = Graph::Layout::Layout;
         Layout layout_;
         std::vector<Text_block> text_blocks_;
-        bool text_extents_calculated_;
+        bool sizes_calculated_;
         wxCoord x_offset_;
         wxCoord y_offset_;
     public:
         Drawable_graph(Layout&& layout) 
             :layout_(std::move(layout)), 
             text_blocks_(layout_.vertices_count()),
-            text_extents_calculated_(false) 
-        {}
+            sizes_calculated_(false) 
+    {}
         void draw(wxDC& dc, Painter& painter) override {
-            if (!text_extents_calculated_) {
-                auto text_blocks_it = text_blocks_.begin();
+            if (!sizes_calculated_) {
+                auto text_block = text_blocks_.begin();
                 for (auto v = layout_.vertices_cbegin(); v != layout_.vertices_cend(); ++v) {
-                    *text_blocks_it = Text_block(&*v);
-                    text_blocks_it->calculate_sizes(dc);
-                    x_offset_ = std::max<wxCoord>(x_offset_, text_blocks_it->rect_width_ / 2 - v->x_);
-                    y_offset_ = std::max<wxCoord>(y_offset_, text_blocks_it->half_height_ - v->y_);
-                    ++text_blocks_it;
+                    *text_block = Text_block(&*v);
+                    text_block->calculate_sizes(dc);
+                    x_offset_ = std::max<wxCoord>(x_offset_, text_block->rect_width_ / 2 - v->x_);
+                    y_offset_ = std::max<wxCoord>(y_offset_, text_block->half_height_ - v->y_);
+                    width_ = std::max<wxCoord>(width_, v->x_ + text_block->rect_width_ / 2);
+                    height_ = std::max<wxCoord>(height_, v->y_ + text_block->half_height_);
+                    ++text_block;
                 }
                 for (auto& tb : text_blocks_) {
                     tb.x_ = tb.vertex_position_->x_ + x_offset_;
                     tb.y_ = tb.vertex_position_->y_ + y_offset_;
                 }
-                text_extents_calculated_ = true;
+                width_ += x_offset_;
+                height_ += y_offset_;
+                sizes_calculated_ = true;
             }
             for (auto e = layout_.edges_cbegin(); e != layout_.edges_cend(); ++e) {
                 auto s = e->first; auto t = e->second;
@@ -106,7 +141,7 @@ class Drawable_graph : public Drawable {
 
 class Graph_widget : public Canvas_widget {
     private:
-        std::vector<std::unique_ptr<Drawable>> drawables_;
+        Drawable* drawable_;
     public:
         Graph_widget(wxWindow *parent) :Canvas_widget(parent) {
 
@@ -137,15 +172,20 @@ class Graph_widget : public Canvas_widget {
 
             auto layout = calculator.calculate_layout_2(100, 100);
 
-            drawables_.push_back(std::make_unique<Drawable_text>());
-            drawables_.push_back(std::make_unique<Drawable_graph>(std::move(layout)));
+            drawable_ = new Vertical_drawable_block{
+                new Drawable_text("test"),
+                    new Drawable_text("test"),
+                    new Drawable_graph(std::move(layout)),
+                    new Drawable_text("testtesttesttesttesttest")
+            };
+        }
+        ~Graph_widget() {
+            delete drawable_;
         }
     protected:
         void do_draw(wxDC& dc) override {
-                // painter_.draw_rect(dc, 0, 0, 100, 100);
-            dc.DrawRectangle(10, 10, 100, 100);
-            for (auto& drawable : drawables_)
-                drawable->draw(dc, painter_);
+            Painter painter;
+            drawable_->draw(dc, painter);
         }
 };
 
