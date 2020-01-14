@@ -2,197 +2,65 @@
 
 #include "graph.h"
 #include "adjacency_matrix.h"
-#include "canvas_app.h"
+#include "drawables.h"
 
-// #include <forward_list>
-// #include <iostream>
-
-// int main() {
-//     Graph::Layout::Calculator graph;
-//     auto v1 = graph.add_vertex("1");
-//     auto v2 = graph.add_vertex("2");
-//     auto v3 = graph.add_vertex("3");
-//     auto v4 = graph.add_vertex("4");
-//     auto v5 = graph.add_vertex("5");
-
-//     graph.add_edge(v1, v2)
-//         .add_edge(v2, v3)
-//         .add_edge(v3, v4)
-//         .add_edge(v1, v3)
-//         .add_edge(v2, v4)
-//         .add_edge(v2, v5);
-//     auto layout = graph.calculate_layout_2(100, 100);
-
-//     for (auto e = layout.cbegin(); e != layout.cend(); ++e)
-//         std::cout << e->first->label_ << " " << e->second->label_ << std::endl;
-// }
-
-class Drawable {
-    protected:
-        wxCoord height_;
-        wxCoord width_;
-    public:
-        Drawable() :height_(0), width_(0) {}
-        virtual void draw(wxDC& dc, Painter& painter) = 0;
-        virtual ~Drawable() {}
-        wxCoord height() { return height_; }
-        wxCoord width() { return width_; }
-};
-
-class Vertical_drawable_block : public Drawable {
+class Drawables_stream {
     private:
-        std::vector<Drawable*> drawables_;
+        Vertical_drawable_block* const block_;
     public:
-        Vertical_drawable_block(const std::initializer_list<Drawable*>& l)
-            :drawables_(l)
-        {}
-        ~Vertical_drawable_block() {
-            for (auto d : drawables_)
-                delete d;
-        }
-        void draw(wxDC& dc, Painter& painter) override {
-            for (auto d : drawables_) {
-                d->draw(dc, painter);
-                painter.shift_y_offset(d->height());
-            }
-        }
+        Drawables_stream(Vertical_drawable_block* block) :block_(block) {}
+        Vertical_drawable_block* const block() { return block_; }
 };
 
-class Drawable_text : public Drawable {
-    private:
-        wxString text_;
-        bool sizes_calculated_;
-    public:
-        Drawable_text(const char* text) :text_(text), sizes_calculated_(false) {}
-        void draw(wxDC& dc, Painter& painter) override {
-            if (!sizes_calculated_) {
-                dc.GetTextExtent(text_, &width_, &height_);
-                sizes_calculated_ = true;
-            }
-            painter.draw_text(dc, text_, 0, 0);
-        }
-};
+Drawables_stream& operator<<(Drawables_stream& stream, const char* text) {
+    stream.block()->add(new Drawable_text(text));
+    return stream;
+}
 
-class Drawable_graph : public Drawable {
-    private:
-        struct Text_block {
-            const Graph::Layout::Vertex_position* vertex_position_;
-            wxCoord rect_width_;
-            wxCoord rect_height_;
-            wxCoord half_width_;
-            wxCoord half_height_;
-            wxCoord x_;
-            wxCoord y_;
-            Text_block(const Graph::Layout::Vertex_position* v)
-                :vertex_position_(v)
-            {}
-            Text_block() = default;
-            void calculate_sizes(wxDC& dc) {
-                dc.GetTextExtent(vertex_position_->label_, &half_width_, &half_height_);
-                rect_width_ = half_width_ + 8;
-                rect_height_ = half_height_;
-                half_width_ /= 2;
-                half_height_ /= 2;
-            }
-        };
-        using Layout = Graph::Layout::Layout;
-        Layout layout_;
-        std::vector<Text_block> text_blocks_;
-        bool sizes_calculated_;
-        wxCoord x_offset_;
-        wxCoord y_offset_;
-    public:
-        Drawable_graph(Layout&& layout) 
-            :layout_(std::move(layout)), 
-            text_blocks_(layout_.vertices_count()),
-            sizes_calculated_(false) 
-    {}
-        void draw(wxDC& dc, Painter& painter) override {
-            if (!sizes_calculated_) {
-                auto text_block = text_blocks_.begin();
-                for (auto v = layout_.vertices_cbegin(); v != layout_.vertices_cend(); ++v) {
-                    *text_block = Text_block(&*v);
-                    text_block->calculate_sizes(dc);
-                    x_offset_ = std::max<wxCoord>(x_offset_, text_block->rect_width_ / 2 - v->x_);
-                    y_offset_ = std::max<wxCoord>(y_offset_, text_block->half_height_ - v->y_);
-                    width_ = std::max<wxCoord>(width_, v->x_ + text_block->rect_width_ / 2);
-                    height_ = std::max<wxCoord>(height_, v->y_ + text_block->half_height_);
-                    ++text_block;
-                }
-                for (auto& tb : text_blocks_) {
-                    tb.x_ = tb.vertex_position_->x_ + x_offset_;
-                    tb.y_ = tb.vertex_position_->y_ + y_offset_;
-                }
-                width_ += x_offset_;
-                height_ += y_offset_;
-                sizes_calculated_ = true;
-            }
-            for (auto e = layout_.edges_cbegin(); e != layout_.edges_cend(); ++e) {
-                auto s = e->first; auto t = e->second;
-                painter.draw_line(dc, s->x_ + x_offset_, s->y_ + y_offset_, t->x_ + x_offset_, t->y_ + y_offset_);
-            }
-            for (auto tb = text_blocks_.cbegin(); tb != text_blocks_.cend(); ++tb) {
-                auto v = tb->vertex_position_;
-                painter.draw_rect(dc, v->x_, tb->y_, tb->rect_width_, tb->rect_height_);
-                painter.draw_text(dc, v->label_, tb->x_ - tb->half_width_, tb->y_ - tb->half_height_);
-            }
-        }
-};
+template<typename G>
+Drawables_stream& operator<<(Drawables_stream& stream, const G& graph) {
+    Graph::Layout::Calculator calculator;
+    std::map<size_t, Graph::Layout::Calculator::vertex_descriptor> map;
+    Graph::dfs(graph,
+               [&calculator, &map](const auto& v) {
+                   map[v.index()] = calculator.add_vertex(std::to_string(v.value()));
+               },
+               [&calculator, &map](const auto& v, const auto& w) {
+                   if (v.index() < w.index())
+                       calculator.add_edge(map.find(v.index())->second, map.find(w.index())->second);
+               });
+    stream.block()->add(new Drawable_graph(calculator.calculate_layout_2(100, 100)));
+    return stream;
+}
 
-class Graph_widget : public Canvas_widget {
-    private:
-        Drawable* drawable_;
-    public:
-        Graph_widget(wxWindow *parent) :Canvas_widget(parent) {
+Drawable* const compose_drawables() {
+    Vertical_drawable_block* drawable = new Vertical_drawable_block;
+    Drawables_stream dout(drawable);
 
-            Graph::Adjacency_matrix<int> graph;
-            Graph::Constructor constructor(graph);
-            constructor
-                .add_edge(0, 1)
-                .add_edge(0, 2)
-                .add_edge(0, 5)
-                .add_edge(0, 6)
-                .add_edge(1, 2)
-                .add_edge(2, 3)
-                .add_edge(2, 4)
-                .add_edge(3, 4)
-                .add_edge(4, 5)
-                .add_edge(4, 6);
+    dout << "graph with Euler tour";
+    Graph::Adjacency_matrix<int> graph;
+    Graph::Constructor constructor(graph);
+    constructor
+        .add_edge(0, 1)
+        .add_edge(0, 2)
+        .add_edge(0, 5)
+        .add_edge(0, 6)
+        .add_edge(1, 2)
+        .add_edge(2, 3)
+        .add_edge(2, 4)
+        .add_edge(3, 4)
+        .add_edge(4, 5)
+        .add_edge(4, 6);
+    dout << graph;
 
-            Graph::Layout::Calculator calculator;
-            std::map<size_t, Graph::Layout::Calculator::vertex_descriptor> map;
-            Graph::dfs(graph,
-                       [&calculator, &map](const auto& v) {
-                           map[v.index()] = calculator.add_vertex(std::to_string(v.value()));
-                       },
-                       [&calculator, &map](const auto& v, const auto& w) {
-                           if (v.index() < w.index())
-                               calculator.add_edge(map.find(v.index())->second, map.find(w.index())->second);
-                       });
+    dout << "\ngraph with Hamilton path";
+    constructor
+        .add_edge(1, 3)
+        .add_edge(3, 5);
+    dout << graph;
 
-            auto layout = calculator.calculate_layout_2(100, 100);
+    return drawable;
+}
 
-            drawable_ = new Vertical_drawable_block{
-                new Drawable_text("test"),
-                    new Drawable_text("test"),
-                    new Drawable_graph(std::move(layout)),
-                    new Drawable_text("testtesttesttesttesttest")
-            };
-        }
-        ~Graph_widget() {
-            delete drawable_;
-        }
-    protected:
-        void do_draw(wxDC& dc) override {
-            Painter painter;
-            drawable_->draw(dc, painter);
-        }
-};
-
-class Graph_application : public Application {
-    wxWindow* create_canvas_widget(wxWindow* parent) override {
-        return new Graph_widget(parent);
-    }
-};
-wxIMPLEMENT_APP(Graph_application);
+IMPLEMENT_CANVAS_APP(compose_drawables)
 

@@ -8,24 +8,27 @@
 #include <iostream>
 #include <fstream>
 
-Canvas_widget::Canvas_widget(wxWindow *parent, const wxPoint& pos,
-                             const wxSize& size, long style, const wxString& name)
-    :wxWindow(parent, wxID_ANY, pos, size, style, name)
-{
-    SetBackgroundStyle(wxBG_STYLE_PAINT);
-    SetBackgroundColour(wxColour("white"));
-    Bind(wxEVT_PAINT, [this](wxPaintEvent&) {
-        wxAutoBufferedPaintDC dc(this);
-        PrepareDC(dc);
-        dc.Clear();
-        do_draw(dc);
-    });
-    Bind(wxEVT_ERASE_BACKGROUND, [](wxEraseEvent&) {
-        // event is intercepted to prevent background from erasing
-    });
-    Bind(wxEVT_SIZE, [this](wxSizeEvent&) { Refresh(); });
-}
-
+class Canvas_widget : public wxWindow {
+    public:
+        Canvas_widget(wxWindow *parent, Drawable* const drawable, const wxPoint &pos=wxDefaultPosition,
+                      const wxSize &size=wxDefaultSize, long style=0, const wxString &name=wxPanelNameStr)
+            :wxWindow(parent, wxID_ANY, pos, size, style, name)
+        {
+            SetBackgroundStyle(wxBG_STYLE_PAINT);
+            SetBackgroundColour(wxColour("white"));
+            Bind(wxEVT_PAINT, [this, drawable](wxPaintEvent&) {
+                wxAutoBufferedPaintDC dc(this);
+                PrepareDC(dc);
+                dc.Clear();
+                Painter painter;
+                drawable->draw(dc, painter);
+            });
+            Bind(wxEVT_ERASE_BACKGROUND, [](wxEraseEvent&) {
+                // event is intercepted to prevent background from erasing
+            });
+            Bind(wxEVT_SIZE, [this](wxSizeEvent&) { Refresh(); });
+        }
+};
 
 bool Application::OnInit() {
     std::setlocale(LC_ALL, "en_US.UTF-8");
@@ -46,19 +49,20 @@ bool Application::OnInit() {
 
     class Canvas_panel : public wxPanel {
         public:
-            Canvas_panel(wxWindow* parent, Application* const application) :wxPanel(parent) {
+            Canvas_panel(wxWindow* parent, Drawable* const drawable) :wxPanel(parent) {
                 wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
-                sizer->Add(application->create_canvas_widget(this), 1, wxEXPAND);
+                sizer->Add(new Canvas_widget(this, drawable), 1, wxEXPAND);
                 SetSizer(sizer);
             }
     };
     class Main_frame : public wxFrame {
         public:
-            Main_frame(Application* const application, const wxString& title, const Properties& properties)
+            Main_frame(Application* const application, Drawable* const drawable,
+                       const wxString& title, const Properties& properties)
                 :wxFrame(NULL, wxID_ANY, title) {
                     SetPosition({properties.x_, properties.y_});
                     SetSize(properties.width_, properties.height_);
-                    new Canvas_panel(this, application);
+                    new Canvas_panel(this, drawable);
 
                     Bind(wxEVT_CLOSE_WINDOW, [this, application](wxCloseEvent& e) {
                         Properties properties;
@@ -69,7 +73,7 @@ bool Application::OnInit() {
                     });
                 }
     };
-    (new Main_frame(this, "Canvas", properties))->Show();
+    (new Main_frame(this, drawable_, "Canvas", properties))->Show();
 
     return true;
 }

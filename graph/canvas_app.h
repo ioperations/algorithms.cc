@@ -5,6 +5,13 @@
 #include <wx/wx.h>
 #endif
 
+#define IMPLEMENT_CANVAS_APP(f) \
+    class Graph_application : public Application { \
+        public: \
+                Graph_application() :Application(f()) {} \
+    }; \
+    wxIMPLEMENT_APP(Graph_application); \
+
 class Painter {
     private:
         wxCoord x_offset_ = 10;
@@ -29,17 +36,20 @@ class Painter {
         void shift_y_offset(wxCoord shift) { y_offset_ += shift; }
 };
 
-class Canvas_widget : public wxWindow {
+class Drawable {
     protected:
-        virtual void do_draw(wxDC& dc) = 0;
+        wxCoord height_;
+        wxCoord width_;
     public:
-        Canvas_widget(wxWindow *parent, const wxPoint &pos=wxDefaultPosition,
-                     const wxSize &size=wxDefaultSize, long style=0, const wxString &name=wxPanelNameStr);
+        Drawable() :height_(0), width_(0) {}
+        virtual void draw(wxDC& dc, Painter& painter) = 0;
+        virtual ~Drawable() {}
+        wxCoord height() { return height_; }
+        wxCoord width() { return width_; }
 };
 
 class Application : public wxApp {
     private:
-        bool OnInit() override;
         struct Properties {
             int x_;
             int y_;
@@ -50,8 +60,11 @@ class Application : public wxApp {
             {}
             Properties() :Properties(0, 0, 600, 800) {}
         };
+        Drawable* const drawable_;
+        bool OnInit() override;
     public:
+        Application(Drawable* const drawable) :drawable_(drawable) {}
+        ~Application() { delete drawable_; }
         void write_properties(const Properties& properties);
-        virtual wxWindow* create_canvas_widget(wxWindow* parent) = 0;
 };
 
