@@ -244,8 +244,12 @@ namespace Graph {
                         e_visitor(v, *w);
                     }
                 }
+                void search(const G& g, T_v_visitor v_visitor, T_e_visitor e_visitor) {
+                    for (auto v = g.cbegin(); v != g.cend(); ++v)
+                        search(*v, v_visitor, e_visitor);
+                }
             };
-            Helper(g.vertices_count()).search(*g.cbegin(), v_visitor, e_visitor);
+            Helper(g.vertices_count()).search(g, v_visitor, e_visitor);
         }
 
 }

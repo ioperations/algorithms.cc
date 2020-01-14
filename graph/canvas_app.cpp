@@ -10,12 +10,16 @@
 
 class Canvas_widget : public wxWindow {
     public:
-        Canvas_widget(wxWindow *parent, Drawable* const drawable, const wxPoint &pos=wxDefaultPosition,
+        Canvas_widget(wxWindow* parent, Drawable* const drawable, const wxPoint &pos=wxDefaultPosition,
                       const wxSize &size=wxDefaultSize, long style=0, const wxString &name=wxPanelNameStr)
             :wxWindow(parent, wxID_ANY, pos, size, style, name)
         {
             SetBackgroundStyle(wxBG_STYLE_PAINT);
             SetBackgroundColour(wxColour("white"));
+            wxAutoBufferedPaintDC dc(this);
+            drawable->calculate_size(dc);
+            SetMinSize({drawable->width() + 20, drawable->height() + 20});
+
             Bind(wxEVT_PAINT, [this, drawable](wxPaintEvent&) {
                 wxAutoBufferedPaintDC dc(this);
                 PrepareDC(dc);
@@ -47,14 +51,16 @@ bool Canvas_application_base::OnInit() {
         write_properties(properties);
     }
 
-    class Canvas_panel : public wxPanel {
+    class Canvas_panel : public wxScrolled<wxPanel> {
         public:
-            Canvas_panel(wxWindow* parent, Drawable* const drawable) :wxPanel(parent) {
+            Canvas_panel(wxWindow* parent, Drawable* const drawable) :wxScrolled<wxPanel>(parent) {
                 wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
                 sizer->Add(new Canvas_widget(this, drawable), 1, wxEXPAND);
                 SetSizer(sizer);
+                SetScrollRate(5, 5); 
             }
     };
+
     class Main_frame : public wxFrame {
         public:
             Main_frame(Canvas_application_base* const application, Drawable* const drawable,

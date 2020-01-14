@@ -42,6 +42,7 @@ class Drawable {
         wxCoord width_;
     public:
         Drawable() :height_(0), width_(0) {}
+        virtual void calculate_size(wxDC& dc) = 0;
         virtual void draw(wxDC& dc, Painter& painter) = 0;
         virtual ~Drawable() {}
         wxCoord height() { return height_; }

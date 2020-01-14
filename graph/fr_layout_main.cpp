@@ -29,7 +29,7 @@ Drawables_stream& operator<<(Drawables_stream& stream, const Graph::Adjacency_ma
                    if (v.index() < w.index())
                        calculator.add_edge(map.find(v.index())->second, map.find(w.index())->second);
                });
-    stream.block()->add(new Drawable_graph(calculator.calculate_layout_2(100, 100)));
+    stream.block()->add(new Drawable_graph(calculator.calculate_layout_2(200, 200, 1000)));
     return stream;
 }
 
