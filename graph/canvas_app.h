@@ -6,11 +6,11 @@
 #endif
 
 #define IMPLEMENT_CANVAS_APP(f) \
-    class Graph_application : public Application { \
+    class Canvas_application : public Canvas_application_base { \
         public: \
-                Graph_application() :Application(f()) {} \
+                Canvas_application() :Canvas_application_base(f()) {} \
     }; \
-    wxIMPLEMENT_APP(Graph_application); \
+    wxIMPLEMENT_APP(Canvas_application); \
 
 class Painter {
     private:
@@ -48,7 +48,7 @@ class Drawable {
         wxCoord width() { return width_; }
 };
 
-class Application : public wxApp {
+class Canvas_application_base : public wxApp {
     private:
         struct Properties {
             int x_;
@@ -63,8 +63,8 @@ class Application : public wxApp {
         Drawable* const drawable_;
         bool OnInit() override;
     public:
-        Application(Drawable* const drawable) :drawable_(drawable) {}
-        ~Application() { delete drawable_; }
+        Canvas_application_base(Drawable* const drawable) :drawable_(drawable) {}
+        ~Canvas_application_base() { delete drawable_; }
         void write_properties(const Properties& properties);
 };
 

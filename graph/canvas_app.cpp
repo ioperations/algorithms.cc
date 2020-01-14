@@ -30,7 +30,7 @@ class Canvas_widget : public wxWindow {
         }
 };
 
-bool Application::OnInit() {
+bool Canvas_application_base::OnInit() {
     std::setlocale(LC_ALL, "en_US.UTF-8");
 
     Properties properties;
@@ -57,7 +57,7 @@ bool Application::OnInit() {
     };
     class Main_frame : public wxFrame {
         public:
-            Main_frame(Application* const application, Drawable* const drawable,
+            Main_frame(Canvas_application_base* const application, Drawable* const drawable,
                        const wxString& title, const Properties& properties)
                 :wxFrame(NULL, wxID_ANY, title) {
                     SetPosition({properties.x_, properties.y_});
@@ -78,7 +78,7 @@ bool Application::OnInit() {
     return true;
 }
 
-void Application::write_properties(const Properties& properties) {
+void Canvas_application_base::write_properties(const Properties& properties) {
     namespace pt = boost::property_tree;
     pt::ptree window_ptree;
     window_ptree.put("x", properties.x_);

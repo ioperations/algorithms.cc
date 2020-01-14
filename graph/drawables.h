@@ -25,7 +25,6 @@ class Drawable_text : public Drawable {
 
 class Drawable_graph : public Drawable {
     private:
-        using Layout = Graph::Layout::Layout;
         struct Text_block {
             const Graph::Layout::Vertex_position* vertex_position_;
             wxCoord rect_width_;
@@ -40,6 +39,7 @@ class Drawable_graph : public Drawable {
             void calculate_sizes(wxDC& dc);
         };
 
+        using Layout = Graph::Layout::Layout;
         Layout layout_;
         std::vector<Text_block> text_blocks_;
         bool sizes_calculated_;
