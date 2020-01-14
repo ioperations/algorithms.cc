@@ -12,13 +12,13 @@ class Drawables_stream {
         Vertical_drawable_block* const block() { return block_; }
 };
 
-Drawables_stream& operator<<(Drawables_stream& stream, const char* text) {
+Drawables_stream& operator<<(Drawables_stream& stream, const std::string& text) {
     stream.block()->add(new Drawable_text(text));
     return stream;
 }
 
-template<typename G>
-Drawables_stream& operator<<(Drawables_stream& stream, const G& graph) {
+template<typename T>
+Drawables_stream& operator<<(Drawables_stream& stream, const Graph::Adjacency_matrix<T>& graph) {
     Graph::Layout::Calculator calculator;
     std::map<size_t, Graph::Layout::Calculator::vertex_descriptor> map;
     Graph::dfs(graph,
@@ -31,6 +31,13 @@ Drawables_stream& operator<<(Drawables_stream& stream, const G& graph) {
                });
     stream.block()->add(new Drawable_graph(calculator.calculate_layout_2(100, 100)));
     return stream;
+}
+
+template<typename It>
+void print_path(Drawables_stream& dout, const It& b, const It& e) {
+    std::stringstream ss;
+    Graph::print_collection(b, e, " - ", [](auto p) { return *p; }, ss);
+    dout << ss.str();
 }
 
 Drawable* const compose_drawables() {
@@ -53,11 +60,16 @@ Drawable* const compose_drawables() {
         .add_edge(4, 6);
     dout << graph;
 
+    auto path = Graph::compose_euler_tour(graph, graph.vertex_at(0));
+    print_path(dout, path.cbegin(), path.cend());
+
     dout << "\ngraph with Hamilton path";
     constructor
         .add_edge(1, 3)
         .add_edge(3, 5);
     dout << graph;
+    auto h_path = Graph::compose_hamilton_path(graph);
+    print_path(dout, h_path.cbegin(), h_path.cend());
 
     return drawable;
 }

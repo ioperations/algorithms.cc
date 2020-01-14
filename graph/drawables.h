@@ -30,7 +30,7 @@ class Drawable_text : public Drawable {
         wxString text_;
         bool sizes_calculated_;
     public:
-        Drawable_text(const char* text) :text_(text), sizes_calculated_(false) {}
+        Drawable_text(const std::string& text) :text_(text), sizes_calculated_(false) {}
         void draw(wxDC& dc, Painter& painter) override {
             if (!sizes_calculated_) {
                 dc.GetTextExtent(text_, &width_, &height_);
@@ -72,7 +72,7 @@ class Drawable_graph : public Drawable {
         Drawable_graph(Layout&& layout) 
             :layout_(std::move(layout)), 
             text_blocks_(layout_.vertices_count()),
-            sizes_calculated_(false) {}
+            sizes_calculated_(false), x_offset_(0), y_offset_(0) {}
         void draw(wxDC& dc, Painter& painter) override {
             if (!sizes_calculated_) {
                 auto text_block = text_blocks_.begin();
