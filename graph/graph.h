@@ -225,7 +225,7 @@ namespace Graph {
 
     template<typename G, typename V = typename G::Vertex, typename T_v_visitor, typename T_e_visitor>
         void dfs(const G& g, T_v_visitor v_visitor, T_e_visitor e_visitor) {
-            if (g.vertices_count() < 1)
+            if (g.vertices_count() == 0)
                 return;
             struct Helper {
                 Array<bool> visited_;
