@@ -17,9 +17,15 @@ class Two_dimensional_array {
             begin_(begin), end_(begin_ + size) {}
         Two_dimensional_array(size_t rows, size_t columns, size_t size)
             :Two_dimensional_array(new T[size], rows, columns, size) {}
+
+        template<typename It>
+            It do_get_row(size_t index) const {
+                return {*this, begin_ + index * columns_count_};
+            }
     public:
         using iterator = typename Row<false>::Iterator;
         using const_iterator = typename Row<true>::Iterator;
+
         Two_dimensional_array(size_t rows, size_t columns)
             :Two_dimensional_array(rows, columns, rows * columns)
         {}
@@ -46,28 +52,28 @@ class Two_dimensional_array {
             std::swap(size_, o.size_);
             return *this;
         }
-        ~Two_dimensional_array() {
-            delete[] begin_;
-        }
-        T& get(size_t row, size_t column) {
+        ~Two_dimensional_array() { delete[] begin_; }
+
+        const T& get(size_t row, size_t column) const {
             return *(begin_ + row * columns_count_ + column);
         }
+        T& get(size_t row, size_t column) {
+            return const_cast<T&>(static_cast<const Two_dimensional_array&>(*this).get(row, column));
+        }
+        iterator operator[](size_t index) {
+            return do_get_row<iterator>(index);
+        }
+        const_iterator operator[](size_t index) const {
+            return do_get_row<const_iterator>(index);
+        }
         void fill(const T& value) {
-            for (auto p = begin_; p != end_; ++p)
-                *p = value;
+            for (auto p = begin_; p != end_; *p++ = value);
         }
-        const_iterator cbegin() const {
-            return const_iterator(*this, begin_);
-        }
-        const_iterator cend() const {
-            return const_iterator(*this, end_);
-        }
-        iterator begin() {
-            return iterator(*this, begin_);
-        }
-        iterator end() {
-            return iterator(*this, end_);
-        }
+
+        const_iterator cbegin() const { return {*this, begin_}; }
+        const_iterator cend() const { return {*this, end_}; }
+        iterator begin() { return {*this, begin_}; }
+        iterator end() { return {*this, end_}; }
 };
 
 template<typename T>
@@ -90,27 +96,25 @@ template<typename T>
 template<bool T_is_const>
 class Two_dimensional_array<T>::Row<T_is_const>::Iterator {
     private:
-        using row_type = Row<T_is_const>;
         friend class Two_dimensional_array<T>;
         const Two_dimensional_array<T>& array_;
-        row_type row_;
+        Row row_;
         Iterator(const Two_dimensional_array& array, T* ptr)
             :array_(array), row_(ptr, ptr + array_.columns_count_)
         {}
     public:
-        row_type& operator*() {
-            return row_;
-        }
-        row_type* operator->() {
-            return &operator*();
-        }
+        Row& operator*() { return row_; }
+        Row* operator->() { return &operator*(); }
         Iterator& operator++() {
             auto p = row_.begin_ + array_.columns_count_;
             row_ = {p, p + array_.columns_count_};
             return *this;
         }
-        bool operator!=(const Iterator& o) {
+        bool operator!=(const Iterator& o) const {
             return row_.begin_ != o.row_.begin_;
+        }
+        Row::value_type& operator[](size_t index) {
+            return *(row_.begin_ + index);
         }
 };
 

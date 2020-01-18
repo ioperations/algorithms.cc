@@ -5,6 +5,11 @@
 #include <iostream>
 
 template<typename T>
+std::ostream& operator<<(std::ostream& stream, const typename Two_dimensional_array<T>::Row& row) {
+    return stream;
+}
+
+template<typename T>
 std::ostream& operator<<(std::ostream& stream, const Two_dimensional_array<T>& array) {
     stream << std::endl;
     for (auto r = array.cbegin(); r != array.cend(); ++r) {
@@ -48,11 +53,15 @@ TEST(Two_dimensional_array_test, base) {
 
         ASSERT_EQ(0, array.get(0, 0));
         ASSERT_EQ(22, array.get(4, 2));
+        ASSERT_EQ(16, array[3][1]);
 
         ASSERT_EQ(expected, to_string(array_copy));
 
         array_copy = array;
         ASSERT_EQ(expected, to_string(array_copy));
+
+        array[3][1] = 99;
+        ASSERT_EQ(99, array[3][1]);
     }
     {
         Two_dimensional_array<int> array(5, 5);
