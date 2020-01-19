@@ -14,7 +14,29 @@ namespace Graph {
                 class Vertex;
             private:
                 Vector<Vertex> vertices_;
+                void update_vertices_this_link() {
+                    for (auto& v : vertices_)
+                        v.adjacency_lists_ = this;
+                }
             public:
+                Adjacency_lists() = default;
+                Adjacency_lists(const Adjacency_lists& o) :vertices_(o.vertices_) {
+                    update_vertices_this_link();
+                }
+                Adjacency_lists& operator=(const Adjacency_lists& o) {
+                    auto copy = o;
+                    std::swap(*this, copy);
+                    return *this;
+                }
+                Adjacency_lists(Adjacency_lists&& o) :vertices_(std::move(o.vertices_)) {
+                    update_vertices_this_link();
+                }
+                Adjacency_lists& operator=(Adjacency_lists&& o) {
+                    std::swap(vertices_, o.vertices_);
+                    update_vertices_this_link();
+                    return *this;
+                }
+
                 Vertex& create_vertex(const T& t) {
                     vertices_.push_back(Vertex(t, vertices_.size(), this));
                     return vertices_[vertices_.size() - 1];
@@ -29,19 +51,35 @@ namespace Graph {
                 const Vertex& vertex_at(size_t index) const {
                     return vertices_[index];
                 }
+                Vertex& vertex_at(size_t index) {
+                    return vertices_[index];
+                }
                 void print_internal(std::ostream& stream) {
                     for (auto& v : vertices_) {
                         stream << v.index_ << ": ";
-                        for (auto& i : v.links_)
-                            stream << i << " ";
+                        for (auto& w : v)
+                            stream << w.index() << " ";
                         stream << std::endl;
                     }
+                }
+
+                auto cbegin() const { return vertices_.cbegin(); }
+                auto cend() const { return vertices_.cend(); }
+                auto begin() { return vertices_.begin(); }
+                auto end() { return vertices_.end(); } 
+
+                void remove_edge(Vertex& v1, Vertex& v2) {
+                    v1.remove_edge(v2);
+                    v2.remove_edge(v1);
                 }
         };
 
     template<typename T>
         class Adjacency_lists<T>::Vertex : public Vertex_base<T> {
             private:
+                template<bool T_is_const>
+                    class Iterator;
+
                 friend class Adjacency_lists;
                 friend class Vector<Vertex>;
 
@@ -61,36 +99,56 @@ namespace Graph {
                         links_.push_back(v.index_);
                 }
             public:
-                class Iterator;
-                const Iterator cbegin() const {
-                    return Iterator(*this, links_.cbegin());
+                using iterator = Iterator<false>;
+                using const_iterator = Iterator<true>;
+
+                iterator begin() {
+                    return {*this, links_.begin()};
                 }
-                const Iterator cend() const {
-                    return Iterator(*this, links_.cend());
+                iterator end() {
+                    return {*this, links_.end()};
+                }
+                const_iterator cbegin() const {
+                    return {*this, links_.cbegin()};
+                }
+                const_iterator cend() const {
+                    return {*this, links_.cend()};
+                }
+                void remove_edge(const Vertex& v) {
+                    links_.remove_first_if([&v](size_t index) { return v.index() == index; });
                 }
         };
 
     template<typename T>
+        template<bool T_is_const>
         class Adjacency_lists<T>::Vertex::Iterator {
             private:
+                using links_type = Forward_list<size_t>;
+                using links_iterator_type = std::conditional_t<T_is_const,
+                      links_type::const_iterator, links_type::iterator>;
+                using value_type = std::conditional_t<T_is_const, const Vertex, Vertex>;
+
                 friend class Vertex;
-                const Vertex& vertex_;
-                mutable Forward_list<size_t>::const_iterator it_;
-                Iterator(const Vertex& vertex, const Forward_list<size_t>::const_iterator& it)
+                value_type& vertex_;
+                links_iterator_type it_;
+                Iterator(value_type& vertex, const links_iterator_type& it)
                     :vertex_(vertex), it_(it)
                 {}
             public:
-                const Iterator& operator++() const {
+                const Iterator& operator++() {
                     ++it_;
                     return *this;
                 }
-                bool operator!=(const Iterator& o) const {
-                    return it_ != o.it_;
+                bool operator==(const Iterator& o) const {
+                    return it_ == o.it_;
                 }
-                const Vertex* operator->() const {
+                bool operator!=(const Iterator& o) const {
+                    return !operator==(o);
+                }
+                value_type* operator->() const {
                     return &operator*();
                 }
-                const Vertex& operator*() const {
+                value_type& operator*() const {
                     return vertex_.adjacency_lists_->vertices_[*it_];
                 }
         };

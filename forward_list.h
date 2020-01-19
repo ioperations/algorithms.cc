@@ -100,6 +100,31 @@ class Forward_list {
         iterator before_end() {
             return iterator(tail_);
         }
+        template<typename F>
+            bool remove_first_if(F f) {
+                if (empty())
+                    return false;
+
+                Node* previous;
+                Node* current = head_;
+                bool found = false;
+                for (; !(found = f(current->value_)) && current != tail_; 
+                     previous = current, current = current->next_);
+                if (!found)
+                    return false;
+
+                if (current == head_) {
+                    head_ = current->next_;
+                    if (!head_)
+                        tail_ = nullptr;
+                } else {
+                    previous->next_ = current->next_;
+                    if (current == tail_) 
+                        tail_ = previous;
+                }
+                delete current;
+                return true;
+            }
         bool empty() const {
             return head_ == nullptr;
         }

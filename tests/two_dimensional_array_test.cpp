@@ -5,11 +5,6 @@
 #include <iostream>
 
 template<typename T>
-std::ostream& operator<<(std::ostream& stream, const typename Two_dimensional_array<T>::Row& row) {
-    return stream;
-}
-
-template<typename T>
 std::ostream& operator<<(std::ostream& stream, const Two_dimensional_array<T>& array) {
     stream << std::endl;
     for (auto r = array.cbegin(); r != array.cend(); ++r) {

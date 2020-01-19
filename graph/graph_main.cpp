@@ -51,4 +51,35 @@ int main() {
         Graph::Adjacency_lists<std::string> graph;
         test_graph(graph);
     }
+    {
+        // Graph::Adjacency_lists<int> graph;
+        Graph::Adjacency_matrix<int> graph;
+        Graph::Constructor(graph)
+            .add_edge(0, 1)
+            .add_edge(0, 2)
+            .add_edge(0, 5)
+            .add_edge(0, 6)
+            .add_edge(1, 2)
+            .add_edge(2, 3)
+            .add_edge(2, 4)
+            .add_edge(3, 4)
+            .add_edge(4, 5)
+            .add_edge(4, 6);
+        graph = {};
+        Graph::Constructor(graph) 
+            .add_edge(0, 1)
+            .add_edge(0, 2)
+            .add_edge(0, 5)
+            .add_edge(0, 6)
+            .add_edge(1, 2)
+            .add_edge(2, 3)
+            .add_edge(2, 4)
+            .add_edge(3, 4)
+            .add_edge(4, 5)
+            .add_edge(4, 6);
+
+        auto path = Graph::compose_euler_tour(graph, graph.vertex_at(0));
+        print_path(path.begin(), path.end());
+
+    }
 }

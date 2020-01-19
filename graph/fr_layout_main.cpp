@@ -2,6 +2,7 @@
 
 #include "graph.h"
 #include "adjacency_matrix.h"
+#include "adjacency_lists.h"
 #include "drawables.h"
 
 class Drawables_stream {
@@ -17,8 +18,8 @@ Drawables_stream& operator<<(Drawables_stream& stream, const std::string& text) 
     return stream;
 }
 
-template<typename T>
-Drawables_stream& operator<<(Drawables_stream& stream, const Graph::Adjacency_matrix<T>& graph) {
+template<typename G>
+Drawables_stream& print_graph(Drawables_stream& stream, const G& graph) {
     Graph::Layout::Calculator calculator;
     std::map<size_t, Graph::Layout::Calculator::vertex_descriptor> map;
     Graph::dfs(graph,
@@ -33,6 +34,16 @@ Drawables_stream& operator<<(Drawables_stream& stream, const Graph::Adjacency_ma
     return stream;
 }
 
+template<typename T>
+Drawables_stream& operator<<(Drawables_stream& stream, const Graph::Adjacency_matrix<T>& graph) {
+    return print_graph(stream, graph);
+}
+
+template<typename T>
+Drawables_stream& operator<<(Drawables_stream& stream, const Graph::Adjacency_lists<T>& graph) {
+    return print_graph(stream, graph);
+}
+
 template<typename It>
 void print_path(Drawables_stream& dout, const It& b, const It& e) {
     std::stringstream ss;
@@ -45,7 +56,8 @@ Drawable* const compose_drawables() {
     Drawables_stream dout(drawable);
 
     dout << "graph with Euler tour";
-    Graph::Adjacency_matrix<int> graph;
+    Graph::Adjacency_lists<int> graph;
+    // Graph::Adjacency_matrix<int> graph;
     Graph::Constructor constructor(graph);
     constructor
         .add_edge(0, 1)
@@ -70,6 +82,20 @@ Drawable* const compose_drawables() {
     dout << graph;
     auto h_path = Graph::compose_hamilton_path(graph);
     print_path(dout, h_path.cbegin(), h_path.cend());
+
+    graph = {};
+    Graph::Constructor(graph) 
+        .add_edge(0, 1)
+        .add_edge(0, 2)
+        .add_edge(0, 5)
+        .add_edge(0, 6)
+        .add_edge(1, 2)
+        .add_edge(2, 3)
+        .add_edge(2, 4)
+        .add_edge(3, 4)
+        .add_edge(4, 5)
+        .add_edge(4, 6);
+    dout << graph;
 
     return drawable;
 }

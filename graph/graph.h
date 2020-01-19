@@ -119,7 +119,7 @@ namespace Graph {
                     if (v1 == v2)
                         return true;
                     visited[v1.index()] = true;
-                    for (const auto v = v1.cbegin(); v != v1.cend(); ++v)
+                    for (auto v = v1.cbegin(); v != v1.cend(); ++v)
                         if (!visited[v->index()])
                             if (has_simple_path(graph, *v, v2, visited))
                                 return true;
@@ -187,24 +187,25 @@ namespace Graph {
                     if (*w != v && degrees[w->index()] % 2 != 0)
                         found = false;
                 if (found) {
-                    using Stack = Stack<const V*>;
+                    using Stack = Stack<V*>;
                     struct Helper {
                         const G& original_g_;
                         G& g_;
                         Stack stack_;
                         Helper(const G& original_graph, G& g) :original_g_(original_graph), g_(g) {}
-                        const V* tour(const V* v) {
+                        V* tour(V* v) {
                             while (true) {
-                                auto w = v->cbegin();
-                                if (w == v->cend())
+                                auto it = v->begin();
+                                if (it == v->end())
                                     break;
                                 stack_.push(v);
-                                g_.remove_edge(*v, *w);
-                                v = &*w;
+                                auto& w = *it;
+                                g_.remove_edge(*v, w);
+                                v = &w;
                             }
                             return v;
                         }
-                        void compose(const V* v, Path& path) {
+                        void compose(V* v, Path& path) {
                             auto push_original_v = [this, &path](const V* v) {
                                 auto& original_v = original_g_.vertex_at(v->index());
                                 path.push_back(&original_v);

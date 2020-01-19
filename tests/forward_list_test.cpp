@@ -81,3 +81,23 @@ TEST(Forward_list_test, merge_sort) {
     ASSERT_EQ("", to_string(list));
 }
 
+TEST(Forward_list_test, remove_element) {
+    Forward_list<int> list{5, 3};
+    ASSERT_TRUE(list.remove_first_if([](int value) { return value == 5; }));
+    ASSERT_EQ("3 ", to_string(list));
+    ASSERT_FALSE(list.remove_first_if([](int value) { return value == 2; }));
+    ASSERT_EQ("3 ", to_string(list));
+    ASSERT_TRUE(list.remove_first_if([](int value) { return value == 3; }));
+    ASSERT_EQ(true, list.empty());
+    ASSERT_FALSE(list.remove_first_if([](int value) { return value == 3; }));
+
+    list = {5, 2, 3};
+    ASSERT_TRUE(list.remove_first_if([](int value) { return value == 2; }));
+    ASSERT_EQ("5 3 ", to_string(list));
+    ASSERT_TRUE(list.remove_first_if([](int value) { return value == 3; }));
+    ASSERT_EQ("5 ", to_string(list));
+    ASSERT_TRUE(list.remove_first_if([](int value) { return value == 5; }));
+    ASSERT_EQ(true, list.empty());
+    ASSERT_EQ("", to_string(list));
+}
+
