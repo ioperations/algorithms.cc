@@ -1,6 +1,7 @@
 #include "fr_layout.h"
 
 #include "graph.h"
+#include "graphs.h"
 #include "adjacency_matrix.h"
 #include "adjacency_lists.h"
 #include "drawables.h"
@@ -56,46 +57,18 @@ Drawable* const compose_drawables() {
     Drawables_stream dout(drawable);
 
     dout << "graph with Euler tour";
-    Graph::Adjacency_lists<int> graph;
-    // Graph::Adjacency_matrix<int> graph;
-    Graph::Constructor constructor(graph);
-    constructor
-        .add_edge(0, 1)
-        .add_edge(0, 2)
-        .add_edge(0, 5)
-        .add_edge(0, 6)
-        .add_edge(1, 2)
-        .add_edge(2, 3)
-        .add_edge(2, 4)
-        .add_edge(3, 4)
-        .add_edge(4, 5)
-        .add_edge(4, 6);
+    auto graph = Graph::Samples::euler_tour_sample<Graph::Adjacency_lists<int>>();
     dout << graph;
 
     auto path = Graph::compose_euler_tour(graph, graph.vertex_at(0));
     print_path(dout, path.cbegin(), path.cend());
 
     dout << "\ngraph with Hamilton path";
-    constructor
-        .add_edge(1, 3)
-        .add_edge(3, 5);
+
+    graph = Graph::Samples::hamilton_path_sample<Graph::Adjacency_lists<int>>();
     dout << graph;
     auto h_path = Graph::compose_hamilton_path(graph);
     print_path(dout, h_path.cbegin(), h_path.cend());
-
-    graph = {};
-    Graph::Constructor(graph) 
-        .add_edge(0, 1)
-        .add_edge(0, 2)
-        .add_edge(0, 5)
-        .add_edge(0, 6)
-        .add_edge(1, 2)
-        .add_edge(2, 3)
-        .add_edge(2, 4)
-        .add_edge(3, 4)
-        .add_edge(4, 5)
-        .add_edge(4, 6);
-    dout << graph;
 
     return drawable;
 }

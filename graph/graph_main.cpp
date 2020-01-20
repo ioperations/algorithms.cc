@@ -1,5 +1,6 @@
 #include "adjacency_matrix.h"
 #include "adjacency_lists.h"
+#include "graphs.h"
 
 #include <string>
 #include <stdexcept>
@@ -11,16 +12,18 @@ void print_path(const It& b, const It& e) {
 }
 
 template<typename G>
-void test_graph(G& graph) {
+void test_graph(const char* label) {
+    std::cout << std::endl << label << ":" << std::endl;
+    G graph;
     Graph::Constructor constructor(graph);
 
-    constructor.add_edge("1", "2")
-        .add_edge("2", "3")
-        .add_edge("2", "4")
-        .add_edge("3", "4");
-    constructor.get_or_create_vertex("5");
+    constructor.add_edge(1, 2)
+        .add_edge(2, 3)
+        .add_edge(2, 4)
+        .add_edge(3, 4);
+    constructor.get_or_create_vertex(5);
 
-    auto has_simple_path = [&graph, &constructor](const std::string& l1, const std::string& l2) {
+    auto has_simple_path = [&graph, &constructor](const auto& l1, const auto& l2) {
         std::cout << l1 << " - " << l2 << ": ";
         if (Graph::has_simple_path(graph, constructor.get_vertex(l1), constructor.get_vertex(l2)))
             std::cout << "simple path found";
@@ -28,8 +31,8 @@ void test_graph(G& graph) {
             std::cout << "no simple path";
         std::cout << std::endl;
     };
-    has_simple_path("1", "4");
-    has_simple_path("1", "5");
+    has_simple_path(1, 4);
+    has_simple_path(1, 5);
 
     std::cout << "Hamilton path: ";
     auto h_path = Graph::compose_hamilton_path(graph);
@@ -37,49 +40,15 @@ void test_graph(G& graph) {
 
     std::cout << std::endl << "internal structure: " << std::endl;
     graph.print_internal(std::cout);
+
+    std::cout << "euler tour:" << std::endl;
+    graph = Graph::Samples::euler_tour_sample<G>();
+    auto path = Graph::compose_euler_tour(graph, graph.vertex_at(0));
+    print_path(path.begin(), path.end());
+    std::cout << std::endl;
 }
 
 int main() {
-    std::cout << std::endl;
-    {
-        std::cout << "adjacency matrix:" << std::endl;
-        Graph::Adjacency_matrix<std::string> graph;
-        test_graph(graph);
-    }
-    {
-        std::cout << "adjacency lists:" << std::endl;
-        Graph::Adjacency_lists<std::string> graph;
-        test_graph(graph);
-    }
-    {
-        // Graph::Adjacency_lists<int> graph;
-        Graph::Adjacency_matrix<int> graph;
-        Graph::Constructor(graph)
-            .add_edge(0, 1)
-            .add_edge(0, 2)
-            .add_edge(0, 5)
-            .add_edge(0, 6)
-            .add_edge(1, 2)
-            .add_edge(2, 3)
-            .add_edge(2, 4)
-            .add_edge(3, 4)
-            .add_edge(4, 5)
-            .add_edge(4, 6);
-        graph = {};
-        Graph::Constructor(graph) 
-            .add_edge(0, 1)
-            .add_edge(0, 2)
-            .add_edge(0, 5)
-            .add_edge(0, 6)
-            .add_edge(1, 2)
-            .add_edge(2, 3)
-            .add_edge(2, 4)
-            .add_edge(3, 4)
-            .add_edge(4, 5)
-            .add_edge(4, 6);
-
-        auto path = Graph::compose_euler_tour(graph, graph.vertex_at(0));
-        print_path(path.begin(), path.end());
-
-    }
+    test_graph<Graph::Adjacency_matrix<int>>("adjacency matrix");
+    test_graph<Graph::Adjacency_lists<int>>("adjacency lists");
 }
