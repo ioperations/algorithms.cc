@@ -91,7 +91,7 @@ namespace Graph {
                 void calculate_layout(double width, double height, int iterations = 100);
                 Vertex_positions& positions();
 
-                Layout calculate_layout_2(double width, double height, int iterations = 100);
+                Layout calculate_layout_2(double size, int iterations = 100);
         };
 
     }

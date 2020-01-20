@@ -40,6 +40,29 @@ namespace Graph {
                 return graph;
             }
 
+        template<typename G>
+            auto bridges_sample() {
+                G graph = {};
+                Graph::Constructor(graph)
+                    .add_edge(0, 1)
+                    .add_edge(0, 6)
+                    .add_edge(1, 2)
+                    .add_edge(2, 6)
+                    .add_edge(6, 7)
+                    .add_edge(7, 8)
+                    .add_edge(7, 10)
+                    .add_edge(8, 10)
+                    .add_edge(0, 5)
+                    .add_edge(5, 3)
+                    .add_edge(5, 4)
+                    .add_edge(3, 4)
+                    .add_edge(4, 9)
+                    .add_edge(4, 11)
+                    .add_edge(9, 11)
+                    .add_edge(11, 12);
+                return graph;
+            }
+
     }
 
 }

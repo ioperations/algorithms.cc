@@ -87,9 +87,11 @@ namespace Graph {
 
         Vertex_positions& Calculator::positions() { return positions_; }
 
-        Layout Calculator::calculate_layout_2(double width, double height, int iterations) { // todo rename
+        Layout Calculator::calculate_layout_2(double size, int iterations) { // todo rename
 
-            using Positions = std::vector<boost::rectangle_topology<>::point_type>;
+            using topology_type = b::square_topology<>;
+
+            using Positions = std::vector<topology_type::point_type>;
             using Positions_map = boost::iterator_property_map<Positions::iterator, 
                   boost::property_map<Calculator::graph_type, boost::vertex_index_t>::type>;
 
@@ -97,7 +99,7 @@ namespace Graph {
             Positions_map positions_map(positions.begin(), get(b::vertex_index, graph_)); 
 
             b::minstd_rand generator;
-            b::rectangle_topology<> topology(generator, 0, 0, width, height);
+            topology_type topology(generator, size);
             b::random_graph_layout(graph_, positions_map, topology);
             b::fruchterman_reingold_force_directed_layout(graph_, positions_map, topology);
 

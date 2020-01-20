@@ -46,6 +46,30 @@ void test_graph(const char* label) {
     auto path = Graph::compose_euler_tour(graph, graph.vertex_at(0));
     print_path(path.begin(), path.end());
     std::cout << std::endl;
+
+    std::cout << "graph with bridges:" << std::endl;
+    graph = Graph::Samples::bridges_sample<G>();
+    auto bridges = Graph::find_bridges(graph);
+    auto b = bridges.begin();
+    if (b != bridges.end()) {
+        auto print_bridge = [](auto& b) {
+            std::cout << *b->first << " - " << *b->second;
+        };
+        print_bridge(b);
+        for (++b; b != bridges.end(); ++b) {
+            std::cout << ", ";
+            print_bridge(b);
+        }
+    }
+}
+
+template<typename C>
+void print_aligned_collection(const C& c) {
+    for (auto it = c.cbegin(); it != c.cend(); ++it) {
+        std::cout.width(3);
+        std::cout << *it;
+    }
+    std::cout << std::endl;
 }
 
 int main() {

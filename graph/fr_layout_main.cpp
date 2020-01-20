@@ -31,7 +31,7 @@ Drawables_stream& print_graph(Drawables_stream& stream, const G& graph) {
                    if (v.index() < w.index())
                        calculator.add_edge(map.find(v.index())->second, map.find(w.index())->second);
                });
-    stream.block()->add(new Drawable_graph(calculator.calculate_layout_2(200, 200, 1000)));
+    stream.block()->add(new Drawable_graph(calculator.calculate_layout_2(200, 1000)));
     return stream;
 }
 
@@ -56,8 +56,10 @@ Drawable* const compose_drawables() {
     Vertical_drawable_block* drawable = new Vertical_drawable_block;
     Drawables_stream dout(drawable);
 
+    using graph_type = Graph::Adjacency_lists<int>;
+
     dout << "graph with Euler tour";
-    auto graph = Graph::Samples::euler_tour_sample<Graph::Adjacency_lists<int>>();
+    auto graph = Graph::Samples::euler_tour_sample<graph_type>();
     dout << graph;
 
     auto path = Graph::compose_euler_tour(graph, graph.vertex_at(0));
@@ -65,10 +67,29 @@ Drawable* const compose_drawables() {
 
     dout << "\ngraph with Hamilton path";
 
-    graph = Graph::Samples::hamilton_path_sample<Graph::Adjacency_lists<int>>();
+    graph = Graph::Samples::hamilton_path_sample<graph_type>();
     dout << graph;
     auto h_path = Graph::compose_hamilton_path(graph);
     print_path(dout, h_path.cbegin(), h_path.cend());
+
+    dout <<"\ngraph with bridges";
+    graph = Graph::Samples::bridges_sample<graph_type>();
+    dout << graph;
+
+    std::stringstream ss;
+    auto bridges = Graph::find_bridges(graph);
+    auto b = bridges.begin();
+    if (b != bridges.end()) {
+        auto print_bridge = [&ss](auto& b) {
+            ss << *b->first << " - " << *b->second;
+        };
+        print_bridge(b);
+        for (++b; b != bridges.end(); ++b) {
+            ss << ", ";
+            print_bridge(b);
+        }
+    }
+    dout << ss.str();
 
     return drawable;
 }

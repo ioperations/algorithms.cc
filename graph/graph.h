@@ -90,6 +90,9 @@ namespace Graph {
                 size_t index() const {
                     return index_;
                 }
+                operator size_t() const {
+                    return index_;
+                }
                 bool operator==(const Vertex_base& o) const {
                     return index_ == o.index_;
                 }
@@ -251,6 +254,40 @@ namespace Graph {
                 }
             };
             Helper(g.vertices_count()).search(g, v_visitor, e_visitor);
+        }
+    
+    template<typename G, typename V = typename G::Vertex>
+        Forward_list<std::pair<const V*, const V*>> find_bridges(const G& graph) {
+            struct Searcher {
+                const G& g_;
+                Array<int> orders_;
+                Array<int> mins_;
+                int order_;
+                Forward_list<std::pair<const V*, const V*>> bridges_;
+                Searcher(const G& g) :g_(g), orders_(g.vertices_count()), mins_(g.vertices_count()), order_(-1) {
+                    for (auto& o : orders_) o = -1;
+                }
+                void search() {
+                    for (auto v = g_.cbegin(); v != g_.cend(); ++v)
+                        if (orders_[*v] == -1)
+                            search(*v, *v);
+                }
+                void search(const V& v, const V& w) {
+                    orders_[w] = ++order_;
+                    mins_[w] = orders_[w];
+                    for (auto t = w.cbegin(); t != w.cend(); ++t)
+                        if (orders_[t->index()] == -1) {
+                            search(w, *t);
+                            if (mins_[w] > mins_[*t]) mins_[w] = mins_[*t];
+                            if (mins_[*t] == orders_[*t])
+                                bridges_.emplace_back(&w, &*t);
+                        } else if (v != *t)
+                            mins_[w] = mins_[*t];
+                }
+            };
+            Searcher s(graph);
+            s.search();
+            return std::move(s.bridges_);
         }
 
 }
