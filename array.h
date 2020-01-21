@@ -96,6 +96,10 @@ class Array {
 
         size_t size() const { return size_; }
 
+        void fill(const T& t) {
+            for (auto& e : *this) e = t;
+        }
+
         iterator begin() { return ptr_; }
         iterator end() { return ptr_ + size_; }
         const_iterator cbegin() const { return ptr_; } // todo code duplication
@@ -212,6 +216,11 @@ class Array<bool> {
             current_reference_.set_index(ptr_, index);
             return current_reference_;
         };
+
+        void fill(bool b) {
+            for (auto& e : *this) e = b;
+        }
+
         iterator begin() {
             return iterator(ptr_, 0);
         };

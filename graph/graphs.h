@@ -80,6 +80,27 @@ namespace Graph {
                 return graph;
             }
 
+        template<typename G>
+            auto digraph_sample() {
+                G g;
+                auto& v0 = g.create_vertex(0);
+                auto& v1 = g.create_vertex(1);
+                auto& v2 = g.create_vertex(2);
+                auto& v3 = g.create_vertex(3);
+                auto& v4 = g.create_vertex(4);
+                auto& v5 = g.create_vertex(5);
+                g
+                    .add_edge(v0, v2)
+                    .add_edge(v0, v5)
+                    .add_edge(v5, v4)
+                    .add_edge(v4, v5)
+                    .add_edge(v3, v4)
+                    .add_edge(v3, v2)
+                    .add_edge(v2, v1)
+                    .add_edge(v1, v0);
+                return g;
+            }
+
     }
 
 }

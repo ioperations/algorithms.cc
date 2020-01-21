@@ -333,5 +333,46 @@ namespace Graph {
             }
             return {std::move(all_parents)};
         }
+
+    template<typename G>
+        G warshall_transitive_closure(const G& g) {
+            G g_copy = g;
+            for (auto& v : g_copy)
+                g_copy.add_edge(v, v);
+            for (auto& i : g_copy)
+                for (auto& s : g_copy)
+                    if (g_copy.has_edge(s, i))
+                        for (auto& t : g_copy)
+                            if (g_copy.has_edge(i, t))
+                                g_copy.add_edge(s, t);
+            return g_copy;
+        }
+
+    template<typename G, typename V = typename G::Vertex>
+        G dfs_transitive_closure(const G& g) {
+            struct Helper {
+                G& g_;
+                Array<bool> a_;
+                Helper(G& g) :g_(g), a_(g.vertices_count()) {}
+                void search() {
+                    for (auto& v : g_) {
+                        a_.fill(false);
+                        search(v, v, v);
+                    }
+                }
+                void search(V& vv, V& v, V& w) {
+                    if (!a_[w]) {
+                        a_[w] = true;
+                        if (!g_.has_edge(vv, w))
+                            g_.add_edge(vv, w);
+                        for (auto& t : w)
+                            search(vv, w, t);
+                    }
+                }
+            };
+            auto g_copy = g;
+            Helper(g_copy).search();
+            return g_copy;
+        }
 }
 

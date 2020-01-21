@@ -51,6 +51,15 @@ namespace Graph {
                 Vertex& vertex_at(size_t index) {
                     return vertices_[index];
                 }
+                bool has_edge(const Vertex& v, const Vertex& w) const {
+                    return v.has_edge(w);
+                }
+
+                auto cbegin() const { return vertices_.cbegin(); }
+                auto cend() const { return vertices_.cend(); }
+                auto begin() { return vertices_.begin(); }
+                auto end() { return vertices_.end(); } 
+
                 void print_internal(std::ostream& stream) {
                     for (auto& v : vertices_) {
                         stream << v.index_ << ": ";
@@ -59,11 +68,6 @@ namespace Graph {
                         stream << std::endl;
                     }
                 }
-
-                auto cbegin() const { return vertices_.cbegin(); }
-                auto cend() const { return vertices_.cend(); }
-                auto begin() { return vertices_.begin(); }
-                auto end() { return vertices_.end(); } 
         };
 
     template<typename T, Graph_type graph_type = Graph_type::GRAPH>
@@ -93,8 +97,9 @@ namespace Graph {
             private:
                 using Base = Adjacency_lists_base<T>;
             public:
-                void add_edge(Vertex& v1, Vertex& v2) {
+                Adjacency_lists& add_edge(Vertex& v1, Vertex& v2) {
                     Edges_handler<T, graph_type>::add_edge(v1, v2);
+                    return *this;
                 }
                 void remove_edge(Vertex& v1, Vertex& v2) {
                     Edges_handler<T, graph_type>::remove_edge(v1, v2);
@@ -145,6 +150,12 @@ namespace Graph {
                 }
                 void remove_edge(const Vertex& v) {
                     links_.remove_first_if([&v](size_t index) { return v.index() == index; });
+                }
+                bool has_edge(const Vertex& v) const {
+                    for (auto l = v.cbegin(); l != v.cend(); ++l)
+                        if (*l == v)
+                            return true;
+                    return false;
                 }
         };
 

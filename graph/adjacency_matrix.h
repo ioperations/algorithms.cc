@@ -51,7 +51,6 @@ namespace Graph {
                     return vertices_[vertices_.size() - 1];
                 }
                 size_t vertices_count() const {
-
                     return vertices_.size();
                 }
                 const Vertex& vertex_at(size_t index) const {
@@ -60,7 +59,12 @@ namespace Graph {
                 Vertex& vertex_at(size_t index) {
                     return vertices_[index];
                 }
+                bool has_edge(const Vertex& v, const Vertex& w) {
+                    return edges_[v][w];
+                }
 
+                auto begin() { return vertices_.begin(); }
+                auto end() { return vertices_.end(); }
                 auto cbegin() const { return vertices_.cbegin(); }
                 auto cend() const { return vertices_.cend(); }
 
@@ -96,8 +100,9 @@ namespace Graph {
                         }
                     };
             public:
-                void add_edge(const Vertex& v1, const Vertex& v2) {
+                Adjacency_matrix& add_edge(const Vertex& v1, const Vertex& v2) {
                     Edges_handler<T, graph_type>::set_edge(Adjacency_matrix_base<T>::edges_, v1, v2, true);
+                    return *this;
                 }
                 void remove_edge(Vertex& v1, Vertex& v2) {
                     Edges_handler<T, graph_type>::set_edge(Adjacency_matrix_base<T>::edges_, v1, v2, false);

@@ -80,17 +80,25 @@ void print_aligned_collection(const C& c) {
     std::cout << std::endl;
 }
 
+template<typename G>
+void test_digraph() {
+    auto g = Graph::Samples::digraph_sample<G>();
+
+    std::cout << "dfs transitive closure" << std::endl;
+    auto transitive_closure = Graph::dfs_transitive_closure(g);
+    transitive_closure.print_internal(std::cout);
+}
+
 int main() {
     test_graph<Graph::Adjacency_matrix<int>>("adjacency matrix");
     test_graph<Graph::Adjacency_lists<int>>("adjacency lists");
 
-    Graph::Adjacency_matrix<int, Graph::Graph_type::DIGRAPH> di;
-
-    di.create_vertex(0);
-    di.create_vertex(1);
-
-    di.add_edge(di.vertex_at(0), di.vertex_at(1));
     std::cout << std::endl;
-    di.print_internal(std::cout);
+    test_digraph<Graph::Adjacency_matrix<int, Graph::Graph_type::DIGRAPH>>();
+    test_digraph<Graph::Adjacency_lists<int, Graph::Graph_type::DIGRAPH>>();
 
+    std::cout << "Warshall transitive closure" << std::endl;
+    auto g = Graph::Samples::digraph_sample<Graph::Adjacency_matrix<int, Graph::Graph_type::DIGRAPH>>();
+    auto transitive_closure = Graph::warshall_transitive_closure(g);
+    transitive_closure.print_internal(std::cout);
 }
