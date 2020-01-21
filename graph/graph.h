@@ -3,6 +3,7 @@
 #include "array.h"
 #include "stack.h"
 #include "string_utils.h"
+#include "two_dimensional_array.h"
 
 #include <map>
 #include <iostream>
@@ -255,7 +256,7 @@ namespace Graph {
             };
             Helper(g.vertices_count()).search(g, v_visitor, e_visitor);
         }
-    
+
     template<typename G, typename V = typename G::Vertex>
         Forward_list<std::pair<const V*, const V*>> find_bridges(const G& graph) {
             struct Searcher {
@@ -290,5 +291,47 @@ namespace Graph {
             return std::move(s.bridges_);
         }
 
+
+    template<typename G, typename V = typename G::Vertex>
+        void find_shortest_paths(const G& g) {
+
+            struct Searcher {
+                const G& g_;
+                Two_dimensional_array<int> distances_;
+                Searcher(const G& g) :g_(g), distances_(g.vertices_count(), g.vertices_count()) {
+                    distances_.fill(-1);
+                }
+                void search() {
+                    for (auto v = g_.cbegin(); v != g_.cend(); ++v)
+                        search(*v);
+                }
+                void search(const V& v) {
+                    Forward_list<std::pair<const V&, const V&>> queue;
+                    queue.emplace_back(v, v);
+                    while (!queue.empty()) {
+                        auto e = queue.pop_front();
+                        auto& distance = distances_.get(v, e.second);
+                        if (distance == -1) {
+                            distance = e.first;
+                            for (auto t = e.second.cbegin(); t != e.second.cend(); ++t)
+                                if (distances_.get(v, *t) == -1)
+                                    queue.emplace_back(e.second, *t);
+                        }
+                    }
+                }
+                void find_path(const V& v, const V& w) {
+                    auto row = distances_[w];
+                    for (size_t t = v; t != w; t = row[t])
+                        std::cout << g_.vertex_at(t) << " ";
+                    std::cout << w << std::endl;
+                }
+            };
+
+            Searcher s(g);
+            s.search();
+
+            s.find_path(g.vertex_at(0), g.vertex_at(7));
+            s.find_path(g.vertex_at(1), g.vertex_at(7));
+        }
 }
 

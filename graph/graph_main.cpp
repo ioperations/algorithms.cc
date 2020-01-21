@@ -75,4 +75,8 @@ void print_aligned_collection(const C& c) {
 int main() {
     test_graph<Graph::Adjacency_matrix<int>>("adjacency matrix");
     test_graph<Graph::Adjacency_lists<int>>("adjacency lists");
+
+    std::cout << std::endl << "shortest paths" << std::endl;
+    auto graph = Graph::Samples::shortest_paths_sample<Graph::Adjacency_matrix<int>>();
+    find_shortest_paths(graph);
 }

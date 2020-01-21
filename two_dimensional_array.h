@@ -20,7 +20,8 @@ class Two_dimensional_array {
 
         template<typename It>
             It do_get_row(size_t index) const {
-                return {*this, begin_ + index * columns_count_};
+                auto p = begin_ + index * columns_count_;
+                return {p, p + columns_count_};
             }
     public:
         using iterator = typename Row<false>::Iterator;
@@ -60,11 +61,11 @@ class Two_dimensional_array {
         T& get(size_t row, size_t column) {
             return const_cast<T&>(static_cast<const Two_dimensional_array&>(*this).get(row, column));
         }
-        iterator operator[](size_t index) {
-            return do_get_row<iterator>(index);
+        Row<false> operator[](size_t index) {
+            return do_get_row<Row<false>>(index);
         }
-        const_iterator operator[](size_t index) const {
-            return do_get_row<const_iterator>(index);
+        Row<true> operator[](size_t index) const {
+            return do_get_row<Row<true>>(index);
         }
         void fill(const T& value) {
             for (auto p = begin_; p != end_; *p++ = value);
@@ -82,6 +83,7 @@ class Two_dimensional_array<T>::Row {
     public:
         class Iterator;
         friend class Iterator;
+        friend class Two_dimensional_array;
     private:
         using value_type = std::conditional_t<T_is_const, const T, T>;
         value_type* begin_;
@@ -90,6 +92,11 @@ class Two_dimensional_array<T>::Row {
     public:
         value_type* begin() { return begin_; }
         value_type* end() { return end_; }
+        value_type* cbegin() const { return begin_; }
+        value_type* cend() const { return end_; }
+        value_type& operator[](size_t index) {
+            return *(begin_ + index);
+        }
 };
 
 template<typename T>
@@ -114,7 +121,7 @@ class Two_dimensional_array<T>::Row<T_is_const>::Iterator {
             return row_.begin_ != o.row_.begin_;
         }
         Row::value_type& operator[](size_t index) {
-            return *(row_.begin_ + index);
+            return row_[index];
         }
 };
 

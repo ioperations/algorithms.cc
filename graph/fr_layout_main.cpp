@@ -91,6 +91,9 @@ Drawable* const compose_drawables() {
     }
     dout << ss.str();
 
+    graph = Graph::Samples::shortest_paths_sample<graph_type>();
+    dout << graph;
+
     return drawable;
 }
 
