@@ -24,8 +24,10 @@ class Two_dimensional_array {
                 return {p, p + columns_count_};
             }
     public:
-        using iterator = typename Row<false>::Iterator;
-        using const_iterator = typename Row<true>::Iterator;
+        using row_type = Row<false>;
+        using const_row_type = Row<true>;
+        using iterator = typename row_type::Iterator;
+        using const_iterator = typename const_row_type::Iterator;
 
         Two_dimensional_array(size_t rows, size_t columns)
             :Two_dimensional_array(rows, columns, rows * columns)

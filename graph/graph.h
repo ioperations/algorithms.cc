@@ -122,9 +122,9 @@ namespace Graph {
                 bool has_simple_path(const G& graph, const V& v1, const V& v2, Array<bool>& visited) {
                     if (v1 == v2)
                         return true;
-                    visited[v1.index()] = true;
+                    visited[v1] = true;
                     for (auto v = v1.cbegin(); v != v1.cend(); ++v)
-                        if (!visited[v->index()])
+                        if (!visited[*v])
                             if (has_simple_path(graph, *v, v2, visited))
                                 return true;
                     return false;
@@ -152,12 +152,12 @@ namespace Graph {
                         has = depth == 0;
                     else {
                         has = false;
-                        visited[v1.index()] = true;
+                        visited[v1] = true;
                         for (auto v = v1.cbegin(); v != v1.cend() && !has; ++v)
-                            has = !visited[v->index()] 
+                            has = !visited[*v] 
                                 && has_hamilton_path(graph, *v, v2, visited, depth - 1, stack);
                         if (!has)
-                            visited[v1.index()] = false;
+                            visited[v1] = false;
                     }
                     if (has)
                         stack.push(&v1);
@@ -180,7 +180,7 @@ namespace Graph {
                 for (auto v = g.cbegin(); v != g.cend(); ++v, ++e)
                     *e = count_vertex_edges(*v);
             }
-            auto degree = degrees[v.index()] + degrees[v.index()];
+            auto degree = degrees[v] + degrees[v];
 
             using Path = Forward_list<const V*>;
             Path path;
@@ -188,7 +188,7 @@ namespace Graph {
             if (degree % 2 == 0) {
                 bool found = true;
                 for (auto w = g.cbegin(); w != g.cend() && found; ++w)
-                    if (*w != v && degrees[w->index()] % 2 != 0)
+                    if (*w != v && degrees[*w] % 2 != 0)
                         found = false;
                 if (found) {
                     using Stack = Stack<V*>;
@@ -211,7 +211,7 @@ namespace Graph {
                         }
                         void compose(V* v, Path& path) {
                             auto push_original_v = [this, &path](const V* v) {
-                                auto& original_v = original_g_.vertex_at(v->index());
+                                auto& original_v = original_g_.vertex_at(*v);
                                 path.push_back(&original_v);
                             };
                             push_original_v(v);
@@ -222,7 +222,7 @@ namespace Graph {
                         }
                     };
                     auto g_copy = g;
-                    Helper(g, g_copy).compose(&g_copy.vertex_at(v.index()), path);
+                    Helper(g, g_copy).compose(&g_copy.vertex_at(v), path);
                 }
             }
             return path;
@@ -239,7 +239,7 @@ namespace Graph {
                         v = false;
                 }
                 void search(const V& v, T_v_visitor v_visitor, T_e_visitor e_visitor) {
-                    auto& visited = visited_[v.index()];
+                    auto& visited = visited_[v];
                     if (visited)
                         return;
                     v_visitor(v);
@@ -277,7 +277,7 @@ namespace Graph {
                     orders_[w] = ++order_;
                     mins_[w] = orders_[w];
                     for (auto t = w.cbegin(); t != w.cend(); ++t)
-                        if (orders_[t->index()] == -1) {
+                        if (orders_[*t] == -1) {
                             search(w, *t);
                             if (mins_[w] > mins_[*t]) mins_[w] = mins_[*t];
                             if (mins_[*t] == orders_[*t])
@@ -291,47 +291,43 @@ namespace Graph {
             return std::move(s.bridges_);
         }
 
+    template <typename V>
+        class Shortest_paths_matrix {
+            public:
+                using parents_type = Two_dimensional_array<const V*>;
+            private:
+                parents_type parents_;
+            public:
+                Shortest_paths_matrix(parents_type&& parents) :parents_(parents) {}
+                auto find_path(const V& v, const V& w) {
+                    Forward_list<const V*> path;
+                    auto row = parents_[w];
+                    for (auto t = &v; t != &w; t = row[*t]) path.push_back(t);
+                    path.push_back(&w);
+                    return path;
+                }
+        };
 
     template<typename G, typename V = typename G::Vertex>
-        void find_shortest_paths(const G& g) {
-
-            struct Searcher {
-                const G& g_;
-                Two_dimensional_array<int> distances_;
-                Searcher(const G& g) :g_(g), distances_(g.vertices_count(), g.vertices_count()) {
-                    distances_.fill(-1);
-                }
-                void search() {
-                    for (auto v = g_.cbegin(); v != g_.cend(); ++v)
-                        search(*v);
-                }
-                void search(const V& v) {
-                    Forward_list<std::pair<const V&, const V&>> queue;
-                    queue.emplace_back(v, v);
-                    while (!queue.empty()) {
-                        auto e = queue.pop_front();
-                        auto& distance = distances_.get(v, e.second);
-                        if (distance == -1) {
-                            distance = e.first;
-                            for (auto t = e.second.cbegin(); t != e.second.cend(); ++t)
-                                if (distances_.get(v, *t) == -1)
-                                    queue.emplace_back(e.second, *t);
-                        }
+        Shortest_paths_matrix<V> find_shortest_paths(const G& g) {
+            typename Shortest_paths_matrix<V>::parents_type all_parents(g.vertices_count(), g.vertices_count());
+            all_parents.fill(nullptr);
+            for (auto v = g.cbegin(); v != g.cend(); ++v) {
+                auto parents = all_parents[*v];
+                Forward_list<std::pair<const V&, const V&>> queue;
+                queue.emplace_back(*v, *v);
+                while (!queue.empty()) {
+                    auto e = queue.pop_front();
+                    auto& parent = parents[e.second];
+                    if (!parent) {
+                        parent = &e.first;
+                        for (auto t = e.second.cbegin(); t != e.second.cend(); ++t)
+                            if (!parents[*t])
+                                queue.emplace_back(e.second, *t);
                     }
                 }
-                void find_path(const V& v, const V& w) {
-                    auto row = distances_[w];
-                    for (size_t t = v; t != w; t = row[t])
-                        std::cout << g_.vertex_at(t) << " ";
-                    std::cout << w << std::endl;
-                }
-            };
-
-            Searcher s(g);
-            s.search();
-
-            s.find_path(g.vertex_at(0), g.vertex_at(7));
-            s.find_path(g.vertex_at(1), g.vertex_at(7));
+            }
+            return {std::move(all_parents)};
         }
 }
 

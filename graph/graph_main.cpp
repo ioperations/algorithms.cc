@@ -6,9 +6,9 @@
 #include <stdexcept>
 #include <sstream>
 
-template<typename It>
-void print_path(const It& b, const It& e) {
-    Graph::print_collection(b, e, " - ", [](auto p) { return *p; }, std::cout);
+template<typename P>
+void print_path(const P& p) {
+    Graph::print_collection(p.cbegin(), p.cend(), " - ", [](auto p) { return *p; }, std::cout);
 }
 
 template<typename G>
@@ -36,7 +36,7 @@ void test_graph(const char* label) {
 
     std::cout << "Hamilton path: ";
     auto h_path = Graph::compose_hamilton_path(graph);
-    print_path(h_path.begin(), h_path.end());
+    print_path(h_path);
 
     std::cout << std::endl << "internal structure: " << std::endl;
     graph.print_internal(std::cout);
@@ -44,7 +44,7 @@ void test_graph(const char* label) {
     std::cout << "euler tour:" << std::endl;
     graph = Graph::Samples::euler_tour_sample<G>();
     auto path = Graph::compose_euler_tour(graph, graph.vertex_at(0));
-    print_path(path.begin(), path.end());
+    print_path(path);
     std::cout << std::endl;
 
     std::cout << "graph with bridges:" << std::endl;
@@ -61,6 +61,14 @@ void test_graph(const char* label) {
             print_bridge(b);
         }
     }
+
+    std::cout << std::endl << "shortest paths" << std::endl;
+    graph = Graph::Samples::shortest_paths_sample<G>();
+    auto matrix = find_shortest_paths(graph);
+
+    print_path(matrix.find_path(graph.vertex_at(0), graph.vertex_at(7)));
+    std::cout << std::endl;
+    print_path(matrix.find_path(graph.vertex_at(1), graph.vertex_at(7)));
 }
 
 template<typename C>
@@ -75,8 +83,4 @@ void print_aligned_collection(const C& c) {
 int main() {
     test_graph<Graph::Adjacency_matrix<int>>("adjacency matrix");
     test_graph<Graph::Adjacency_lists<int>>("adjacency lists");
-
-    std::cout << std::endl << "shortest paths" << std::endl;
-    auto graph = Graph::Samples::shortest_paths_sample<Graph::Adjacency_matrix<int>>();
-    find_shortest_paths(graph);
 }
