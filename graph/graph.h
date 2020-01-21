@@ -10,6 +10,10 @@
 
 namespace Graph {
 
+    enum class Graph_type {
+        GRAPH, DIGRAPH
+    };
+
     template<typename G, typename T = typename G::value_type>
         class Constructor {
             private:

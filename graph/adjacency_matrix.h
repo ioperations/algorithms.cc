@@ -8,40 +8,38 @@
 namespace Graph {
 
     template<typename T>
-        class Adjacency_matrix {
+        class Adjacency_matrix_base {
             public:
                 using value_type = T;
                 class Vertex;
             private:
                 friend class Vertex;
                 Vector<Vertex> vertices_;
-                Vector<Vector<bool>> edges_;
-                void set_edge(const Vertex& v1, const Vertex& v2, bool is_set) {
-                    edges_[v1.index_][v2.index_] = is_set;
-                    edges_[v2.index_][v1.index_] = is_set;
-                }
                 void update_vertices_this_link() {
                     for (auto& v : vertices_)
                         v.matrix_ = this;
                 }
+            protected:
+                Vector<Vector<bool>> edges_;
+
             public:
-                Adjacency_matrix() :edges_(100) {
+                Adjacency_matrix_base() :edges_(100) {
                     for (auto& l : edges_) l = Vector<bool>(100);
                 }
 
-                Adjacency_matrix(const Adjacency_matrix& o) :vertices_(o.vertices_), edges_(o.edges_) {
+                Adjacency_matrix_base(const Adjacency_matrix_base& o) :vertices_(o.vertices_), edges_(o.edges_) {
                     update_vertices_this_link();
                 }
-                Adjacency_matrix& operator=(const Adjacency_matrix& o) {
+                Adjacency_matrix_base& operator=(const Adjacency_matrix_base& o) {
                     auto copy = o;
                     std::swap(*this, copy);
                     return *this;
                 }
-                Adjacency_matrix(Adjacency_matrix&& o) 
+                Adjacency_matrix_base(Adjacency_matrix_base&& o) 
                     :vertices_(std::move(o.vertices_)), edges_(std::move(o.edges_)) {
                         update_vertices_this_link();
                     }
-                Adjacency_matrix& operator=(Adjacency_matrix&& o) {
+                Adjacency_matrix_base& operator=(Adjacency_matrix_base&& o) {
                     std::swap(vertices_, o.vertices_);
                     std::swap(edges_, o.edges_);
                     update_vertices_this_link();
@@ -52,9 +50,6 @@ namespace Graph {
                     vertices_.push_back(Vertex(t, vertices_.size(), this)); // todo add emplace back method
                     return vertices_[vertices_.size() - 1];
                 }
-                void add_edge(const Vertex& v1, const Vertex& v2) {
-                    set_edge(v1, v2, true);
-                }
                 size_t vertices_count() const {
 
                     return vertices_.size();
@@ -64,9 +59,6 @@ namespace Graph {
                 }
                 Vertex& vertex_at(size_t index) {
                     return vertices_[index];
-                }
-                void remove_edge(Vertex& v1, Vertex& v2) {
-                    set_edge(v1, v2, false);
                 }
 
                 auto cbegin() const { return vertices_.cbegin(); }
@@ -83,17 +75,47 @@ namespace Graph {
                 }
         };
 
+    template<typename T, Graph_type graph_type = Graph_type::GRAPH>
+        class Adjacency_matrix : public Adjacency_matrix_base<T> {
+            public:
+                using Vertex = typename Adjacency_matrix_base<T>::Vertex;
+            private:
+                template<typename TT, Graph_type gt = Graph_type::GRAPH>
+                    struct Edges_handler {
+                        static void set_edge(Vector<Vector<bool>>& edges, const Vertex& v1, const Vertex& v2,
+                                             bool is_set) {
+                            edges[v1][v2] = is_set;
+                            edges[v2][v1] = is_set;
+                        }
+                    };
+                template<typename TT>
+                    struct Edges_handler<TT, Graph_type::DIGRAPH> {
+                        static void set_edge(Vector<Vector<bool>>& edges, const Vertex& v1, const Vertex& v2,
+                                             bool is_set) {
+                            edges[v1][v2] = is_set;
+                        }
+                    };
+            public:
+                void add_edge(const Vertex& v1, const Vertex& v2) {
+                    Edges_handler<T, graph_type>::set_edge(Adjacency_matrix_base<T>::edges_, v1, v2, true);
+                }
+                void remove_edge(Vertex& v1, Vertex& v2) {
+                    Edges_handler<T, graph_type>::set_edge(Adjacency_matrix_base<T>::edges_, v1, v2, false);
+                }
+        };
+
+
     template<typename T>
-        class Adjacency_matrix<T>::Vertex : public Vertex_base<T> {
+        class Adjacency_matrix_base<T>::Vertex : public Vertex_base<T> {
             private:
                 template<bool T_is_const>
                     class Iterator;
-                friend class Adjacency_matrix;
+                friend class Adjacency_matrix_base;
                 friend class Vector<Vertex>;
 
-                Adjacency_matrix* matrix_;
+                Adjacency_matrix_base* matrix_;
 
-                Vertex(const T& value, size_t index, Adjacency_matrix* matrix) 
+                Vertex(const T& value, size_t index, Adjacency_matrix_base* matrix) 
                     :Vertex_base<T>(value, index), matrix_(matrix) 
                 {}
                 Vertex() :matrix_(nullptr) {}
@@ -120,7 +142,7 @@ namespace Graph {
 
     template<typename T>
         template<bool T_is_const>
-        class Adjacency_matrix<T>::Vertex::Iterator {
+        class Adjacency_matrix_base<T>::Vertex::Iterator {
             private:
                 using value_type = std::conditional_t<T_is_const, const Vertex, Vertex>;
                 friend class Vertex;

@@ -83,4 +83,14 @@ void print_aligned_collection(const C& c) {
 int main() {
     test_graph<Graph::Adjacency_matrix<int>>("adjacency matrix");
     test_graph<Graph::Adjacency_lists<int>>("adjacency lists");
+
+    Graph::Adjacency_matrix<int, Graph::Graph_type::DIGRAPH> di;
+
+    di.create_vertex(0);
+    di.create_vertex(1);
+
+    di.add_edge(di.vertex_at(0), di.vertex_at(1));
+    std::cout << std::endl;
+    di.print_internal(std::cout);
+
 }
