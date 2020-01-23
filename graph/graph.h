@@ -463,5 +463,64 @@ namespace Graph {
             return s.dag_is_valid_;
         }
 
+    template<typename G, typename V = typename G::Vertex>
+        void topological_sort(const G& g) {
+            std::cout << "topological sort" << std::endl;
+            struct Searcher {
+                const G& g_;
+                Graph::Counters<int> pre_;
+                Array<int> post_;
+                Array<size_t> post_inverted_;
+                int post_counter_;
+                Searcher(const G& g, size_t size) 
+                    :g_(g), pre_(size), post_(size), post_inverted_(size), post_counter_(-1)
+                {}
+                void search() {
+                    for (auto v = g_.cbegin(); v != g_.cend(); ++v)
+                        if (pre_.is_unset(*v))
+                            search(*v, *v);
+                }
+                void search(const V& v, const V& w) {
+                    pre_.set_next(w);
+                    for (auto it = w.cbegin(); it != w.cend(); ++it) {
+                        auto& t = *it;
+                        if (pre_.is_unset(t))
+                            search(w, t);
+                    }
+                    post_[w] = ++post_counter_;
+                    post_inverted_[post_counter_] = w;
+                }
+            };
+            std::cout << g.vertices_count() << std::endl;
+            Searcher s(g, g.vertices_count());
+            s.search();
+            std::cout << "order: " << std::endl << s.post_ << std::endl;
+            std::cout << "order inverted: " << std::endl << s.post_inverted_ << std::endl;
+        }
+
+    template<typename G, typename V = typename G::Vertex>
+        void topological_sort_sinks_queue(const G& g) {
+            std::cout << "topological sort (sinks queue)" << std::endl;
+            Array<size_t> in(g.vertices_count());
+            in.fill(0);
+            for (auto v = g.cbegin(); v != g.cend(); ++v)
+                for (auto w = v->cbegin(); w != v->cend(); ++w)
+                    ++in[*w];
+            std::cout << in << std::endl;
+            Forward_list<const V*> queue;
+            for (auto v = g.cbegin(); v != g.cend(); ++v)
+                if (in[*v] == 0)
+                    queue.push_back(&*v);
+            Array<size_t> ordered(g.vertices_count());
+            for (size_t index = 0; !queue.empty(); ++index) {
+                auto v = queue.pop_front();
+                ordered[index] = *v;
+                for (auto w = v->cbegin(); w != v->cend(); ++w)
+                    if (--in[*w] == 0)
+                        queue.push_back(&*w);
+            }
+            std::cout << "order: " << std::endl << ordered << std::endl;
+        }
+
 }
 
