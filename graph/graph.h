@@ -374,5 +374,94 @@ namespace Graph {
             Helper(g_copy).search();
             return g_copy;
         }
+
+    template<typename T, bool T_inverted = false>
+        class Counters : public Array<T> {
+            private:
+                T current_max_;
+            public:
+                Counters(size_t size) :Array<T>(size), current_max_(-1) { Array<T>::fill(-1); }
+                bool is_unset(size_t index) {
+                    return Array<int>::operator[](index) == -1;
+                }
+                void set_next(size_t index) {
+                    Array<int>::operator[](index) = ++current_max_;
+                }
+        };
+
+    template<typename G, typename V = typename G::Vertex>
+        void trace_dfs(const G& g) {
+            struct S {
+                const G& g_;
+                Counters<int> pre_;
+                Counters<int> post_;
+                int depth_;
+                S(const G& g, size_t size) :g_(g), pre_(size), post_(size), depth_(-1) {}
+                void search() {
+                    for (auto v = g_.cbegin(); v != g_.cend(); ++v)
+                        if (pre_.is_unset(*v)) {
+                            std::cout << *v << std::endl;
+                            search(*v, *v);
+                        }
+                }
+                void search(const V& v, const V& w) {
+                    pre_.set_next(w);
+                    ++depth_;
+                    for (auto it = w.cbegin(); it != w.cend(); ++it) {
+                        auto& t = *it;
+                        if (pre_.is_unset(t))
+                            search(w, t);
+                        if (pre_[t] > pre_[w])
+                            print("down", w, t);
+                        else if (post_[t] == -1)
+                            print("back", w, t);
+                        else
+                            print("cross", w, t);
+                    }
+                    post_.set_next(w);
+                    --depth_;
+                }
+                void print(const char* label, const V& v, const V& w) {
+                    for (int i = 0; i < depth_; ++i) std::cout << " ";
+                    std::cout << label << " " << v << " " << w << std::endl;
+                }
+            };
+            S s(g, g.vertices_count());
+            s.search();
+        }
+
+    template<typename G, typename V = typename G::Vertex>
+        bool is_dag(const G& g) {
+            struct Searcher {
+                const G& g_;
+                Graph::Counters<int> pre_;
+                Graph::Counters<int> post_;
+                bool dag_is_valid_;
+                Searcher(const G& g, size_t size) 
+                    :g_(g), pre_(size), post_(size), dag_is_valid_(true) 
+                {}
+                void search() {
+                    for (auto v = g_.cbegin(); v != g_.cend(); ++v)
+                        if (dag_is_valid_ && pre_.is_unset(*v))
+                            search(*v, *v);
+                }
+                void search(const V& v, const V& w) {
+                    pre_.set_next(w);
+                    for (auto it = w.cbegin(); dag_is_valid_ && it != w.cend(); ++it) {
+                        auto& t = *it;
+                        if (pre_.is_unset(t))
+                            search(w, t);
+                        if (pre_[t] < pre_[w] && post_.is_unset(t))
+                            // back link found
+                            dag_is_valid_ = false;
+                    }
+                    post_.set_next(w);
+                }
+            };
+            Searcher s(g, g.vertices_count());
+            s.search();
+            return s.dag_is_valid_;
+        }
+
 }
 

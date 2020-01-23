@@ -82,23 +82,84 @@ void print_aligned_collection(const C& c) {
 
 template<typename G>
 void test_digraph() {
-    auto g = Graph::Samples::digraph_sample<G>();
-
     std::cout << "dfs transitive closure" << std::endl;
+    auto g = Graph::Samples::digraph_sample<G>();
     auto transitive_closure = Graph::dfs_transitive_closure(g);
     transitive_closure.print_internal(std::cout);
 }
 
+template<typename G, typename V = typename G::Vertex>
+G invert(const G& g) {
+    G inverted;
+    for (auto v = g.cbegin(); v != g.cend(); ++v)
+        inverted.create_vertex(v->value());
+    for (auto v = g.cbegin(); v != g.cend(); ++v)
+        for (auto w = v->cbegin(); w != v->cend(); ++w)
+            inverted.add_edge(*w, *v);
+    return inverted;
+}
+
+template<typename G, typename V = typename G::Vertex>
+void topological_sort(const G& g) {
+    struct Searcher {
+        const G& g_;
+        Graph::Counters<int> pre_;
+        Array<int> post_;
+        Array<size_t> post_inverted_;
+        int post_counter_;
+        Searcher(const G& g, size_t size) 
+            :g_(g), pre_(size), post_(size), post_inverted_(size), post_counter_(-1)
+        {}
+        void search() {
+            for (auto v = g_.cbegin(); v != g_.cend(); ++v)
+                if (pre_.is_unset(*v))
+                    search(*v, *v);
+        }
+        void search(const V& v, const V& w) {
+            pre_.set_next(w);
+            for (auto it = w.cbegin(); it != w.cend(); ++it) {
+                auto& t = *it;
+                if (pre_.is_unset(t))
+                    search(w, t);
+            }
+            post_[w] = ++post_counter_;
+            post_inverted_[post_counter_] = w;
+        }
+    };
+    std::cout << g.vertices_count() << std::endl;
+    Searcher s(g, g.vertices_count());
+    s.search();
+    std::cout << s.post_ << std::endl;
+    std::cout << s.post_inverted_ << std::endl;
+}
+
 int main() {
-    test_graph<Graph::Adjacency_matrix<int>>("adjacency matrix");
-    test_graph<Graph::Adjacency_lists<int>>("adjacency lists");
 
-    std::cout << std::endl;
-    test_digraph<Graph::Adjacency_matrix<int, Graph::Graph_type::DIGRAPH>>();
-    test_digraph<Graph::Adjacency_lists<int, Graph::Graph_type::DIGRAPH>>();
 
-    std::cout << "Warshall transitive closure" << std::endl;
+    // test_graph<Graph::Adjacency_matrix<int>>("adjacency matrix");
+    // test_graph<Graph::Adjacency_lists<int>>("adjacency lists");
+
+    // std::cout << std::endl;
+    // test_digraph<Graph::Adjacency_matrix<int, Graph::Graph_type::DIGRAPH>>();
+    // test_digraph<Graph::Adjacency_lists<int, Graph::Graph_type::DIGRAPH>>();
+
+    // std::cout << "Warshall transitive closure" << std::endl;
     auto g = Graph::Samples::digraph_sample<Graph::Adjacency_matrix<int, Graph::Graph_type::DIGRAPH>>();
-    auto transitive_closure = Graph::warshall_transitive_closure(g);
-    transitive_closure.print_internal(std::cout);
+    // auto transitive_closure = Graph::warshall_transitive_closure(g);
+    // transitive_closure.print_internal(std::cout);
+
+    // Graph::trace_dfs(g);
+
+    // std::cout << "DAG is valid: " << Graph::is_dag(g) << std::endl;
+
+    g = Graph::Samples::dag_sample<Graph::Adjacency_matrix<int, Graph::Graph_type::DIGRAPH>>();
+
+    Graph::trace_dfs(g);
+    std::cout << "DAG is valid: " << Graph::is_dag(g) << std::endl;
+
+
+    auto inverted = invert(g);
+    Graph::trace_dfs(inverted);
+    std::cout << "DAG is valid: " << Graph::is_dag(g) << std::endl;
+    topological_sort(inverted);
 }
