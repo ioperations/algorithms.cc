@@ -16,9 +16,14 @@ class Vector {
             for (size_t i = 0; i < array_size_; ++i)
                 array_[i] = T();
         }
+
+        template<bool T_is_const>
+            class Reverse_iterator;
     public:
         using iterator = T*;
         using const_iterator = const iterator;
+        using reverse_iterator = Reverse_iterator<false>;
+        using const_reverse_iterator = Reverse_iterator<true>;
 
         Vector(size_t size) :array_(new T[size]), array_size_(size), size_(size) { 
             fill_defaults();
@@ -69,6 +74,11 @@ class Vector {
         inline const_iterator cbegin() const { return array_; }
         inline const_iterator cend() const { return array_ + size_; }
 
+        reverse_iterator rbegin() { return {array_ + size_ - 1}; }
+        reverse_iterator rend() { return {array_ - 1}; }
+        const_reverse_iterator crbegin() const { return {array_ + size_ - 1}; }
+        const_reverse_iterator crend() const { return {array_ - 1}; }
+
         template<typename TT>
         void push_back(TT&& t) {
             if (size_ + 1 > array_size_) {
@@ -89,7 +99,21 @@ class Vector {
         const T& operator[](size_t i) const {
             return array_[i];
         }
+};
 
+template<typename T>
+template<bool T_is_const>
+class Vector<T>::Reverse_iterator {
+    private:
+        using value_type = std::conditional_t<T_is_const, const T, T>;
+        value_type* ptr_;
+    public:
+        Reverse_iterator(value_type* ptr) :ptr_(ptr) {}
+        value_type& operator*() const { return *ptr_; }
+        value_type* operator->() const { return ptr_; }
+        bool operator==(const Reverse_iterator& o) const { return ptr_ == o.ptr_; }
+        bool operator!=(const Reverse_iterator& o) const { return !operator==(o); }
+        Reverse_iterator& operator++() { --ptr_; return *this; }
 };
 
 template<typename T>

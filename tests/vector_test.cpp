@@ -57,5 +57,20 @@ TEST(Vector_test, test_1) {
     v.push_back(1);
     ASSERT_EQ(to_string(v), "[1]");
     ASSERT_EQ(v.size(), 1);
+
+    v = {};
+    for (int i = 9; i >= 0; --i)
+        v.push_back(i);
+
+    std::stringstream ss;
+    for (auto r = v.rbegin(); r != v.rend(); ++r)
+        ss << *r << " ";
+    ASSERT_EQ("0 1 2 3 4 5 6 7 8 9 ", ss.str());
+
+    ss = std::stringstream();
+    for (auto r = v.crbegin(); r != v.crend(); ++r)
+        ss << *r << " ";
+    ASSERT_EQ("0 1 2 3 4 5 6 7 8 9 ", ss.str());
+
 }
 

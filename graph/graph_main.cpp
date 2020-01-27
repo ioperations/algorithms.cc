@@ -88,19 +88,106 @@ void test_digraph() {
     transitive_closure.print_internal(std::cout);
 }
 
-template<typename G, typename V = typename G::Vertex>
-G invert(const G& g) {
-    G inverted;
-    for (auto v = g.cbegin(); v != g.cend(); ++v)
-        inverted.create_vertex(v->value());
-    for (auto v = g.cbegin(); v != g.cend(); ++v)
-        for (auto w = v->cbegin(); w != v->cend(); ++w)
-            inverted.add_edge(*w, *v);
-    return inverted;
+namespace Graph {
+
+    template<typename G>
+        struct Base_search_helper {
+            using V = typename G::Vertex;
+            Base_search_helper(const G& g) {}
+            void search_post_process(const V&) {}
+        };
+
+    template<typename G, typename T_post = size_t>
+        struct Post_counters_search_helper {
+            using V = typename G::Vertex;
+            using post_counters_type = Counters<T_post>;
+            post_counters_type post_;
+            Post_counters_search_helper(const G& g) :post_(g.vertices_count()) {}
+            void search_post_process(const V& v) {
+                post_.set_next(v);
+            }
+        };
+
+    template<typename G, typename DFS = Base_search_helper<G>, typename T_pre = size_t>
+            struct Dfs_searcher : public DFS {
+                using V = typename G::Vertex;
+                using counters_type = Counters<T_pre>;
+                const G& g_;
+                counters_type pre_;
+                Dfs_searcher(const G& g) :DFS(g), g_(g), pre_(g.vertices_count()) {}
+                void search_pairs() {
+                    for (auto v = g_.cbegin(); v != g_.cend(); ++v)
+                        if (pre_.is_unset(*v))
+                            search_pairs(*v, *v);
+                }
+                void search_pairs(const V& v, const V& w) {
+                    pre_.set_next(w);
+                    for (auto t = w.cbegin(); t != w.cend(); ++t)
+                        if (pre_.is_unset(*t))
+                            search_pairs(w, *t);
+                    DFS::search_post_process(w);
+                }
+                void search() {
+                    for (auto v = g_.cbegin(); v != g_.cend(); ++v)
+                        if (pre_.is_unset(*v))
+                            search(*v);
+                }
+                void search(const V& v) {
+                    pre_.set_next(v);
+                    for (auto t = v.cbegin(); t != v.cend(); ++t)
+                        if (pre_.is_unset(*t))
+                            search(*t);
+                    DFS::search_post_process(v);
+                }
+            };
+
+    template<typename G, typename V = typename G::Vertex>
+        void foo(const G& g) {
+            auto inverted = invert(g);
+            using i_searcher_type = Dfs_searcher<G, Post_counters_search_helper<G>>;
+            using counters_type = typename i_searcher_type::counters_type;
+            i_searcher_type s(inverted);
+            s.search();
+            std::cout << s.post_ << std::endl;
+
+            struct Foo {
+                using group_id_type = typename counters_type::value_type;
+                const G& g_;
+                Array<group_id_type> ids_;
+                group_id_type group_id_;
+                counters_type& post_i_;
+                const group_id_type EMPTY_GROUP_ID = static_cast<group_id_type>(-1);
+                Foo(const G& g, counters_type& post_i) :g_(g), ids_(g.vertices_count()), post_i_(post_i) {
+                    ids_.fill(EMPTY_GROUP_ID);
+                }
+                void search() {
+                    for (auto v = g_.crbegin(); v != g_.crend(); ++v) {
+                        auto t = g_.vertex_at(post_i_[*v]);
+                        if (ids_[t] == EMPTY_GROUP_ID) {
+                            search(t);
+                            ++group_id_;
+                        }
+                    }
+                }
+                void search(const V& v) {
+                    ids_[v] = group_id_;
+                    for (auto w = v.cbegin(); w != v.cend(); ++w)
+                        if (ids_[*w] == EMPTY_GROUP_ID)
+                            search(*w);
+
+                }
+            };
+
+            Foo f(g, s.pre_);
+            f.search();
+            std::cout << f.ids_ << std::endl;
+
+            // std::cout << f.search_helper_.post_ << std::endl;
+        }
+
 }
 
 int main() {
-
     test_graph<Graph::Adjacency_matrix<int>>("adjacency matrix");
     test_graph<Graph::Adjacency_lists<int>>("adjacency lists");
 
@@ -120,6 +207,8 @@ int main() {
     std::cout << "DAG is valid: " << Graph::is_dag(g) << std::endl;
 
     std::cout << "DAG is valid: " << Graph::is_dag(g) << std::endl;
-    Graph::topological_sort(invert(g));
+    Graph::topological_sort(Graph::invert(g));
     Graph::topological_sort_sinks_queue(g);
+
+    foo(g);
 }

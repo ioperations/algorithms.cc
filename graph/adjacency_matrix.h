@@ -67,6 +67,8 @@ namespace Graph {
                 auto end() { return vertices_.end(); }
                 auto cbegin() const { return vertices_.cbegin(); }
                 auto cend() const { return vertices_.cend(); }
+                auto crbegin() const { return vertices_.crbegin(); }
+                auto crend() const { return vertices_.crend(); }
 
                 void print_internal(std::ostream& stream) const {
                     auto size = vertices_.size();

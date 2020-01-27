@@ -375,17 +375,40 @@ namespace Graph {
             return g_copy;
         }
 
-    template<typename T, bool T_inverted = false>
+    template<typename T>
         class Counters : public Array<T> {
             private:
                 T current_max_;
             public:
-                Counters(size_t size) :Array<T>(size), current_max_(-1) { Array<T>::fill(-1); }
+                using value_type = T;
+                static T default_value() {
+                    static T d(static_cast<T>(-1));
+                    return d;
+                }
+                Counters(size_t size) :Array<T>(size), current_max_(default_value()) { 
+                    Array<T>::fill(default_value());
+                }
                 bool is_unset(size_t index) {
-                    return Array<int>::operator[](index) == -1;
+                    return Array<T>::operator[](index) == default_value();
                 }
                 void set_next(size_t index) {
-                    Array<int>::operator[](index) = ++current_max_;
+                    Array<T>::operator[](index) = ++current_max_;
+                }
+        };
+
+    template<>
+        class Counters<bool> : public Array<bool> {
+            public:
+                static bool default_value() {
+                    return false;
+                }
+                using value_type = bool;
+                Counters(size_t size) :Array<bool>(size) { Array<bool>::fill(default_value()); }
+                bool is_unset(size_t index) {
+                    return Array<bool>::operator[](index) == default_value();
+                }
+                void set_next(size_t index) {
+                    Array<bool>::operator[](index) = true;
                 }
         };
 
@@ -506,8 +529,7 @@ namespace Graph {
             for (auto v = g.cbegin(); v != g.cend(); ++v)
                 for (auto w = v->cbegin(); w != v->cend(); ++w)
                     ++in[*w];
-            std::cout << in << std::endl;
-            Forward_list<const V*> queue;
+            Forward_list<const V* const> queue;
             for (auto v = g.cbegin(); v != g.cend(); ++v)
                 if (in[*v] == 0)
                     queue.push_back(&*v);
@@ -519,7 +541,18 @@ namespace Graph {
                     if (--in[*w] == 0)
                         queue.push_back(&*w);
             }
-            std::cout << "order: " << std::endl << ordered << std::endl;
+            std::cout << ordered << std::endl;
+        }
+
+    template<typename G, typename V = typename G::Vertex>
+        G invert(const G& g) {
+            G inverted;
+            for (auto v = g.cbegin(); v != g.cend(); ++v)
+                inverted.create_vertex(v->value());
+            for (auto v = g.cbegin(); v != g.cend(); ++v)
+                for (auto w = v->cbegin(); w != v->cend(); ++w)
+                    inverted.add_edge(*w, *v);
+            return inverted;
         }
 
 }
