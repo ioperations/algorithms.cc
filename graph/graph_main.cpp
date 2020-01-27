@@ -90,61 +90,12 @@ void test_digraph() {
 
 namespace Graph {
 
-    template<typename G>
-        struct Base_search_helper {
-            using V = typename G::Vertex;
-            Base_search_helper(const G& g) {}
-            void search_post_process(const V&) {}
-        };
-
-    template<typename G, typename T_post = size_t>
-        struct Post_counters_search_helper {
-            using V = typename G::Vertex;
-            using post_counters_type = Counters<T_post>;
-            post_counters_type post_;
-            Post_counters_search_helper(const G& g) :post_(g.vertices_count()) {}
-            void search_post_process(const V& v) {
-                post_.set_next(v);
-            }
-        };
-
-    template<typename G, typename DFS = Base_search_helper<G>, typename T_pre = size_t>
-            struct Dfs_searcher : public DFS {
-                using V = typename G::Vertex;
-                using counters_type = Counters<T_pre>;
-                const G& g_;
-                counters_type pre_;
-                Dfs_searcher(const G& g) :DFS(g), g_(g), pre_(g.vertices_count()) {}
-                void search_pairs() {
-                    for (auto v = g_.cbegin(); v != g_.cend(); ++v)
-                        if (pre_.is_unset(*v))
-                            search_pairs(*v, *v);
-                }
-                void search_pairs(const V& v, const V& w) {
-                    pre_.set_next(w);
-                    for (auto t = w.cbegin(); t != w.cend(); ++t)
-                        if (pre_.is_unset(*t))
-                            search_pairs(w, *t);
-                    DFS::search_post_process(w);
-                }
-                void search() {
-                    for (auto v = g_.cbegin(); v != g_.cend(); ++v)
-                        if (pre_.is_unset(*v))
-                            search(*v);
-                }
-                void search(const V& v) {
-                    pre_.set_next(v);
-                    for (auto t = v.cbegin(); t != v.cend(); ++t)
-                        if (pre_.is_unset(*t))
-                            search(*t);
-                    DFS::search_post_process(v);
-                }
-            };
+    using namespace Dfs;
 
     template<typename G, typename V = typename G::Vertex>
         void foo(const G& g) {
             auto inverted = invert(g);
-            using i_searcher_type = Dfs_searcher<G, Post_counters_search_helper<G>>;
+            using i_searcher_type = Dfs_searcher<G, Post_dfs<G>>;
             using counters_type = typename i_searcher_type::counters_type;
             i_searcher_type s(inverted);
             s.search();
@@ -188,27 +139,37 @@ namespace Graph {
 }
 
 int main() {
-    test_graph<Graph::Adjacency_matrix<int>>("adjacency matrix");
-    test_graph<Graph::Adjacency_lists<int>>("adjacency lists");
+     test_graph<Graph::Adjacency_matrix<int>>("adjacency matrix");
+     test_graph<Graph::Adjacency_lists<int>>("adjacency lists");
 
-    std::cout << std::endl;
-    test_digraph<Graph::Adjacency_matrix<int, Graph::Graph_type::DIGRAPH>>();
-    test_digraph<Graph::Adjacency_lists<int, Graph::Graph_type::DIGRAPH>>();
+     std::cout << std::endl;
+     test_digraph<Graph::Adjacency_matrix<int, Graph::Graph_type::DIGRAPH>>();
+     test_digraph<Graph::Adjacency_lists<int, Graph::Graph_type::DIGRAPH>>();
 
-    std::cout << "Warshall transitive closure" << std::endl;
-    auto g = Graph::Samples::digraph_sample<Graph::Adjacency_matrix<int, Graph::Graph_type::DIGRAPH>>();
-    auto transitive_closure = Graph::warshall_transitive_closure(g);
-    transitive_closure.print_internal(std::cout);
-    std::cout << "DAG is valid: " << Graph::is_dag(g) << std::endl;
+     std::cout << "Warshall transitive closure" << std::endl;
+     auto g = Graph::Samples::digraph_sample<Graph::Adjacency_matrix<int, Graph::Graph_type::DIGRAPH>>();
+     auto transitive_closure = Graph::warshall_transitive_closure(g);
+     transitive_closure.print_internal(std::cout);
+     std::cout << "DAG is valid: " << Graph::is_dag(g) << std::endl;
 
-    g = Graph::Samples::dag_sample<Graph::Adjacency_matrix<int, Graph::Graph_type::DIGRAPH>>();
+     g = Graph::Samples::dag_sample<Graph::Adjacency_matrix<int, Graph::Graph_type::DIGRAPH>>();
 
-    Graph::trace_dfs(g);
-    std::cout << "DAG is valid: " << Graph::is_dag(g) << std::endl;
+     Graph::trace_dfs(g);
+     std::cout << "DAG is valid: " << Graph::is_dag(g) << std::endl;
 
-    std::cout << "DAG is valid: " << Graph::is_dag(g) << std::endl;
-    Graph::topological_sort(Graph::invert(g));
-    Graph::topological_sort_sinks_queue(g);
+     std::cout << "DAG is valid: " << Graph::is_dag(g) << std::endl;
+     Graph::topological_sort(Graph::invert(g));
+     Graph::topological_sort_sinks_queue(g);
 
-    foo(g);
+     foo(g);
+    
+    // std::cout << std::endl;
+
+    // auto g = Graph::Samples::euler_tour_sample<Graph::Adjacency_matrix<int>>();
+    // Graph::dfs(g, [](auto& v) {
+    //     std::cout << v << std::endl;
+    // }, [](auto& v, auto& w) {
+    //     std::cout << v << " " << w << std::endl;
+    // });
+
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "dfs.h"
 #include "array.h"
 #include "stack.h"
 #include "string_utils.h"
@@ -232,35 +233,6 @@ namespace Graph {
             return path;
         }
 
-    template<typename G, typename V = typename G::Vertex, typename T_v_visitor, typename T_e_visitor>
-        void dfs(const G& g, T_v_visitor v_visitor, T_e_visitor e_visitor) {
-            if (g.vertices_count() == 0)
-                return;
-            struct Helper {
-                Array<bool> visited_;
-                Helper(size_t size) :visited_(size) {
-                    for (auto& v : visited_)
-                        v = false;
-                }
-                void search(const V& v, T_v_visitor v_visitor, T_e_visitor e_visitor) {
-                    auto& visited = visited_[v];
-                    if (visited)
-                        return;
-                    v_visitor(v);
-                    visited = true;
-                    for (auto w = v.cbegin(); w != v.cend(); ++w) {
-                        search(*w, v_visitor, e_visitor);
-                        e_visitor(v, *w);
-                    }
-                }
-                void search(const G& g, T_v_visitor v_visitor, T_e_visitor e_visitor) {
-                    for (auto v = g.cbegin(); v != g.cend(); ++v)
-                        search(*v, v_visitor, e_visitor);
-                }
-            };
-            Helper(g.vertices_count()).search(g, v_visitor, e_visitor);
-        }
-
     template<typename G, typename V = typename G::Vertex>
         Forward_list<std::pair<const V*, const V*>> find_bridges(const G& graph) {
             struct Searcher {
@@ -374,43 +346,6 @@ namespace Graph {
             Helper(g_copy).search();
             return g_copy;
         }
-
-    template<typename T>
-        class Counters : public Array<T> {
-            private:
-                T current_max_;
-            public:
-                using value_type = T;
-                static T default_value() {
-                    static T d(static_cast<T>(-1));
-                    return d;
-                }
-                Counters(size_t size) :Array<T>(size), current_max_(default_value()) { 
-                    Array<T>::fill(default_value());
-                }
-                bool is_unset(size_t index) {
-                    return Array<T>::operator[](index) == default_value();
-                }
-                void set_next(size_t index) {
-                    Array<T>::operator[](index) = ++current_max_;
-                }
-        };
-
-    template<>
-        class Counters<bool> : public Array<bool> {
-            public:
-                static bool default_value() {
-                    return false;
-                }
-                using value_type = bool;
-                Counters(size_t size) :Array<bool>(size) { Array<bool>::fill(default_value()); }
-                bool is_unset(size_t index) {
-                    return Array<bool>::operator[](index) == default_value();
-                }
-                void set_next(size_t index) {
-                    Array<bool>::operator[](index) = true;
-                }
-        };
 
     template<typename G, typename V = typename G::Vertex>
         void trace_dfs(const G& g) {
