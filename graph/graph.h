@@ -61,7 +61,6 @@ namespace Graph {
             print_collection(b, e, del, [](auto& v) { return v; }, stream);
         }
 
-
     template<typename T>
         class Fixed_size_stack {
             private:
@@ -349,43 +348,34 @@ namespace Graph {
 
     template<typename G, typename V = typename G::Vertex>
         void trace_dfs(const G& g) {
-            struct S {
-                const G& g_;
-                Counters<int> pre_;
-                Counters<int> post_;
+            using namespace Dfs;
+            struct Searcher : public Post_dfs<G> {
+                using Base = Post_dfs<G>;
                 int depth_;
-                S(const G& g, size_t size) :g_(g), pre_(size), post_(size), depth_(-1) {}
-                void search() {
-                    for (auto v = g_.cbegin(); v != g_.cend(); ++v)
-                        if (pre_.is_unset(*v)) {
-                            std::cout << *v << std::endl;
-                            search(*v, *v);
-                        }
-                }
-                void search(const V& v, const V& w) {
-                    pre_.set_next(w);
+                Searcher(const G& g) 
+                    :Base(g), depth_(-1)
+                {}
+                void visit_vertex(const V& v) {
                     ++depth_;
-                    for (auto it = w.cbegin(); it != w.cend(); ++it) {
-                        auto& t = *it;
-                        if (pre_.is_unset(t))
-                            search(w, t);
-                        if (pre_[t] > pre_[w])
-                            print("down", w, t);
-                        else if (post_[t] == -1)
-                            print("back", w, t);
-                        else
-                            print("cross", w, t);
-                    }
-                    post_.set_next(w);
+                }
+                void visit_edge(const V& v, const V& w) {
+                    if (Base::pre_[w] > Base::pre_[v])
+                        print("down", v, w);
+                    else if (Base::post_.is_unset(w))
+                        print("back", v, w);
+                    else
+                        print("cross", v, w);
+                }
+                void search_post_process(const V& v) {
                     --depth_;
+                    Base::search_post_process(v);
                 }
                 void print(const char* label, const V& v, const V& w) {
                     for (int i = 0; i < depth_; ++i) std::cout << " ";
                     std::cout << label << " " << v << " " << w << std::endl;
                 }
             };
-            S s(g, g.vertices_count());
-            s.search();
+            Dfs_searcher<G, Searcher>(g).search_pairs();
         }
 
     template<typename G, typename V = typename G::Vertex>

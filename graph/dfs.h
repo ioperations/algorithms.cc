@@ -43,17 +43,19 @@ namespace Graph {
 
     namespace Dfs {
 
-        template<typename G>
+        template<typename G, typename T_pre = size_t>
             struct Base_dfs {
                 using V = typename G::Vertex;
-                Base_dfs(const G& g) {}
-                void search_pre_process(const V&) {}
-                void search_pre_process(const V&, const V&) {}
+                using pre_counters_type = Counters<T_pre>;
+                pre_counters_type pre_;
+                Base_dfs(const G& g) :pre_(g.vertices_count()) {}
+                void visit_vertex(const V&) {}
+                void visit_edge(const V&, const V&) {}
                 void search_post_process(const V&) {}
             };
 
-        template<typename G, typename T_post = size_t>
-            struct Post_dfs : public Base_dfs<G> {
+        template<typename G, typename T_pre = size_t, typename T_post = size_t>
+            struct Post_dfs : public Base_dfs<G, T_pre> {
                 using V = typename G::Vertex;
                 using post_counters_type = Counters<T_post>;
                 post_counters_type post_;
@@ -63,40 +65,38 @@ namespace Graph {
                 }
             };
 
-        template<typename G, typename DFS = Base_dfs<G>, typename T_pre = size_t>
+        template<typename G, typename DFS = Base_dfs<G>>
             struct Dfs_searcher : public DFS {
                 using V = typename G::Vertex;
-                using counters_type = Counters<T_pre>;
                 const G& g_;
-                counters_type pre_;
                 template<typename... Args>
                     Dfs_searcher(const G& g, Args&&... args) 
-                    :DFS(g, std::forward<Args>(args)...), g_(g), pre_(g.vertices_count()) 
+                    :DFS(g, std::forward<Args>(args)...), g_(g) 
                     {}
                 void search_pairs() {
                     for (auto v = g_.cbegin(); v != g_.cend(); ++v)
-                        if (pre_.is_unset(*v))
+                        if (DFS::pre_.is_unset(*v))
                             search_pairs(*v, *v);
                 }
                 void search_pairs(const V& v, const V& w) {
-                    DFS::search_pre_process(w);
-                    pre_.set_next(w);
+                    DFS::visit_vertex(w);
+                    DFS::pre_.set_next(w);
                     for (auto t = w.cbegin(); t != w.cend(); ++t) {
-                        if (pre_.is_unset(*t))
+                        if (DFS::pre_.is_unset(*t))
                             search_pairs(w, *t);
-                        DFS::search_pre_process(w, *t); // todo rename
+                        DFS::visit_edge(w, *t);
                     }
                     DFS::search_post_process(w);
                 }
                 void search() {
                     for (auto v = g_.cbegin(); v != g_.cend(); ++v)
-                        if (pre_.is_unset(*v))
+                        if (DFS::pre_.is_unset(*v))
                             search(*v);
                 }
                 void search(const V& v) {
-                    pre_.set_next(v);
+                    DFS::pre_.set_next(v);
                     for (auto t = v.cbegin(); t != v.cend(); ++t)
-                        if (pre_.is_unset(*t))
+                        if (DFS::pre_.is_unset(*t))
                             search(*t);
                     DFS::search_post_process(v);
                 }
@@ -107,20 +107,20 @@ namespace Graph {
     template<typename G, typename V = typename G::Vertex, typename T_v_visitor, typename T_e_visitor>
         void dfs(const G& g, T_v_visitor v_visitor, T_e_visitor e_visitor) {
             using namespace Dfs;
-            struct Searcher : public Base_dfs<G> {
+            struct Searcher : public Base_dfs<G, bool> {
                 T_v_visitor v_visitor_;
                 T_e_visitor e_visitor_;
                 Searcher(const G& g, T_v_visitor v_visitor, T_e_visitor e_visitor) 
                     :Base_dfs<G>(g), v_visitor_(v_visitor), e_visitor_(e_visitor)
                 {}
-                void search_pre_process(const V& v) {
+                void visit_vertex(const V& v) {
                     v_visitor_(v);
                 }
-                void search_pre_process(const V& v, const V& w) {
+                void visit_edge(const V& v, const V& w) {
                     e_visitor_(v, w);
                 }
             };
-            Dfs_searcher<G, Searcher, bool>(g, v_visitor, e_visitor).search_pairs();
+            Dfs_searcher<G, Searcher>(g, v_visitor, e_visitor).search_pairs();
         }
 
 }

@@ -96,7 +96,7 @@ namespace Graph {
         void foo(const G& g) {
             auto inverted = invert(g);
             using i_searcher_type = Dfs_searcher<G, Post_dfs<G>>;
-            using counters_type = typename i_searcher_type::counters_type;
+            using counters_type = typename i_searcher_type::post_counters_type;
             i_searcher_type s(inverted);
             s.search();
             std::cout << s.post_ << std::endl;
