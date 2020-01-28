@@ -139,6 +139,7 @@ namespace Graph {
 }
 
 int main() {
+
      test_graph<Graph::Adjacency_matrix<int>>("adjacency matrix");
      test_graph<Graph::Adjacency_lists<int>>("adjacency lists");
 
@@ -157,7 +158,7 @@ int main() {
      Graph::trace_dfs(g);
      std::cout << "DAG is valid: " << Graph::is_dag(g) << std::endl;
 
-     Graph::topological_sort(Graph::invert(g));
+     Graph::topological_sort(g);
      Graph::topological_sort_sinks_queue(g);
 
      foo(g);

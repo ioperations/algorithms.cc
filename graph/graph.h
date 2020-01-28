@@ -401,36 +401,21 @@ namespace Graph {
     template<typename G, typename V = typename G::Vertex>
         void topological_sort(const G& g) {
             std::cout << "topological sort" << std::endl;
-            struct Searcher {
-                const G& g_;
-                Graph::Counters<int> pre_;
-                Array<int> post_;
-                Array<size_t> post_inverted_;
-                int post_counter_;
-                Searcher(const G& g, size_t size) 
-                    :g_(g), pre_(size), post_(size), post_inverted_(size), post_counter_(-1)
-                {}
-                void search() {
-                    for (auto v = g_.cbegin(); v != g_.cend(); ++v)
-                        if (pre_.is_unset(*v))
-                            search(*v, *v);
-                }
-                void search(const V& v, const V& w) {
-                    pre_.set_next(w);
-                    for (auto it = w.cbegin(); it != w.cend(); ++it) {
-                        auto& t = *it;
-                        if (pre_.is_unset(t))
-                            search(w, t);
-                    }
-                    post_[w] = ++post_counter_;
-                    post_inverted_[post_counter_] = w;
+            using namespace Dfs;
+            struct Searcher : public Post_dfs<G, bool> {
+                using Base = Post_dfs<G, bool>;
+                Array<size_t> post_i_;
+                Searcher(const G& g) :Base(g), post_i_(g.vertices_count()) {}
+                void search_post_process(const V& v) {
+                    Base::search_post_process(v);
+                    post_i_[Base::post_[v]] = v;
                 }
             };
-            std::cout << g.vertices_count() << std::endl;
-            Searcher s(g, g.vertices_count());
-            s.search();
+            auto inverted = invert(g);
+            Dfs_searcher<G, Searcher> s(inverted);
+            s.search_pairs();
             std::cout << "order: " << std::endl << s.post_ << std::endl;
-            std::cout << "order inverted: " << std::endl << s.post_inverted_ << std::endl;
+            std::cout << "order inverted: " << std::endl << s.post_i_ << std::endl;
         }
 
     template<typename G, typename V = typename G::Vertex>

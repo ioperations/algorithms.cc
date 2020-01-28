@@ -10,10 +10,7 @@ namespace Graph {
                 T current_max_;
             public:
                 using value_type = T;
-                static T default_value() {
-                    static T d(static_cast<T>(-1));
-                    return d;
-                }
+                static constexpr T default_value() { return static_cast<T>(-1); }
                 Counters(size_t size) :Array<T>(size), current_max_(default_value()) { 
                     Array<T>::fill(default_value());
                 }
@@ -28,10 +25,8 @@ namespace Graph {
     template<>
         class Counters<bool> : public Array<bool> {
             public:
-                static bool default_value() {
-                    return false;
-                }
                 using value_type = bool;
+                static constexpr bool default_value() { return false; }
                 Counters(size_t size) :Array<bool>(size) { Array<bool>::fill(default_value()); }
                 bool is_unset(size_t index) {
                     return Array<bool>::operator[](index) == default_value();
@@ -59,7 +54,7 @@ namespace Graph {
                 using V = typename G::Vertex;
                 using post_counters_type = Counters<T_post>;
                 post_counters_type post_;
-                Post_dfs(const G& g) : Base_dfs<G>(g), post_(g.vertices_count()) {}
+                Post_dfs(const G& g) : Base_dfs<G, T_pre>(g), post_(g.vertices_count()) {}
                 void search_post_process(const V& v) {
                     post_.set_next(v);
                 }
