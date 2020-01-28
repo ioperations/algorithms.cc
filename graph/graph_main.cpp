@@ -94,12 +94,19 @@ namespace Graph {
 
     template<typename G, typename V = typename G::Vertex>
         void foo(const G& g) {
+
+            // todo replace with topological sort
             auto inverted = invert(g);
             using i_searcher_type = Dfs_searcher<G, Post_dfs<G>>;
             using counters_type = typename i_searcher_type::post_counters_type;
-            i_searcher_type s(inverted);
-            s.search();
-            std::cout << s.post_ << std::endl;
+            i_searcher_type i_searcher(inverted);
+            i_searcher.search();
+            std::cout << i_searcher.post_ << std::endl;
+
+            // Graph::trace_dfs(g);
+            // trace_bfs(g);
+            std::cout << std::endl;
+            // trace_bfs(inverted);
 
             struct Foo {
                 using group_id_type = typename counters_type::value_type;
@@ -107,29 +114,33 @@ namespace Graph {
                 Array<group_id_type> ids_;
                 group_id_type group_id_;
                 counters_type& post_i_;
-                const group_id_type EMPTY_GROUP_ID = static_cast<group_id_type>(-1);
-                Foo(const G& g, counters_type& post_i) :g_(g), ids_(g.vertices_count()), post_i_(post_i) {
-                    ids_.fill(EMPTY_GROUP_ID);
+                Foo(const G& g, counters_type& post_i) 
+                    :g_(g), ids_(g.vertices_count()), group_id_(counters_type::default_value()), post_i_(post_i) 
+                { 
+                    ids_.fill(counters_type::default_value());
                 }
                 void search() {
                     for (auto v = g_.crbegin(); v != g_.crend(); ++v) {
-                        auto t = g_.vertex_at(post_i_[*v]);
-                        if (ids_[t] == EMPTY_GROUP_ID) {
-                            search(t);
+                        auto& t = g_.vertex_at(post_i_[*v]);
+                        if (ids_[t] == counters_type::default_value()) {
                             ++group_id_;
+                            search(t);
                         }
                     }
                 }
                 void search(const V& v) {
                     ids_[v] = group_id_;
                     for (auto w = v.cbegin(); w != v.cend(); ++w)
-                        if (ids_[*w] == EMPTY_GROUP_ID)
+                        if (ids_[*w] == counters_type::default_value())
                             search(*w);
-
                 }
             };
 
-            Foo f(g, s.pre_);
+            counters_type inv(i_searcher.pre_.size());
+            for (size_t i = 0; i < i_searcher.pre_.size(); ++i)
+                inv[i_searcher.pre_[i]] = i;
+
+            Foo f(g, inv);
             f.search();
             std::cout << f.ids_ << std::endl;
 
@@ -161,7 +172,32 @@ int main() {
      Graph::topological_sort(g);
      Graph::topological_sort_sinks_queue(g);
 
+     Graph::Builder<decltype(g)> b;
+     for (int i = 0; i < 13; ++i)
+         b.for_vertex(i);
+
+     g = b
+         .for_vertex(0).add_edges(1, 5, 6)
+         .for_vertex(2).add_edges(0, 3)
+         .for_vertex(3).add_edges(2, 5)
+         .for_vertex(4).add_edges(2, 3, 11)
+         .for_vertex(5).add_edges(4)
+         .for_vertex(6).add_edges(4, 9)
+         .for_vertex(7).add_edges(6, 8)
+         .for_vertex(8).add_edges(7, 9)
+         .for_vertex(9).add_edges(10, 11)
+         .for_vertex(10).add_edges(12)
+         .for_vertex(11).add_edges(12)
+         .for_vertex(12).add_edges(9)
+         .build();
+
+     g.print_internal(std::cout);
+
+     Graph::trace_dfs(g);
+
      foo(g);
+
+     // Graph::topological_sort(g);
     
     // std::cout << std::endl;
 

@@ -128,7 +128,7 @@ namespace Graph {
                 Vertex() :matrix_(nullptr) {}
 
                 Vector<bool>& edges() const {
-                    return matrix_->edges_[this->index()];
+                    return matrix_->edges_[*this];
                 }
             public:
                 using iterator = Iterator<false>;

@@ -7,32 +7,35 @@ namespace Graph {
     template<typename T>
         class Counters : public Array<T> {
             private:
+                using Base = Array<T>;
                 T current_max_;
             public:
                 using value_type = T;
                 static constexpr T default_value() { return static_cast<T>(-1); }
-                Counters(size_t size) :Array<T>(size), current_max_(default_value()) { 
-                    Array<T>::fill(default_value());
+                Counters(size_t size) :Base(size), current_max_(default_value()) { 
+                    Base::fill(default_value());
                 }
                 bool is_unset(size_t index) {
-                    return Array<T>::operator[](index) == default_value();
+                    return Base::operator[](index) == default_value();
                 }
                 void set_next(size_t index) {
-                    Array<T>::operator[](index) = ++current_max_;
+                    Base::operator[](index) = ++current_max_;
                 }
         };
 
     template<>
         class Counters<bool> : public Array<bool> {
+            private:
+                using Base = Array<bool>;
             public:
                 using value_type = bool;
                 static constexpr bool default_value() { return false; }
-                Counters(size_t size) :Array<bool>(size) { Array<bool>::fill(default_value()); }
+                Counters(size_t size) :Base(size) { Base::fill(default_value()); }
                 bool is_unset(size_t index) {
-                    return Array<bool>::operator[](index) == default_value();
+                    return Base::operator[](index) == default_value();
                 }
                 void set_next(size_t index) {
-                    Array<bool>::operator[](index) = true;
+                    Base::operator[](index) = true;
                 }
         };
 
@@ -42,8 +45,9 @@ namespace Graph {
             struct Base_dfs {
                 using V = typename G::Vertex;
                 using pre_counters_type = Counters<T_pre>;
+                const G& g_;
                 pre_counters_type pre_;
-                Base_dfs(const G& g) :pre_(g.vertices_count()) {}
+                Base_dfs(const G& g) :g_(g), pre_(g.vertices_count()) {}
                 void visit_vertex(const V&) {}
                 void visit_edge(const V&, const V&) {}
                 void search_post_process(const V&) {}
@@ -63,13 +67,12 @@ namespace Graph {
         template<typename G, typename DFS = Base_dfs<G>>
             struct Dfs_searcher : public DFS {
                 using V = typename G::Vertex;
-                const G& g_;
                 template<typename... Args>
                     Dfs_searcher(const G& g, Args&&... args) 
-                    :DFS(g, std::forward<Args>(args)...), g_(g) 
+                    :DFS(g, std::forward<Args>(args)...) 
                     {}
                 void search_pairs() {
-                    for (auto v = g_.cbegin(); v != g_.cend(); ++v)
+                    for (auto v = DFS::g_.cbegin(); v != DFS::g_.cend(); ++v)
                         if (DFS::pre_.is_unset(*v))
                             search_pairs(*v, *v);
                 }
@@ -84,7 +87,7 @@ namespace Graph {
                     DFS::search_post_process(w);
                 }
                 void search() {
-                    for (auto v = g_.cbegin(); v != g_.cend(); ++v)
+                    for (auto v = DFS::g_.cbegin(); v != DFS::g_.cend(); ++v)
                         if (DFS::pre_.is_unset(*v))
                             search(*v);
                 }
@@ -106,7 +109,7 @@ namespace Graph {
                 T_v_visitor v_visitor_;
                 T_e_visitor e_visitor_;
                 Searcher(const G& g, T_v_visitor v_visitor, T_e_visitor e_visitor) 
-                    :Base_dfs<G>(g), v_visitor_(v_visitor), e_visitor_(e_visitor)
+                    :Base_dfs<G, bool>(g), v_visitor_(v_visitor), e_visitor_(e_visitor)
                 {}
                 void visit_vertex(const V& v) {
                     v_visitor_(v);

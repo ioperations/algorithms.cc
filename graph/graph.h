@@ -46,6 +46,59 @@ namespace Graph {
                 };
         };
 
+    template<typename G>
+        class Builder {
+            private:
+                class Vertex;
+                friend class Vertex;
+                using value_type = typename G::value_type;
+                using vertex_type = typename G::Vertex;
+
+                G g_;
+                std::map<value_type, const vertex_type* const> map_;
+
+                const vertex_type* const get_or_create_vertex(const value_type& value) {
+                    auto vertex = map_.find(value);
+                    if (vertex == map_.end()) {
+                        auto p = &g_.create_vertex(value);
+                        map_.insert({value, p});
+                        return p;
+                    } else
+                        return vertex->second;
+                }
+                template<typename E, typename... Es>
+                    void add_edges(const Vertex& vertex, E&& edge, Es&&... edges) {
+                        g_.add_edge(*vertex.vertex_, *get_or_create_vertex(std::forward<E>(edge)));
+                        add_edges(vertex, std::forward<Es>(edges)...);
+                    }
+                void add_edges(const Vertex&) {}
+            public:
+                Vertex for_vertex(const value_type& value) {
+                    return Vertex(*this, get_or_create_vertex(value));
+                }
+                G build() { return std::move(g_); }
+        };
+
+    template<typename G>
+        class Builder<G>::Vertex {
+            private:
+                using builder_type = Builder<G>;
+                using vertex_type = typename G::Vertex;
+                using value_type = typename G::value_type;
+                builder_type& builder_;
+            public:
+                const vertex_type* const vertex_;
+                Vertex(builder_type& b, const vertex_type* const v) :builder_(b), vertex_(v) {}
+
+                template<typename... E>
+                    Vertex& add_edges(E&&... edges) {
+                        builder_.add_edges(*this, std::forward<E>(edges)...);
+                        return *this;
+                    }
+                Vertex for_vertex(const value_type& v) { return builder_.for_vertex(v); }
+                G build() { return builder_.build(); }
+        };
+
     template<typename It, typename F>
         void print_collection(const It& b, const It& e, const char* del, F f, std::ostream& stream) {
             if (b == e)
@@ -352,30 +405,75 @@ namespace Graph {
             struct Searcher : public Post_dfs<G> {
                 using Base = Post_dfs<G>;
                 int depth_;
+                Stack<std::string> lines_stack_;
                 Searcher(const G& g) 
                     :Base(g), depth_(-1)
                 {}
+                void print_stack() {
+                    while (!lines_stack_.empty())
+                        std::cout << lines_stack_.pop() << std::endl;
+                }
                 void visit_vertex(const V& v) {
                     ++depth_;
+                    if (depth_ == 0)
+                        print_stack();
                 }
                 void visit_edge(const V& v, const V& w) {
+                    std::string str;
                     if (Base::pre_[w] > Base::pre_[v])
-                        print("down", v, w);
+                        str = "down";
                     else if (Base::post_.is_unset(w))
-                        print("back", v, w);
+                        str = "back";
                     else
-                        print("cross", v, w);
+                        str = "cross";
+                    lines_stack_.push(compose_stack_line(str, v, w));
                 }
                 void search_post_process(const V& v) {
                     --depth_;
                     Base::search_post_process(v);
                 }
-                void print(const char* label, const V& v, const V& w) {
-                    for (int i = 0; i < depth_; ++i) std::cout << " ";
-                    std::cout << label << " " << v << " " << w << std::endl;
+                std::string compose_stack_line(const std::string label, const V& v, const V& w) {
+                    std::stringstream ss;
+                    for (int i = 0; i < depth_; ++i) ss << " ";
+                    ss << v << " " << w << " (" << label << ")";
+                    return ss.str();
                 }
             };
-            Dfs_searcher<G, Searcher>(g).search_pairs();
+            Dfs_searcher<G, Searcher> s(g);
+            s.search_pairs();
+            s.print_stack();
+        }
+
+    template<typename G>
+        void trace_bfs(const G& g) {
+            using V = typename G::Vertex;
+            Counters<bool> pre(g.vertices_count());
+            for (auto vv = g.cbegin(); vv != g.cend(); ++vv) {
+                if (pre.is_unset(*vv)) {
+                    struct Entry {
+                        const V* const v_;
+                        const int d_;
+                        Entry(const V* const v, int d) :v_(v), d_(d) {}
+                    };
+                    Forward_list<Entry> queue;
+                    queue.emplace_back(&*vv, 0);
+                    while (!queue.empty()) {
+                        auto p = queue.pop_front();
+                        auto& w = *p.v_;
+                        for (auto t = w.cbegin(); t != w.cend(); ++t) {
+                            if (pre.is_unset(*t)) {
+                                pre.set_next(*t);
+                                queue.emplace_back(&*t, p.d_ + 1);
+                            }
+                            if (w != *t) {
+                                for (int i = 0; i < p.d_; ++i)
+                                    std::cout << " ";
+                                std::cout << w << " " << *t << std::endl;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
     template<typename G, typename V = typename G::Vertex>
@@ -448,7 +546,7 @@ namespace Graph {
                 inverted.create_vertex(v->value());
             for (auto v = g.cbegin(); v != g.cend(); ++v)
                 for (auto w = v->cbegin(); w != v->cend(); ++w)
-                    inverted.add_edge(*w, *v);
+                    inverted.add_edge(inverted.vertex_at(*w), inverted.vertex_at(*v));
             return inverted;
         }
 
