@@ -380,35 +380,22 @@ namespace Graph {
 
     template<typename G, typename V = typename G::Vertex>
         bool is_dag(const G& g) {
-            struct Searcher {
-                const G& g_;
-                Graph::Counters<int> pre_;
-                Graph::Counters<int> post_;
-                bool dag_is_valid_;
-                Searcher(const G& g, size_t size) 
-                    :g_(g), pre_(size), post_(size), dag_is_valid_(true) 
-                {}
-                void search() {
-                    for (auto v = g_.cbegin(); v != g_.cend(); ++v)
-                        if (dag_is_valid_ && pre_.is_unset(*v))
-                            search(*v, *v);
-                }
-                void search(const V& v, const V& w) {
-                    pre_.set_next(w);
-                    for (auto it = w.cbegin(); dag_is_valid_ && it != w.cend(); ++it) {
-                        auto& t = *it;
-                        if (pre_.is_unset(t))
-                            search(w, t);
-                        if (pre_[t] < pre_[w] && post_.is_unset(t))
-                            // back link found
-                            dag_is_valid_ = false;
-                    }
-                    post_.set_next(w);
+            class Invalid_dag_exception {};
+            using namespace Dfs;
+            struct Searcher : public Post_dfs<G> {
+                using Base = Post_dfs<G>;
+                Searcher(const G& g) :Base(g) {}
+                void visit_edge(const V& v, const V& w) {
+                    if (Base::pre_[w] < Base::pre_[v] && Base::post_.is_unset(w))
+                        throw Invalid_dag_exception(); // back link found
                 }
             };
-            Searcher s(g, g.vertices_count());
-            s.search();
-            return s.dag_is_valid_;
+            try {
+                Dfs_searcher<G, Searcher>(g).search_pairs();
+                return true;
+            } catch (const Invalid_dag_exception&) {
+                return false;
+            }
         }
 
     template<typename G, typename V = typename G::Vertex>

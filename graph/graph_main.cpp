@@ -157,7 +157,6 @@ int main() {
      Graph::trace_dfs(g);
      std::cout << "DAG is valid: " << Graph::is_dag(g) << std::endl;
 
-     std::cout << "DAG is valid: " << Graph::is_dag(g) << std::endl;
      Graph::topological_sort(Graph::invert(g));
      Graph::topological_sort_sinks_queue(g);
 
