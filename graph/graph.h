@@ -399,49 +399,88 @@ namespace Graph {
             return g_copy;
         }
 
+    template<typename G>
+        struct Dfs_tracer : public Dfs::Post_dfs<G> {
+            using Base = Dfs::Post_dfs<G>;
+            using V = typename G::Vertex;
+            int depth_;
+            Stack<std::string> lines_stack_;
+            size_t last_root_id_;
+            Dfs_tracer(const G& g) 
+                :Base(g), depth_(-1), last_root_id_(-1)
+            {}
+            void print_stack() {
+                while (!lines_stack_.empty())
+                    std::cout << lines_stack_.pop() << std::endl;
+            }
+            void visit_vertex(const V& v) {
+                ++depth_;
+                if (depth_ == 0) {
+                    if (lines_stack_.empty()) {
+                        std::cout << v << std::endl;
+                    } else
+                        print_stack();
+                    last_root_id_ = v;
+                }
+            }
+            void visit_edge(const V& v, const V& w) {
+                std::string str;
+                if (Base::pre_[w] > Base::pre_[v])
+                    str = "down";
+                else if (Base::post_.is_unset(w))
+                    str = "back";
+                else
+                    str = "cross";
+                lines_stack_.push(compose_stack_line(str, v, w));
+            }
+            void search_post_process(const V& v) {
+                --depth_;
+                Base::search_post_process(v);
+            }
+            std::string compose_stack_line(const std::string label, const V& v, const V& w) {
+                std::stringstream ss;
+                for (int i = 0; i < depth_; ++i) ss << " ";
+                ss << " " << w << " (" << label << ")";
+                return ss.str();
+            }
+        };
+
     template<typename G, typename V = typename G::Vertex>
         void trace_dfs(const G& g) {
             using namespace Dfs;
-            struct Searcher : public Post_dfs<G> {
-                using Base = Post_dfs<G>;
-                int depth_;
-                Stack<std::string> lines_stack_;
-                Searcher(const G& g) 
-                    :Base(g), depth_(-1)
-                {}
-                void print_stack() {
-                    while (!lines_stack_.empty())
-                        std::cout << lines_stack_.pop() << std::endl;
-                }
-                void visit_vertex(const V& v) {
-                    ++depth_;
-                    if (depth_ == 0)
-                        print_stack();
-                }
-                void visit_edge(const V& v, const V& w) {
-                    std::string str;
-                    if (Base::pre_[w] > Base::pre_[v])
-                        str = "down";
-                    else if (Base::post_.is_unset(w))
-                        str = "back";
-                    else
-                        str = "cross";
-                    lines_stack_.push(compose_stack_line(str, v, w));
-                }
-                void search_post_process(const V& v) {
-                    --depth_;
-                    Base::search_post_process(v);
-                }
-                std::string compose_stack_line(const std::string label, const V& v, const V& w) {
-                    std::stringstream ss;
-                    for (int i = 0; i < depth_; ++i) ss << " ";
-                    ss << v << " " << w << " (" << label << ")";
-                    return ss.str();
+            struct Tracer : public Dfs_searcher<G, Dfs_tracer<G>> {
+                using Base = Dfs_searcher<G, Dfs_tracer<G>>;
+                Tracer(const G& g) :Base(g) {}
+                void search_pairs() {
+                    Base::search_pairs();
+                    std::cout << Base::last_root_id_ << std::endl;
+                    Base::print_stack();
                 }
             };
-            Dfs_searcher<G, Searcher> s(g);
-            s.search_pairs();
-            s.print_stack();
+            Tracer t(g);
+            t.search_pairs();
+        }
+
+    template<typename G, typename V = typename G::Vertex>
+        void trace_dfs_topo_sorted(const G& g) {
+            using namespace Dfs;
+            struct Tracer : public Dfs_searcher<G, Dfs_tracer<G>> {
+                using Base = Dfs_searcher<G, Dfs_tracer<G>>;
+                Tracer(const G& g) :Base(g) {}
+                void search_pairs() {
+                    auto t_order = topological_sort_inverted(Base::g_);
+                    for (auto it = Base::g_.crbegin(); it != Base::g_.crend(); ++it) {
+                        auto& v = Base::g_.vertex_at(t_order[*it]);
+
+                        if (Base::pre_.is_unset(v))
+                            Base::search_pairs(v, v);
+                    }
+                    std::cout << Base::last_root_id_ << std::endl;
+                    Base::print_stack();
+                }
+            };
+            Tracer t(g);
+            t.search_pairs();
         }
 
     template<typename G>
@@ -496,9 +535,18 @@ namespace Graph {
             }
         }
 
-    template<typename G, typename V = typename G::Vertex>
-        void topological_sort(const G& g) {
-            std::cout << "topological sort" << std::endl;
+    template<typename G>
+        Array<size_t> topological_sort(const G& g) {
+            using namespace Dfs;
+            auto inverted = invert(g);
+            Dfs_searcher<G, Post_dfs<G, bool>> s(inverted);
+            s.search_pairs();
+            return s.post_.to_array();
+        }
+
+    template<typename G>
+        Array<size_t> topological_sort_inverted(const G& g) {
+            using V = typename G::Vertex;
             using namespace Dfs;
             struct Searcher : public Post_dfs<G, bool> {
                 using Base = Post_dfs<G, bool>;
@@ -512,8 +560,7 @@ namespace Graph {
             auto inverted = invert(g);
             Dfs_searcher<G, Searcher> s(inverted);
             s.search_pairs();
-            std::cout << "order: " << std::endl << s.post_ << std::endl;
-            std::cout << "order inverted: " << std::endl << s.post_i_ << std::endl;
+            return std::move(s.post_i_);
         }
 
     template<typename G, typename V = typename G::Vertex>
@@ -550,5 +597,39 @@ namespace Graph {
             return inverted;
         }
 
+    template<typename G, typename V = typename G::Vertex>
+        Array<size_t> calculate_strong_components(const G& g) {
+            using namespace Dfs;
+            struct Foo {
+                const G& g_;
+                Array<size_t> ids_;
+                size_t group_id_;
+                Foo(const G& g) 
+                    :g_(g), ids_(g.vertices_count()), group_id_(-1) 
+                { 
+                    ids_.fill(-1);
+                }
+                void search() {
+                    auto t_order = topological_sort_inverted(g_);
+                    for (auto v = g_.crbegin(); v != g_.crend(); ++v) {
+                        auto& t = g_.vertex_at(t_order[*v]);
+                        if (ids_[t] == static_cast<size_t>(-1)) {
+                            ++group_id_;
+                            search(t);
+                        }
+                    }
+                }
+                void search(const V& v) {
+                    ids_[v] = group_id_;
+                    for (auto w = v.cbegin(); w != v.cend(); ++w)
+                        if (ids_[*w] == static_cast<size_t>(-1))
+                            search(*w);
+                }
+            };
+
+            Foo f(g);
+            f.search();
+            return std::move(f.ids_);
+        }
 }
 

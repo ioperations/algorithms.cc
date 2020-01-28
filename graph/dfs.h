@@ -21,6 +21,10 @@ namespace Graph {
                 void set_next(size_t index) {
                     Base::operator[](index) = ++current_max_;
                 }
+                Array<T> to_array() {
+                    Array<T> array(std::move(*this));
+                    return array;
+                }
         };
 
     template<>
