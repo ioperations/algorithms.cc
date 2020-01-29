@@ -108,35 +108,21 @@ int main() {
      Graph::trace_dfs(g);
      std::cout << "DAG is valid: " << Graph::is_dag(g) << std::endl;
 
-     std::cout << "topological sort: " << std::endl << Graph::topological_sort(g) << std::endl;
-     std::cout << "topological sort (inverted): " << std::endl << Graph::topological_sort_inverted(g) << std::endl;
+     std::cout << "topological sort (rearrange): " << std::endl << Graph::topological_sort_rearrange(g) << std::endl;
+     std::cout << "topological sort (relabel): " << std::endl << Graph::topological_sort_relabel(g) << std::endl;
      
      Graph::topological_sort_sinks_queue(g);
 
-     Graph::Builder<decltype(g)> b;
-     for (int i = 0; i < 13; ++i)
-         b.for_vertex(i);
-
-     g = b
-         .for_vertex(0).add_edges(1, 5, 6)
-         .for_vertex(2).add_edges(0, 3)
-         .for_vertex(3).add_edges(2, 5)
-         .for_vertex(4).add_edges(2, 3, 11)
-         .for_vertex(5).add_edges(4)
-         .for_vertex(6).add_edges(4, 9)
-         .for_vertex(7).add_edges(6, 8)
-         .for_vertex(8).add_edges(7, 9)
-         .for_vertex(9).add_edges(10, 11)
-         .for_vertex(10).add_edges(12)
-         .for_vertex(11).add_edges(12)
-         .for_vertex(12).add_edges(9)
-         .build();
+     g = Graph::Samples::strong_components_sample<decltype(g)>();
 
      Graph::trace_dfs(g);
      std::cout << "dfs with topological sort:" << std::endl;
      Graph::trace_dfs_topo_sorted(g);
 
-     std::cout << "strong components: " << std::endl << calculate_strong_components(g) << std::endl;
+     std::cout << "strong components (Kosaraju): " << std::endl << strong_components_kosaraju(g) << std::endl;
+
+     std::cout << "strong components (Tarjan)" << std::endl << strong_components_tarjan(g) << std::endl;
+
 
     // auto g = Graph::Samples::euler_tour_sample<Graph::Adjacency_matrix<int>>();
     // Graph::dfs(g, [](auto& v) {

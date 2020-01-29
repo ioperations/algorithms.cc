@@ -137,6 +137,27 @@ namespace Graph {
                     .add_edge(v11, v12);
             }
 
+        template<typename G>
+            G strong_components_sample() {
+                Graph::Builder<G> b;
+                for (int i = 0; i < 13; ++i)
+                    b.for_vertex(i);
+                return b
+                    .for_vertex(0).add_edges(1, 5, 6)
+                    .for_vertex(2).add_edges(0, 3)
+                    .for_vertex(3).add_edges(2, 5)
+                    .for_vertex(4).add_edges(2, 3, 11)
+                    .for_vertex(5).add_edges(4)
+                    .for_vertex(6).add_edges(4, 9)
+                    .for_vertex(7).add_edges(6, 8)
+                    .for_vertex(8).add_edges(7, 9)
+                    .for_vertex(9).add_edges(10, 11)
+                    .for_vertex(10).add_edges(12)
+                    .for_vertex(11).add_edges(12)
+                    .for_vertex(12).add_edges(9)
+                    .build();
+            }
+
     }
 
 }

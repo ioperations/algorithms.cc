@@ -468,7 +468,7 @@ namespace Graph {
                 using Base = Dfs_searcher<G, Dfs_tracer<G>>;
                 Tracer(const G& g) :Base(g) {}
                 void search_pairs() {
-                    auto t_order = topological_sort_inverted(Base::g_);
+                    auto t_order = topological_sort_relabel(Base::g_);
                     for (auto it = Base::g_.crbegin(); it != Base::g_.crend(); ++it) {
                         auto& v = Base::g_.vertex_at(t_order[*it]);
 
@@ -536,7 +536,7 @@ namespace Graph {
         }
 
     template<typename G>
-        Array<size_t> topological_sort(const G& g) {
+        Array<size_t> topological_sort_rearrange(const G& g) {
             using namespace Dfs;
             auto inverted = invert(g);
             Dfs_searcher<G, Post_dfs<G, bool>> s(inverted);
@@ -545,7 +545,7 @@ namespace Graph {
         }
 
     template<typename G>
-        Array<size_t> topological_sort_inverted(const G& g) {
+        Array<size_t> topological_sort_relabel(const G& g) {
             using V = typename G::Vertex;
             using namespace Dfs;
             struct Searcher : public Post_dfs<G, bool> {
@@ -598,7 +598,7 @@ namespace Graph {
         }
 
     template<typename G, typename V = typename G::Vertex>
-        Array<size_t> calculate_strong_components(const G& g) {
+        Array<size_t> strong_components_kosaraju(const G& g) {
             using namespace Dfs;
             struct Foo {
                 const G& g_;
@@ -610,7 +610,7 @@ namespace Graph {
                     ids_.fill(-1);
                 }
                 void search() {
-                    auto t_order = topological_sort_inverted(g_);
+                    auto t_order = topological_sort_relabel(g_);
                     for (auto v = g_.crbegin(); v != g_.crend(); ++v) {
                         auto& t = g_.vertex_at(t_order[*v]);
                         if (ids_[t] == static_cast<size_t>(-1)) {
@@ -630,6 +630,52 @@ namespace Graph {
             Foo f(g);
             f.search();
             return std::move(f.ids_);
+        }
+
+    template<typename G>
+        Array<size_t> strong_components_tarjan(const G& g) {
+            using V = typename G::Vertex;
+            struct Searcher {
+                const G& g_;
+                Counters<size_t> pre_;
+                Array<size_t> min_;
+                Array<size_t> ids_;
+                size_t group_id_;
+                Stack<const V* const> stack_;
+                Searcher(const G& g) 
+                    :g_(g), pre_(g.vertices_count()), min_(g.vertices_count()), ids_(g.vertices_count()), group_id_(0) 
+                {}
+                void search() {
+                    for (auto v = g_.crbegin(); v != g_.crend(); ++v)
+                        if (pre_.is_unset(*v))
+                            search(*v);
+                }
+                void search(const V& v) {
+                    pre_.set_next(v);
+                    size_t min = min_[v] = pre_[v];
+                    stack_.push(&v);
+                    for (auto w = v.cbegin(); w != v.cend(); ++w) {
+                        if (pre_.is_unset(*w))
+                            search(*w);
+                        if (min_[*w] < min)
+                            min = min_[*w];
+                    }
+                    if (min < min_[v])
+                        min_[v] = min;
+                    else {
+                        const V* w;
+                        do {
+                            w = stack_.pop();
+                            ids_[*w] = group_id_;
+                            min_[*w] = g_.vertices_count();
+                        } while (v != *w);
+                        ++group_id_;
+                    }
+                }
+            };
+            Searcher s(g);
+            s.search();
+            return std::move(s.ids_);
         }
 }
 
