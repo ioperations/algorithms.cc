@@ -36,12 +36,14 @@ Drawables_stream& print_graph(Drawables_stream& stream, const G& graph) {
 }
 
 template<typename T>
-Drawables_stream& operator<<(Drawables_stream& stream, const Graph::Adjacency_matrix<T>& graph) {
+Drawables_stream& operator<<(Drawables_stream& stream, 
+                             const Graph::Adjacency_matrix<Graph::Graph_type::GRAPH, T>& graph) {
     return print_graph(stream, graph);
 }
 
 template<typename T>
-Drawables_stream& operator<<(Drawables_stream& stream, const Graph::Adjacency_lists<T>& graph) {
+Drawables_stream& operator<<(Drawables_stream& stream,
+                             const Graph::Adjacency_lists<T>& graph) {
     return print_graph(stream, graph);
 }
 

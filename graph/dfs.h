@@ -47,7 +47,7 @@ namespace Graph {
 
         template<typename G, typename T_pre = size_t>
             struct Base_dfs {
-                using V = typename G::Vertex;
+                using V = typename G::vertex_type;
                 using pre_counters_type = Counters<T_pre>;
                 const G& g_;
                 pre_counters_type pre_;
@@ -59,7 +59,7 @@ namespace Graph {
 
         template<typename G, typename T_pre = size_t, typename T_post = size_t>
             struct Post_dfs : public Base_dfs<G, T_pre> {
-                using V = typename G::Vertex;
+                using V = typename G::vertex_type;
                 using post_counters_type = Counters<T_post>;
                 post_counters_type post_;
                 Post_dfs(const G& g) : Base_dfs<G, T_pre>(g), post_(g.vertices_count()) {}
@@ -70,7 +70,7 @@ namespace Graph {
 
         template<typename G, typename DFS = Base_dfs<G>>
             struct Dfs_searcher : public DFS {
-                using V = typename G::Vertex;
+                using V = typename G::vertex_type;
                 template<typename... Args>
                     Dfs_searcher(const G& g, Args&&... args) 
                     :DFS(g, std::forward<Args>(args)...) 
@@ -106,7 +106,7 @@ namespace Graph {
 
     }
 
-    template<typename G, typename V = typename G::Vertex, typename T_v_visitor, typename T_e_visitor>
+    template<typename G, typename V = typename G::vertex_type, typename T_v_visitor, typename T_e_visitor>
         void dfs(const G& g, T_v_visitor v_visitor, T_e_visitor e_visitor) {
             using namespace Dfs;
             struct Searcher : public Base_dfs<G, bool> {

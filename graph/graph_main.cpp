@@ -86,43 +86,41 @@ void test_digraph() {
     auto g = Graph::Samples::digraph_sample<G>();
     auto transitive_closure = Graph::dfs_transitive_closure(g);
     transitive_closure.print_internal(std::cout);
+
+    g = Graph::Samples::digraph_sample<G>();
+
+    Graph::trace_dfs(g);
+    std::cout << "DAG is valid: " << Graph::is_dag(g) << std::endl;
+
+    std::cout << "topological sort (rearrange): " << std::endl << Graph::topological_sort_rearrange(g) << std::endl;
+    std::cout << "topological sort (relabel): " << std::endl << Graph::topological_sort_relabel(g) << std::endl;
+
+    Graph::topological_sort_sinks_queue(g);
+
+    g = Graph::Samples::strong_components_sample<decltype(g)>();
+
+    Graph::trace_dfs(g);
+    std::cout << "dfs with topological sort:" << std::endl;
+    Graph::trace_dfs_topo_sorted(g);
+
+    std::cout << "strong components (Kosaraju): " << std::endl << strong_components_kosaraju(g) << std::endl;
+    std::cout << "strong components (Tarjan)" << std::endl << strong_components_tarjan(g) << std::endl;
 }
 
 int main() {
 
-     test_graph<Graph::Adjacency_matrix<int>>("adjacency matrix");
+    // using namespace Graph; // todo
+
+     test_graph<Graph::Adjacency_matrix<Graph::Graph_type::GRAPH, int>>("adjacency matrix");
      test_graph<Graph::Adjacency_lists<int>>("adjacency lists");
 
-     std::cout << std::endl;
-     test_digraph<Graph::Adjacency_matrix<int, Graph::Graph_type::DIGRAPH>>();
-     test_digraph<Graph::Adjacency_lists<int, Graph::Graph_type::DIGRAPH>>();
-
      std::cout << "Warshall transitive closure" << std::endl;
-     auto g = Graph::Samples::digraph_sample<Graph::Adjacency_matrix<int, Graph::Graph_type::DIGRAPH>>();
+     auto g = Graph::Samples::digraph_sample<Graph::Adjacency_matrix<Graph::Graph_type::DIGRAPH, int>>();
      auto transitive_closure = Graph::warshall_transitive_closure(g);
      transitive_closure.print_internal(std::cout);
-     std::cout << "DAG is valid: " << Graph::is_dag(g) << std::endl;
 
-     g = Graph::Samples::dag_sample<Graph::Adjacency_matrix<int, Graph::Graph_type::DIGRAPH>>();
-
-     Graph::trace_dfs(g);
-     std::cout << "DAG is valid: " << Graph::is_dag(g) << std::endl;
-
-     std::cout << "topological sort (rearrange): " << std::endl << Graph::topological_sort_rearrange(g) << std::endl;
-     std::cout << "topological sort (relabel): " << std::endl << Graph::topological_sort_relabel(g) << std::endl;
-     
-     Graph::topological_sort_sinks_queue(g);
-
-     g = Graph::Samples::strong_components_sample<decltype(g)>();
-
-     Graph::trace_dfs(g);
-     std::cout << "dfs with topological sort:" << std::endl;
-     Graph::trace_dfs_topo_sorted(g);
-
-     std::cout << "strong components (Kosaraju): " << std::endl << strong_components_kosaraju(g) << std::endl;
-
-     std::cout << "strong components (Tarjan)" << std::endl << strong_components_tarjan(g) << std::endl;
-
+     test_digraph<Graph::Adjacency_matrix<Graph::Graph_type::DIGRAPH, int>>();
+     test_digraph<Graph::Adjacency_lists<int, Graph::Graph_type::DIGRAPH>>();
 
     // auto g = Graph::Samples::euler_tour_sample<Graph::Adjacency_matrix<int>>();
     // Graph::dfs(g, [](auto& v) {
@@ -130,5 +128,17 @@ int main() {
     // }, [](auto& v, auto& w) {
     //     std::cout << v << " " << w << std::endl;
     // });
+
+     Graph::Edge<bool> e1(false);
+     Graph::Edge<bool> e2(true);
+
+
+     Graph::Adjacency_matrix<Graph::Graph_type::DIGRAPH, int, Graph::Edge<int>> gw;
+
+     auto& v1 = gw.create_vertex(1);
+     auto& v2 = gw.create_vertex(2);
+     gw.add_edge(v1, v2, 4);
+
+     std::cout << gw.get_edge_weight(v1, v2) << std::endl;
 
 }

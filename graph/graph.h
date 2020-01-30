@@ -18,9 +18,9 @@ namespace Graph {
     template<typename G, typename T = typename G::value_type>
         class Constructor {
             private:
-                using Vertex = typename G::Vertex;
+                using vertex_type = typename G::vertex_type;
                 G& graph_;
-                std::map<T, typename G::Vertex&> vertices_;
+                std::map<T, typename G::vertex_type&> vertices_;
             public:
                 Constructor(G& graph) :graph_(graph) {}
                 Constructor& add_edge(const T& l1, const T& l2) {
@@ -29,7 +29,7 @@ namespace Graph {
                     graph_.add_edge(v1, v2);
                     return *this;
                 }
-                Vertex& get_or_create_vertex(const T& l) {
+                vertex_type& get_or_create_vertex(const T& l) {
                     auto it = vertices_.find(l);
                     if (it == vertices_.end()) {
                         auto& v = graph_.create_vertex(l);
@@ -38,7 +38,7 @@ namespace Graph {
                     } else
                         return it->second;
                 }
-                Vertex& get_vertex(const T& label) {
+                vertex_type& get_vertex(const T& label) {
                     auto it = vertices_.find(label);
                     if (it == vertices_.end())
                         throw std::runtime_error("vertex "_str + label + " not found");
@@ -52,12 +52,12 @@ namespace Graph {
                 class Vertex;
                 friend class Vertex;
                 using value_type = typename G::value_type;
-                using vertex_type = typename G::Vertex;
+                using vertex_type = typename G::vertex_type;
 
                 G g_;
-                std::map<value_type, const vertex_type* const> map_;
+                std::map<value_type, vertex_type* const> map_;
 
-                const vertex_type* const get_or_create_vertex(const value_type& value) {
+                vertex_type* const get_or_create_vertex(const value_type& value) {
                     auto vertex = map_.find(value);
                     if (vertex == map_.end()) {
                         auto p = &g_.create_vertex(value);
@@ -67,11 +67,11 @@ namespace Graph {
                         return vertex->second;
                 }
                 template<typename E, typename... Es>
-                    void add_edges(const Vertex& vertex, E&& edge, Es&&... edges) {
+                    void add_edges(Vertex& vertex, E&& edge, Es&&... edges) {
                         g_.add_edge(*vertex.vertex_, *get_or_create_vertex(std::forward<E>(edge)));
                         add_edges(vertex, std::forward<Es>(edges)...);
                     }
-                void add_edges(const Vertex&) {}
+                void add_edges(Vertex&) {}
             public:
                 Vertex for_vertex(const value_type& value) {
                     return Vertex(*this, get_or_create_vertex(value));
@@ -83,12 +83,12 @@ namespace Graph {
         class Builder<G>::Vertex {
             private:
                 using builder_type = Builder<G>;
-                using vertex_type = typename G::Vertex;
+                using vertex_type = typename G::vertex_type;
                 using value_type = typename G::value_type;
                 builder_type& builder_;
             public:
-                const vertex_type* const vertex_;
-                Vertex(builder_type& b, const vertex_type* const v) :builder_(b), vertex_(v) {}
+                vertex_type* const vertex_;
+                Vertex(builder_type& b, vertex_type* const v) :builder_(b), vertex_(v) {}
 
                 template<typename... E>
                     Vertex& add_edges(E&&... edges) {
@@ -170,7 +170,7 @@ namespace Graph {
             return count;
         }
 
-    template<typename G, typename V = typename G::Vertex>
+    template<typename G, typename V = typename G::vertex_type>
         bool has_simple_path(const G& graph, const V& v1, const V& v2) {
             Array<bool> visited(graph.vertices_count());
             for (auto& b : visited)
@@ -190,7 +190,7 @@ namespace Graph {
             return helper.has_simple_path(graph, v1, v2, visited);
         }
 
-    template<typename G, typename V = typename G::Vertex>
+    template<typename G, typename V = typename G::vertex_type>
         Array<const V*> compose_hamilton_path(const G& graph) {
             if (graph.vertices_count() < 1)
                 return {};
@@ -229,7 +229,7 @@ namespace Graph {
             return path;
         }
 
-    template<typename G, typename V = typename G::Vertex>
+    template<typename G, typename V = typename G::vertex_type>
         auto compose_euler_tour(const G& g, const V& v) {
             Array<size_t> degrees(g.vertices_count());
             {
@@ -285,7 +285,7 @@ namespace Graph {
             return path;
         }
 
-    template<typename G, typename V = typename G::Vertex>
+    template<typename G, typename V = typename G::vertex_type>
         Forward_list<std::pair<const V*, const V*>> find_bridges(const G& graph) {
             struct Searcher {
                 const G& g_;
@@ -336,7 +336,7 @@ namespace Graph {
                 }
         };
 
-    template<typename G, typename V = typename G::Vertex>
+    template<typename G, typename V = typename G::vertex_type>
         Shortest_paths_matrix<V> find_shortest_paths(const G& g) {
             typename Shortest_paths_matrix<V>::parents_type all_parents(g.vertices_count(), g.vertices_count());
             all_parents.fill(nullptr);
@@ -372,7 +372,7 @@ namespace Graph {
             return g_copy;
         }
 
-    template<typename G, typename V = typename G::Vertex>
+    template<typename G, typename V = typename G::vertex_type>
         G dfs_transitive_closure(const G& g) {
             struct Helper {
                 G& g_;
@@ -402,7 +402,7 @@ namespace Graph {
     template<typename G>
         struct Dfs_tracer : public Dfs::Post_dfs<G> {
             using Base = Dfs::Post_dfs<G>;
-            using V = typename G::Vertex;
+            using V = typename G::vertex_type;
             int depth_;
             Stack<std::string> lines_stack_;
             size_t last_root_id_;
@@ -445,7 +445,7 @@ namespace Graph {
             }
         };
 
-    template<typename G, typename V = typename G::Vertex>
+    template<typename G, typename V = typename G::vertex_type>
         void trace_dfs(const G& g) {
             using namespace Dfs;
             struct Tracer : public Dfs_searcher<G, Dfs_tracer<G>> {
@@ -461,7 +461,7 @@ namespace Graph {
             t.search_pairs();
         }
 
-    template<typename G, typename V = typename G::Vertex>
+    template<typename G, typename V = typename G::vertex_type>
         void trace_dfs_topo_sorted(const G& g) {
             using namespace Dfs;
             struct Tracer : public Dfs_searcher<G, Dfs_tracer<G>> {
@@ -485,7 +485,7 @@ namespace Graph {
 
     template<typename G>
         void trace_bfs(const G& g) {
-            using V = typename G::Vertex;
+            using V = typename G::vertex_type;
             Counters<bool> pre(g.vertices_count());
             for (auto vv = g.cbegin(); vv != g.cend(); ++vv) {
                 if (pre.is_unset(*vv)) {
@@ -515,7 +515,7 @@ namespace Graph {
             }
         }
 
-    template<typename G, typename V = typename G::Vertex>
+    template<typename G, typename V = typename G::vertex_type>
         bool is_dag(const G& g) {
             class Invalid_dag_exception {};
             using namespace Dfs;
@@ -546,7 +546,7 @@ namespace Graph {
 
     template<typename G>
         Array<size_t> topological_sort_relabel(const G& g) {
-            using V = typename G::Vertex;
+            using V = typename G::vertex_type;
             using namespace Dfs;
             struct Searcher : public Post_dfs<G, bool> {
                 using Base = Post_dfs<G, bool>;
@@ -563,7 +563,7 @@ namespace Graph {
             return std::move(s.post_i_);
         }
 
-    template<typename G, typename V = typename G::Vertex>
+    template<typename G, typename V = typename G::vertex_type>
         void topological_sort_sinks_queue(const G& g) {
             std::cout << "topological sort (sinks queue)" << std::endl;
             Array<size_t> in(g.vertices_count());
@@ -586,7 +586,7 @@ namespace Graph {
             std::cout << ordered << std::endl;
         }
 
-    template<typename G, typename V = typename G::Vertex>
+    template<typename G, typename V = typename G::vertex_type>
         G invert(const G& g) {
             G inverted;
             for (auto v = g.cbegin(); v != g.cend(); ++v)
@@ -597,7 +597,7 @@ namespace Graph {
             return inverted;
         }
 
-    template<typename G, typename V = typename G::Vertex>
+    template<typename G, typename V = typename G::vertex_type>
         Array<size_t> strong_components_kosaraju(const G& g) {
             using namespace Dfs;
             struct Foo {
@@ -634,7 +634,7 @@ namespace Graph {
 
     template<typename G>
         Array<size_t> strong_components_tarjan(const G& g) {
-            using V = typename G::Vertex;
+            using V = typename G::vertex_type;
             struct Searcher {
                 const G& g_;
                 Counters<size_t> pre_;

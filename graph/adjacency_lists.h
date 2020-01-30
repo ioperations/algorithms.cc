@@ -10,16 +10,17 @@ namespace Graph {
 
     template<typename T>
         class Adjacency_lists_base {
-            public:
-                using value_type = T;
-                class Vertex;
             private:
+                class Vertex;
                 Vector<Vertex> vertices_;
                 void update_vertices_this_link() {
                     for (auto& v : vertices_)
                         v.adjacency_lists_ = this;
                 }
+            protected:
+                using vertex_type = Vertex;
             public:
+                using value_type = T;
                 Adjacency_lists_base() = default;
                 Adjacency_lists_base(const Adjacency_lists_base& o) :vertices_(o.vertices_) {
                     update_vertices_this_link();
@@ -60,6 +61,9 @@ namespace Graph {
                 auto begin() { return vertices_.begin(); }
                 auto end() { return vertices_.end(); } 
 
+                auto crbegin() const { return vertices_.crbegin(); }
+                auto crend() const { return vertices_.crend(); }
+
                 void print_internal(std::ostream& stream) {
                     for (auto& v : vertices_) {
                         stream << v.index_ << ": ";
@@ -73,35 +77,35 @@ namespace Graph {
     template<typename T, Graph_type graph_type = Graph_type::GRAPH>
         class Adjacency_lists : public Adjacency_lists_base<T> {
             public:
-                using Vertex = typename Adjacency_lists_base<T>::Vertex;
+                using vertex_type = typename Adjacency_lists_base<T>::vertex_type;
                 template<typename TT, Graph_type gt = Graph_type::GRAPH>
                     struct Edges_handler {
-                        static void add_edge(Vertex& v1, Vertex& v2) {
+                        static void add_edge(vertex_type& v1, vertex_type& v2) {
                             v1.add_link(v2);
                             v2.add_link(v1);
                         }
-                        static void remove_edge(Vertex& v1, Vertex& v2) {
+                        static void remove_edge(vertex_type& v1, vertex_type& v2) {
                             v1.remove_edge(v2);
                             v2.remove_edge(v1);
                         }
                     };
                 template<typename TT>
                     struct Edges_handler<TT, Graph_type::DIGRAPH> {
-                        static void add_edge(Vertex& v1, Vertex& v2) {
+                        static void add_edge(vertex_type& v1, vertex_type& v2) {
                             v1.add_link(v2);
                         }
-                        static void remove_edge(Vertex& v1, Vertex& v2) {
+                        static void remove_edge(vertex_type& v1, vertex_type& v2) {
                             v1.remove_edge(v2);
                         }
                     };
             private:
                 using Base = Adjacency_lists_base<T>;
             public:
-                Adjacency_lists& add_edge(Vertex& v1, Vertex& v2) {
+                Adjacency_lists& add_edge(vertex_type& v1, vertex_type& v2) {
                     Edges_handler<T, graph_type>::add_edge(v1, v2);
                     return *this;
                 }
-                void remove_edge(Vertex& v1, Vertex& v2) {
+                void remove_edge(vertex_type& v1, vertex_type& v2) {
                     Edges_handler<T, graph_type>::remove_edge(v1, v2);
                 }
         };
