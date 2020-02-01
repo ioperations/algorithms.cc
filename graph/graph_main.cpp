@@ -157,6 +157,20 @@ int main() {
      std::cout << time(nullptr) << std::endl;
 
      std::cout << v3.index() << std::endl;
-     std::cout << v3.index_2() << std::endl;
+     // std::cout << v3.index_2() << std::endl;
+
+     {
+
+         Graph::Adjacency_lists<int, Graph::Graph_type::DIGRAPH> gw2;
+
+         auto& v1 = gw2.create_vertex(1);
+         auto& v2 = gw2.create_vertex(2);
+         auto& v3 = gw2.create_vertex(3);
+         gw2.add_edge(v1, v2);
+         gw2.add_edge(v1, v3);
+
+     std::cout << v3.index() << std::endl;
+     // std::cout << v3.index_2() << std::endl;
+     }
 
 }

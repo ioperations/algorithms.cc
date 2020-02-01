@@ -69,7 +69,7 @@ namespace Graph {
                 }
 
                 vertex_type& create_vertex(const V& t) {
-                    vertices_.push_back(vertex_type(t, vertices_.size(), this)); // todo add emplace back method
+                    vertices_.push_back(vertex_type(t, this)); // todo add emplace back method
                     return vertices_[vertices_.size() - 1];
                 }
                 size_t vertices_count() const {
@@ -153,8 +153,8 @@ namespace Graph {
 
                 Adjacency_matrix_base* matrix_;
 
-                Vertex(const V& value, size_t index, Adjacency_matrix_base* matrix) 
-                    :Vertex_base<V>(value, index), matrix_(matrix) 
+                Vertex(const V& value, Adjacency_matrix_base* matrix) 
+                    :Vertex_base<V>(value), matrix_(matrix) 
                 {}
                 Vertex() :matrix_(nullptr) {}
 
@@ -170,14 +170,13 @@ namespace Graph {
                         return It(vertex, vertex->edges().end());
                     }
             public:
+                size_t index() const { return this - matrix_->vertices_.cbegin(); }
+                operator size_t() const { return index(); }
+
                 using iterator = Iterator<false>;
                 using const_iterator = Iterator<true>;
                 using edges_iterator = Edges_iterator<false>;
                 using const_edges_iterator = Edges_iterator<true>;
-
-                size_t index_2() const {
-                    return this - matrix_->vertices_.cbegin();
-                }
 
                 auto cbegin() const { return create_begin_it<const_iterator>(this); }
                 auto cend() const { return create_end_it<const_iterator>(this); }

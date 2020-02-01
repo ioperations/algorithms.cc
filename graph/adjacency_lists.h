@@ -40,7 +40,7 @@ namespace Graph {
                 }
 
                 Vertex& create_vertex(const T& t) {
-                    vertices_.push_back(Vertex(t, vertices_.size(), this));
+                    vertices_.push_back(Vertex(t, this));
                     return vertices_[vertices_.size() - 1];
                 }
                 size_t vertices_count() const {
@@ -66,7 +66,7 @@ namespace Graph {
 
                 void print_internal(std::ostream& stream) {
                     for (auto& v : vertices_) {
-                        stream << v.index_ << ": ";
+                        stream << v.index() << ": ";
                         for (auto& w : v)
                             stream << w.index() << " ";
                         stream << std::endl;
@@ -124,21 +124,26 @@ namespace Graph {
                 Adjacency_lists_base* adjacency_lists_;
                 Forward_list<size_t> links_;
 
-                Vertex(T value, size_t index, Adjacency_lists_base* adjacency_lists)
-                    :Vertex_base<T>(value, index), adjacency_lists_(adjacency_lists)
+                Vertex(T value, Adjacency_lists_base* adjacency_lists)
+                    :Vertex_base<T>(value), adjacency_lists_(adjacency_lists)
                 {}
                 Vertex() :adjacency_lists_(nullptr) {}
 
                 void add_link(const Vertex& v) {
                     bool found = false;
                     for (auto link = links_.begin(); link != links_.end() && !found; ++link)
-                        found = *link == v.index_;
+                        found = *link == v.index();
                     if (!found)
-                        links_.push_back(v.index_);
+                        links_.push_back(v.index());
                 }
             public:
                 using iterator = Iterator<false>;
                 using const_iterator = Iterator<true>;
+
+                size_t index() const {
+                    return this - adjacency_lists_->vertices_.cbegin();
+                }
+                operator size_t() const { return index(); }
 
                 iterator begin() {
                     return {*this, links_.begin()};

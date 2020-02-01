@@ -135,19 +135,13 @@ namespace Graph {
         class Vertex_base {
             protected:
                 T value_;
-                size_t index_; // todo redundant?
-
-                Vertex_base(const T& value, size_t index) 
-                    :value_(value), index_(index) 
-                {}
+                Vertex_base(const T& value) :value_(value) {}
                 Vertex_base() = default;
             public:
                 const T& value() const { return value_; }
                 void set_value(const T& value) { value_ = value; }
-                size_t index() const { return index_; } // todo delete?
-                operator size_t() const { return index_; }
                 bool operator==(const Vertex_base& o) const {
-                    return index_ == o.index_;
+                    return this == &o;
                 }
                 bool operator!=(const Vertex_base& o) const {
                     return !operator==(o);
