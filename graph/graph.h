@@ -451,6 +451,45 @@ namespace Graph {
         }
 
     template<typename G, typename V = typename G::vertex_type>
+        G invert(const G& g) {
+            G inverted;
+            for (auto v = g.cbegin(); v != g.cend(); ++v)
+                inverted.create_vertex(v->value());
+            for (auto v = g.cbegin(); v != g.cend(); ++v)
+                for (auto w = v->cbegin(); w != v->cend(); ++w)
+                    inverted.add_edge(inverted.vertex_at(*w), inverted.vertex_at(*v));
+            return inverted;
+        }
+    
+    template<typename G>
+        Array<size_t> topological_sort_rearrange(const G& g) {
+            using namespace Dfs;
+            auto inverted = invert(g);
+            Dfs_searcher<G, Post_dfs<G, bool>> s(inverted);
+            s.search_pairs();
+            return s.post_.to_array();
+        }
+
+    template<typename G>
+        Array<size_t> topological_sort_relabel(const G& g) {
+            using V = typename G::vertex_type;
+            using namespace Dfs;
+            struct Searcher : public Post_dfs<G, bool> {
+                using Base = Post_dfs<G, bool>;
+                Array<size_t> post_i_;
+                Searcher(const G& g) :Base(g), post_i_(g.vertices_count()) {}
+                void search_post_process(const V& v) {
+                    Base::search_post_process(v);
+                    post_i_[Base::post_[v]] = v;
+                }
+            };
+            auto inverted = invert(g);
+            Dfs_searcher<G, Searcher> s(inverted);
+            s.search_pairs();
+            return std::move(s.post_i_);
+        }
+
+    template<typename G, typename V = typename G::vertex_type>
         void trace_dfs_topo_sorted(const G& g) {
             using namespace Dfs;
             struct Tracer : public Dfs_searcher<G, Dfs_tracer<G>> {
@@ -524,34 +563,6 @@ namespace Graph {
             }
         }
 
-    template<typename G>
-        Array<size_t> topological_sort_rearrange(const G& g) {
-            using namespace Dfs;
-            auto inverted = invert(g);
-            Dfs_searcher<G, Post_dfs<G, bool>> s(inverted);
-            s.search_pairs();
-            return s.post_.to_array();
-        }
-
-    template<typename G>
-        Array<size_t> topological_sort_relabel(const G& g) {
-            using V = typename G::vertex_type;
-            using namespace Dfs;
-            struct Searcher : public Post_dfs<G, bool> {
-                using Base = Post_dfs<G, bool>;
-                Array<size_t> post_i_;
-                Searcher(const G& g) :Base(g), post_i_(g.vertices_count()) {}
-                void search_post_process(const V& v) {
-                    Base::search_post_process(v);
-                    post_i_[Base::post_[v]] = v;
-                }
-            };
-            auto inverted = invert(g);
-            Dfs_searcher<G, Searcher> s(inverted);
-            s.search_pairs();
-            return std::move(s.post_i_);
-        }
-
     template<typename G, typename V = typename G::vertex_type>
         void topological_sort_sinks_queue(const G& g) {
             std::cout << "topological sort (sinks queue)" << std::endl;
@@ -573,17 +584,6 @@ namespace Graph {
                         queue.push_back(&*w);
             }
             std::cout << ordered << std::endl;
-        }
-
-    template<typename G, typename V = typename G::vertex_type>
-        G invert(const G& g) {
-            G inverted;
-            for (auto v = g.cbegin(); v != g.cend(); ++v)
-                inverted.create_vertex(v->value());
-            for (auto v = g.cbegin(); v != g.cend(); ++v)
-                for (auto w = v->cbegin(); w != v->cend(); ++w)
-                    inverted.add_edge(inverted.vertex_at(*w), inverted.vertex_at(*v));
-            return inverted;
         }
 
     template<typename G, typename V = typename G::vertex_type>

@@ -43,7 +43,7 @@ Drawables_stream& operator<<(Drawables_stream& stream,
 
 template<typename T>
 Drawables_stream& operator<<(Drawables_stream& stream,
-                             const Graph::Adjacency_lists<T>& graph) {
+                             const Graph::Adjacency_lists<Graph::Graph_type::GRAPH, T>& graph) {
     return print_graph(stream, graph);
 }
 
@@ -58,7 +58,7 @@ Drawable* const compose_drawables() {
     Vertical_drawable_block* drawable = new Vertical_drawable_block;
     Drawables_stream dout(drawable);
 
-    using graph_type = Graph::Adjacency_lists<int>;
+    using graph_type = Graph::Adjacency_lists<Graph::Graph_type::GRAPH, int>;
 
     dout << "graph with Euler tour";
     auto graph = Graph::Samples::euler_tour_sample<graph_type>();
