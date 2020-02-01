@@ -141,18 +141,22 @@ int main() {
      gw.add_edge(v1, v2, 4);
      gw.add_edge(v1, v3, 8);
 
+     auto& v = *gw.begin();
+     v.set_value(22);
+
      std::cout << gw.get_edge_weight(v1, v2) << std::endl;
 
-     auto b = v1.edges_begin();
-     std::cout << b->target() << " " << b->edge().weight() << std::endl;
-     ++b;
-     std::cout << b->target() << " " << b->edge().weight() << std::endl;
-     ++b;
-     // std::cout << b->target() << " " << b->edge().weight() << std::endl;
-
-     std::cout << (b == v1.edges_end()) << std::endl;
+     v1.edges_begin()->target().set_value(45);
+     v1.edges_begin()->edge().set_weight(45);
 
      for (auto e = v1.edges_begin(); e != v1.edges_end(); ++e) {
-         std::cout << e->target() << " " << e->edge().weight() << std::endl;
+         std::cout << e->source() << " " << e->target() << " " << e->edge().weight() << std::endl;
      }
+
+     // for (auto e = v1.cedges_begin(); e != v1.cedges_end(); ++e) {
+     //     std::cout << e->source() << " " << e->target() << " " << e->edge().weight() << std::endl;
+     // }
+
+     std::cout << time(nullptr) << std::endl;
+
 }

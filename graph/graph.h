@@ -142,15 +142,10 @@ namespace Graph {
                 {}
                 Vertex_base() = default;
             public:
-                const T& value() const {
-                    return value_;
-                }
-                size_t index() const {
-                    return index_;
-                }
-                operator size_t() const {
-                    return index_;
-                }
+                const T& value() const { return value_; }
+                void set_value(const T& value) { value_ = value; }
+                size_t index() const { return index_; } // todo delete?
+                operator size_t() const { return index_; }
                 bool operator==(const Vertex_base& o) const {
                     return index_ == o.index_;
                 }

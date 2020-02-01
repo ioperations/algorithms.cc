@@ -19,6 +19,7 @@ namespace Graph {
                 Edge() :weight_(empty_value()) {}
                 Edge(const T& t) :weight_(t) {}
                 T weight() const { return weight_; }
+                void set_weight(const T& weight) { weight_ = weight; }
                 operator bool() const { return weight_ != empty_value(); }
                 void set(T weight) { weight_ = weight; }
         };
@@ -146,7 +147,7 @@ namespace Graph {
                 template<bool T_is_const>
                     class Iterator;
                 template<bool T_is_const>
-                    class Edge_iterator;
+                    class Edges_iterator;
                 friend class Adjacency_matrix_base;
                 friend class Vector<Vertex>;
 
@@ -160,28 +161,29 @@ namespace Graph {
                 Vector<E>& edges() const {
                     return matrix_->edges_[*this];
                 }
+                template<typename It, typename VV>
+                    static It create_begin_it(VV* vertex) {
+                        return It(vertex, vertex->edges().begin()).move_to_non_empty();
+                    }
+                template<typename It, typename VV>
+                    static It create_end_it(VV* vertex) {
+                        return It(vertex, vertex->edges().end());
+                    }
             public:
                 using iterator = Iterator<false>;
                 using const_iterator = Iterator<true>;
-                const_iterator cbegin() const {
-                    return const_iterator(*this, edges().begin()).move_to_non_empty();
-                }
-                const_iterator cend() const {
-                    return {*this, edges().end()};
-                }
-                iterator begin() {
-                    return iterator(*this, edges().begin()).move_to_non_empty();
-                }
-                iterator end() {
-                    return {*this, edges().end()};
-                }
+                using edges_iterator = Edges_iterator<false>;
+                using const_edges_iterator = Edges_iterator<true>;
 
-                Edge_iterator<false> edges_begin() {
-                    return Edge_iterator<false>(*this, edges().begin()).move_to_non_empty();
-                }
-                Edge_iterator<false> edges_end() {
-                    return {*this, edges().end()};
-                }
+                auto cbegin() const { return create_begin_it<const_iterator>(this); }
+                auto cend() const { return create_end_it<const_iterator>(this); }
+                auto begin() { return create_begin_it<iterator>(this); }
+                auto end() { return create_end_it<iterator>(this); }
+
+                // auto cedges_begin() const { return create_begin_it<const_edges_iterator>(this); }
+                // auto cedges_end() const { return create_end_it<const_edges_iterator>(this); }
+                auto edges_begin() { return create_begin_it<edges_iterator>(this); }
+                auto edges_end() { return create_end_it<edges_iterator>(this); }
         };
 
     template<typename T, typename E>
@@ -189,17 +191,24 @@ namespace Graph {
         class Adjacency_matrix_base<T, E>::Vertex::Iterator {
             private:
                 using value_type = std::conditional_t<T_is_const, const Vertex, Vertex>;
+                using vertices_type = std::conditional_t<T_is_const, const Vector<Vertex>, Vector<Vertex>>;
                 friend class Vertex;
                 Iterator& move_to_non_empty() {
                     for (; it_ != edges_.end() && !*it_; ++it_);
                     return *this;
                 }
-                Iterator(const Vertex& vertex, const typename Vector<E>::iterator& it) 
-                    :vertices_(vertex.matrix_->vertices_),
-                    edges_(vertex.matrix_->edges_[vertex.index()]),
+                Iterator(value_type* vertex, const typename Vector<E>::iterator& it) 
+                    :vertices_(vertex->matrix_->vertices_),
+                    edges_(vertex->matrix_->edges_[vertex->index()]),
                     it_(it) {}
+                static Iterator create_begin_it(value_type* vertex) {
+                    return Iterator(vertex, vertex->edges().begin()).move_to_non_empty();
+                }
+                static Iterator create_end_it(value_type* vertex) {
+                    return {vertex, vertex->edges().end()};
+                }
             protected:
-                Vector<Vertex>& vertices_;
+                vertices_type& vertices_;
                 Vector<E>& edges_;
                 typename Vector<E>::iterator it_;
             public:
@@ -224,30 +233,33 @@ namespace Graph {
 
     template<typename T, typename E>
         template<bool T_is_const>
-        class Adjacency_matrix_base<T, E>::Vertex::Edge_iterator : public Iterator<T_is_const> {
+        class Adjacency_matrix_base<T, E>::Vertex::Edges_iterator : public Iterator<T_is_const> {
             private:
                 using Base = Iterator<T_is_const>;
+                using vertex_type = std::conditional_t<T_is_const, const Vertex, Vertex>;
                 friend class Vertex;
                 class Entry;
 
                 Entry entry_;
 
-                Edge_iterator(const Vertex& vertex, const typename Vector<E>::iterator& it)
-                    :Base(vertex, it)
-                {} // todo keep constructor in private block? is it not enough to declare inner class private?
-                Edge_iterator& move_to_non_empty() {
+                Edges_iterator(vertex_type* vertex, const typename Vector<E>::iterator& it)
+                    :Base(vertex, it), entry_(vertex)
+                {}
+                Edges_iterator& move_to_non_empty() {
                     Base::move_to_non_empty();
                     update_entry();
                     return *this;
                 }
                 void update_entry() {
-                    if (Base::it_ != Base::edges_.end())
-                        entry_ = {&Base::vertices_[Base::it_ - Base::edges_.begin()], &*Base::it_}; // todo end check
+                    if (Base::it_ != Base::edges_.end()) {
+                        entry_.target_ = &Base::vertices_[Base::it_ - Base::edges_.begin()];
+                        entry_.edge_ = &*Base::it_;
+                    }
                 }
             public:
                 const Entry& operator*() const { return entry_; }
                 const Entry* operator->() const { return &entry_; }
-                Edge_iterator& operator++() { 
+                Edges_iterator& operator++() { 
                     Base::operator++();
                     update_entry();
                     return *this;
@@ -257,15 +269,20 @@ namespace Graph {
     // todo rename T to V?
     template<typename T, typename E>
         template<bool T_is_const>
-        class Adjacency_matrix_base<T, E>::Vertex::Edge_iterator<T_is_const>::Entry {
-            public: // todo const and non-const versions
+        class Adjacency_matrix_base<T, E>::Vertex::Edges_iterator<T_is_const>::Entry {
+            private:
+                friend class Edges_iterator<T_is_const>;
+                using vertex_type = std::conditional_t<T_is_const, const Vertex, Vertex>;
+                using edge_type = std::conditional_t<T_is_const, const E, E>;
+
+                vertex_type* source_;
                 Vertex* target_;
                 E* edge_;
-                // todo private constructor?
-                Entry() = default;
-                Entry(Vertex* target, E* edge) :target_(target), edge_(edge) {}
-                const Vertex& target() const { return *target_; }
-                const E& edge() const { return *edge_; }
+                Entry(vertex_type* source) :source_(source) {}
+            public:
+                vertex_type& source() const { return *source_; }
+                vertex_type& target() const { return *target_; }
+                edge_type& edge() const { return *edge_; }
         };
 
 }
