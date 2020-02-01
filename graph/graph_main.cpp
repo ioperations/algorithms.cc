@@ -137,8 +137,22 @@ int main() {
 
      auto& v1 = gw.create_vertex(1);
      auto& v2 = gw.create_vertex(2);
+     auto& v3 = gw.create_vertex(3);
      gw.add_edge(v1, v2, 4);
+     gw.add_edge(v1, v3, 8);
 
      std::cout << gw.get_edge_weight(v1, v2) << std::endl;
 
+     auto b = v1.edges_begin();
+     std::cout << b->target() << " " << b->edge().weight() << std::endl;
+     ++b;
+     std::cout << b->target() << " " << b->edge().weight() << std::endl;
+     ++b;
+     // std::cout << b->target() << " " << b->edge().weight() << std::endl;
+
+     std::cout << (b == v1.edges_end()) << std::endl;
+
+     for (auto e = v1.edges_begin(); e != v1.edges_end(); ++e) {
+         std::cout << e->target() << " " << e->edge().weight() << std::endl;
+     }
 }

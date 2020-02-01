@@ -135,7 +135,7 @@ namespace Graph {
         class Vertex_base {
             protected:
                 T value_;
-                size_t index_;
+                size_t index_; // todo redundant?
 
                 Vertex_base(const T& value, size_t index) 
                     :value_(value), index_(index) 

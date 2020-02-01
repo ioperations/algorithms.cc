@@ -145,6 +145,8 @@ namespace Graph {
             private:
                 template<bool T_is_const>
                     class Iterator;
+                template<bool T_is_const>
+                    class Edge_iterator;
                 friend class Adjacency_matrix_base;
                 friend class Vector<Vertex>;
 
@@ -173,6 +175,13 @@ namespace Graph {
                 iterator end() {
                     return {*this, edges().end()};
                 }
+
+                Edge_iterator<false> edges_begin() {
+                    return Edge_iterator<false>(*this, edges().begin()).move_to_non_empty();
+                }
+                Edge_iterator<false> edges_end() {
+                    return {*this, edges().end()};
+                }
         };
 
     template<typename T, typename E>
@@ -181,9 +190,6 @@ namespace Graph {
             private:
                 using value_type = std::conditional_t<T_is_const, const Vertex, Vertex>;
                 friend class Vertex;
-                Vector<Vertex>& vertices_;
-                Vector<E>& edges_;
-                typename Vector<E>::iterator it_;
                 Iterator& move_to_non_empty() {
                     for (; it_ != edges_.end() && !*it_; ++it_);
                     return *this;
@@ -192,6 +198,10 @@ namespace Graph {
                     :vertices_(vertex.matrix_->vertices_),
                     edges_(vertex.matrix_->edges_[vertex.index()]),
                     it_(it) {}
+            protected:
+                Vector<Vertex>& vertices_;
+                Vector<E>& edges_;
+                typename Vector<E>::iterator it_;
             public:
                 Iterator& operator++() {
                     ++it_;
@@ -204,12 +214,58 @@ namespace Graph {
                 bool operator!=(const Iterator& o) const {
                     return !operator==(o);
                 }
-                value_type* operator->() const {
-                    return &operator*();
-                }
                 value_type& operator*() const {
                     return vertices_[it_ - edges_.begin()];
                 }
+                value_type* operator->() const {
+                    return &operator*();
+                }
+        };
+
+    template<typename T, typename E>
+        template<bool T_is_const>
+        class Adjacency_matrix_base<T, E>::Vertex::Edge_iterator : public Iterator<T_is_const> {
+            private:
+                using Base = Iterator<T_is_const>;
+                friend class Vertex;
+                class Entry;
+
+                Entry entry_;
+
+                Edge_iterator(const Vertex& vertex, const typename Vector<E>::iterator& it)
+                    :Base(vertex, it)
+                {} // todo keep constructor in private block? is it not enough to declare inner class private?
+                Edge_iterator& move_to_non_empty() {
+                    Base::move_to_non_empty();
+                    update_entry();
+                    return *this;
+                }
+                void update_entry() {
+                    if (Base::it_ != Base::edges_.end())
+                        entry_ = {&Base::vertices_[Base::it_ - Base::edges_.begin()], &*Base::it_}; // todo end check
+                }
+            public:
+                const Entry& operator*() const { return entry_; }
+                const Entry* operator->() const { return &entry_; }
+                Edge_iterator& operator++() { 
+                    Base::operator++();
+                    update_entry();
+                    return *this;
+                }
+        };
+
+    // todo rename T to V?
+    template<typename T, typename E>
+        template<bool T_is_const>
+        class Adjacency_matrix_base<T, E>::Vertex::Edge_iterator<T_is_const>::Entry {
+            public: // todo const and non-const versions
+                Vertex* target_;
+                E* edge_;
+                // todo private constructor?
+                Entry() = default;
+                Entry(Vertex* target, E* edge) :target_(target), edge_(edge) {}
+                const Vertex& target() const { return *target_; }
+                const E& edge() const { return *edge_; }
         };
 
 }
