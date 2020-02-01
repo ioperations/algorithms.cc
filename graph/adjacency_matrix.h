@@ -106,10 +106,10 @@ namespace Graph {
                 }
         };
 
-    template<Graph_type graph_type, typename T, typename E = Edge<bool>>
-        class Adjacency_matrix : public Adjacency_matrix_base<T, E> {
+    template<Graph_type graph_type, typename V, typename E = Edge<bool>>
+        class Adjacency_matrix : public Adjacency_matrix_base<V, E> {
             public:
-                using vertex_type = typename Adjacency_matrix_base<T, E>::vertex_type;
+                using vertex_type = typename Adjacency_matrix_base<V, E>::vertex_type;
             private:
                 template<typename TT, typename EE>
                     static void set_edge(Adjacency_matrix<Graph_type::GRAPH, TT, EE>& m,
@@ -141,8 +141,8 @@ namespace Graph {
                 }
         };
 
-    template<typename T, typename E>
-        class Adjacency_matrix_base<T, E>::Vertex : public Vertex_base<T> {
+    template<typename V, typename E>
+        class Adjacency_matrix_base<V, E>::Vertex : public Vertex_base<V> {
             private:
                 template<bool T_is_const>
                     class Iterator;
@@ -153,8 +153,8 @@ namespace Graph {
 
                 Adjacency_matrix_base* matrix_;
 
-                Vertex(const T& value, size_t index, Adjacency_matrix_base* matrix) 
-                    :Vertex_base<T>(value, index), matrix_(matrix) 
+                Vertex(const V& value, size_t index, Adjacency_matrix_base* matrix) 
+                    :Vertex_base<V>(value, index), matrix_(matrix) 
                 {}
                 Vertex() :matrix_(nullptr) {}
 
@@ -175,20 +175,24 @@ namespace Graph {
                 using edges_iterator = Edges_iterator<false>;
                 using const_edges_iterator = Edges_iterator<true>;
 
+                size_t index_2() const {
+                    return this - matrix_->vertices_.cbegin();
+                }
+
                 auto cbegin() const { return create_begin_it<const_iterator>(this); }
                 auto cend() const { return create_end_it<const_iterator>(this); }
                 auto begin() { return create_begin_it<iterator>(this); }
                 auto end() { return create_end_it<iterator>(this); }
 
-                // auto cedges_begin() const { return create_begin_it<const_edges_iterator>(this); }
-                // auto cedges_end() const { return create_end_it<const_edges_iterator>(this); }
+                auto cedges_begin() const { return create_begin_it<const_edges_iterator>(this); }
+                auto cedges_end() const { return create_end_it<const_edges_iterator>(this); }
                 auto edges_begin() { return create_begin_it<edges_iterator>(this); }
                 auto edges_end() { return create_end_it<edges_iterator>(this); }
         };
 
-    template<typename T, typename E>
+    template<typename V, typename E>
         template<bool T_is_const>
-        class Adjacency_matrix_base<T, E>::Vertex::Iterator {
+        class Adjacency_matrix_base<V, E>::Vertex::Iterator {
             private:
                 using value_type = std::conditional_t<T_is_const, const Vertex, Vertex>;
                 using vertices_type = std::conditional_t<T_is_const, const Vector<Vertex>, Vector<Vertex>>;
@@ -231,9 +235,9 @@ namespace Graph {
                 }
         };
 
-    template<typename T, typename E>
+    template<typename V, typename E>
         template<bool T_is_const>
-        class Adjacency_matrix_base<T, E>::Vertex::Edges_iterator : public Iterator<T_is_const> {
+        class Adjacency_matrix_base<V, E>::Vertex::Edges_iterator : public Iterator<T_is_const> {
             private:
                 using Base = Iterator<T_is_const>;
                 using vertex_type = std::conditional_t<T_is_const, const Vertex, Vertex>;
@@ -266,18 +270,17 @@ namespace Graph {
                 }
         };
 
-    // todo rename T to V?
-    template<typename T, typename E>
+    template<typename V, typename E>
         template<bool T_is_const>
-        class Adjacency_matrix_base<T, E>::Vertex::Edges_iterator<T_is_const>::Entry {
+        class Adjacency_matrix_base<V, E>::Vertex::Edges_iterator<T_is_const>::Entry {
             private:
                 friend class Edges_iterator<T_is_const>;
                 using vertex_type = std::conditional_t<T_is_const, const Vertex, Vertex>;
                 using edge_type = std::conditional_t<T_is_const, const E, E>;
 
                 vertex_type* source_;
-                Vertex* target_;
-                E* edge_;
+                vertex_type* target_;
+                edge_type* edge_;
                 Entry(vertex_type* source) :source_(source) {}
             public:
                 vertex_type& source() const { return *source_; }

@@ -149,14 +149,14 @@ int main() {
      v1.edges_begin()->target().set_value(45);
      v1.edges_begin()->edge().set_weight(45);
 
-     for (auto e = v1.edges_begin(); e != v1.edges_end(); ++e) {
+     for (auto e = v1.edges_begin(); e != v1.edges_end(); ++e)
          std::cout << e->source() << " " << e->target() << " " << e->edge().weight() << std::endl;
-     }
-
-     // for (auto e = v1.cedges_begin(); e != v1.cedges_end(); ++e) {
-     //     std::cout << e->source() << " " << e->target() << " " << e->edge().weight() << std::endl;
-     // }
+     for (auto e = v1.cedges_begin(); e != v1.cedges_end(); ++e)
+         std::cout << e->source() << " " << e->target() << " " << e->edge().weight() << std::endl;
 
      std::cout << time(nullptr) << std::endl;
+
+     std::cout << v3.index() << std::endl;
+     std::cout << v3.index_2() << std::endl;
 
 }
