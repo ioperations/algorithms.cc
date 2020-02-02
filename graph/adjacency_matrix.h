@@ -239,10 +239,10 @@ namespace Graph {
                 private:
                     using Base = Iterator<T_is_const>;
                     using vertex_type = std::conditional_t<T_is_const, const Vertex, Vertex>;
+                    using entry_type = Edges_iterator_entry<Vertex, E, T_is_const>;
                     friend class Vertex;
-                    class Entry;
 
-                    Entry entry_;
+                    entry_type entry_;
 
                     Edges_iterator(vertex_type* vertex, const typename Vector<E>::iterator& it)
                         :Base(vertex, it), entry_(vertex)
@@ -259,31 +259,13 @@ namespace Graph {
                         }
                     }
                 public:
-                    const Entry& operator*() const { return entry_; }
-                    const Entry* operator->() const { return &entry_; }
+                    const entry_type& operator*() const { return entry_; }
+                    const entry_type* operator->() const { return &entry_; }
                     Edges_iterator& operator++() { 
                         Base::operator++();
                         update_entry();
                         return *this;
                     }
-            };
-
-        template<typename V, typename E>
-            template<bool T_is_const>
-            class Adjacency_matrix_base<V, E>::Vertex::Edges_iterator<T_is_const>::Entry {
-                private:
-                    friend class Edges_iterator<T_is_const>;
-                    using vertex_type = std::conditional_t<T_is_const, const Vertex, Vertex>;
-                    using edge_type = std::conditional_t<T_is_const, const E, E>;
-
-                    vertex_type* source_;
-                    vertex_type* target_;
-                    edge_type* edge_;
-                    Entry(vertex_type* source) :source_(source) {}
-                public:
-                    vertex_type& source() const { return *source_; }
-                    vertex_type& target() const { return *target_; }
-                    edge_type& edge() const { return *edge_; }
             };
 
     }

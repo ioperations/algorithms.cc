@@ -151,6 +151,23 @@ namespace Graph {
                 }
         };
 
+        template<typename V, typename E, bool T_is_const>
+            class Edges_iterator_entry {
+                private:
+                    using vertex_type = std::conditional_t<T_is_const, const V, V>;
+                    using edge_type = std::conditional_t<T_is_const, const E, E>;
+                public:
+                    vertex_type* source_;
+                    vertex_type* target_;
+                    edge_type* edge_;
+
+                    Edges_iterator_entry(vertex_type* source) :source_(source) {}
+
+                    vertex_type& source() const { return *source_; }
+                    vertex_type& target() const { return *target_; }
+                    edge_type& edge() const { return *edge_; }
+            };
+
     template<typename V>
         auto count_vertex_edges(const V& v) {
             size_t count = 0;

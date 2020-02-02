@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <sstream>
 
-    using namespace Graph;
+using namespace Graph;
 
 template<typename P>
 void print_path(const P& p) {
@@ -110,18 +110,16 @@ void test_digraph() {
 }
 
 int main() {
+    test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>("adjacency matrix");
+    test_graph<Adjacency_lists<Graph_type::GRAPH, int>>("adjacency lists");
 
+    std::cout << "Warshall transitive closure" << std::endl;
+    auto g = Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
+    auto transitive_closure = warshall_transitive_closure(g);
+    transitive_closure.print_internal(std::cout);
 
-     test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>("adjacency matrix");
-     test_graph<Adjacency_lists<Graph_type::GRAPH, int>>("adjacency lists");
-
-     std::cout << "Warshall transitive closure" << std::endl;
-     auto g = Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
-     auto transitive_closure = warshall_transitive_closure(g);
-     transitive_closure.print_internal(std::cout);
-
-     test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
-     test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
+    test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
+    test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
 
     // auto g = Samples::euler_tour_sample<Adjacency_matrix<int>>();
     // dfs(g, [](auto& v) {
@@ -130,45 +128,52 @@ int main() {
     //     std::cout << v << " " << w << std::endl;
     // });
 
-     auto gw = create_adj_matrix<Graph_type::DIGRAPH, int, int>();
-     auto gwl = create_adj_lists<Graph_type::DIGRAPH, int, int>(); // todo remove
 
-     auto& v1 = gw.create_vertex(1);
-     auto& v2 = gw.create_vertex(2);
-     auto& v3 = gw.create_vertex(3);
-     gw.add_edge(v1, v2, 4);
-     gw.add_edge(v1, v3, 8);
+    {
+        auto gw = create_adj_matrix<Graph_type::DIGRAPH, int, int>();
+        auto& v1 = gw.create_vertex(1);
+        auto& v2 = gw.create_vertex(2);
+        auto& v3 = gw.create_vertex(3);
+        gw.add_edge(v1, v2, 4);
+        gw.add_edge(v1, v3, 8);
 
-     auto& v = *gw.begin();
-     v.set_value(22);
+        auto& v = *gw.begin();
+        v.set_value(22);
 
-     std::cout << gw.get_edge_weight(v1, v2) << std::endl;
+        // todo return iterator
+        std::cout << gw.get_edge_weight(v1, v2) << std::endl;
 
-     v1.edges_begin()->target().set_value(45);
-     v1.edges_begin()->edge().set_weight(45);
+        v1.edges_begin()->target().set_value(45);
+        v1.edges_begin()->edge().set_weight(45);
 
-     for (auto e = v1.edges_begin(); e != v1.edges_end(); ++e)
-         std::cout << e->source() << " " << e->target() << " " << e->edge().weight() << std::endl;
-     for (auto e = v1.cedges_begin(); e != v1.cedges_end(); ++e)
-         std::cout << e->source() << " " << e->target() << " " << e->edge().weight() << std::endl;
+        for (auto e = v1.edges_begin(); e != v1.edges_end(); ++e)
+            std::cout << e->source() << " " << e->target() << " " << e->edge().weight() << std::endl;
+        for (auto e = v1.cedges_begin(); e != v1.cedges_end(); ++e)
+            std::cout << e->source() << " " << e->target() << " " << e->edge().weight() << std::endl;
 
-     std::cout << time(nullptr) << std::endl;
+    }
+    {
+        auto gwl = create_adj_lists<Graph_type::DIGRAPH, int, int>(); // todo remove
+        auto& v1 = gwl.create_vertex(1);
+        auto& v2 = gwl.create_vertex(2);
+        auto& v3 = gwl.create_vertex(3);
+        gwl.add_edge(v1, v2, 4);
+        gwl.add_edge(v1, v3, 8);
 
-     std::cout << v3.index() << std::endl;
-     // std::cout << v3.index_2() << std::endl;
+        // auto& v = *gwl.begin();
+        // v.set_value(22);
 
-     {
+        // v1.edges_begin();
 
-         Adjacency_lists<Graph_type::DIGRAPH, int> gw2;
+        // std::cout << gwl.get_edge_weight(v1, v2) << std::endl;
 
-         auto& v1 = gw2.create_vertex(1);
-         auto& v2 = gw2.create_vertex(2);
-         auto& v3 = gw2.create_vertex(3);
-         gw2.add_edge(v1, v2);
-         gw2.add_edge(v1, v3);
+        v1.edges_begin()->target().set_value(45);
+        v1.edges_begin()->edge().set_weight(45);
 
-     std::cout << v3.index() << std::endl;
-     // std::cout << v3.index_2() << std::endl;
-     }
-
+        // for (auto e = v1.edges_begin(); e != v1.edges_end(); ++e)
+        //     std::cout << e->source() << " " << e->target() << " " << e->edge().weight() << std::endl;
+        // for (auto e = v1.cedges_begin(); e != v1.cedges_end(); ++e)
+        //     std::cout << e->source() << " " << e->target() << " " << e->edge().weight() << std::endl;
+    }
+    std::cout << time(nullptr) << std::endl;
 }
