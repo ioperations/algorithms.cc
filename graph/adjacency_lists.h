@@ -57,18 +57,13 @@ namespace Graph {
                         vertices_.push_back(Vertex(t, this));
                         return vertices_[vertices_.size() - 1];
                     }
-                    size_t vertices_count() const {
-                        return vertices_.size();
-                    }
-                    const Vertex& vertex_at(size_t index) const {
-                        return vertices_[index];
-                    }
-                    Vertex& vertex_at(size_t index) {
-                        return vertices_[index];
-                    }
-                    bool has_edge(const Vertex& v, const Vertex& w) const {
-                        return v.has_edge(w);
-                    }
+
+                    size_t vertices_count() const { return vertices_.size(); }
+                    const Vertex& vertex_at(size_t index) const { return vertices_[index]; }
+                    Vertex& vertex_at(size_t index) { return vertices_[index]; }
+
+                    bool has_edge(const Vertex& v, const Vertex& w) const { return v.has_edge(w); }
+                    E* get_edge(Vertex& v, const Vertex& w) { return v.get_edge(w); }
 
                     auto cbegin() const { return vertices_.cbegin(); }
                     auto cend() const { return vertices_.cend(); }
@@ -173,6 +168,7 @@ namespace Graph {
                     using iterator = Iterator<false>;
                     using const_iterator = Iterator<true>;
                     using edges_iterator = Edges_iterator<false>;
+                    using const_edges_iterator = Edges_iterator<true>;
 
                     size_t index() const { return this - adjacency_lists_->vertices_.cbegin(); }
                     operator size_t() const { return index(); }
@@ -184,15 +180,23 @@ namespace Graph {
 
                     edges_iterator edges_begin() { return {this, links_.begin()}; }
                     edges_iterator edges_end() { return {this, links_.end()}; }
+                    const_edges_iterator cedges_begin() const { return {this, links_.cbegin()}; }
+                    const_edges_iterator cedges_end() const { return {this, links_.cend()}; }
 
                     void remove_edge(const Vertex& v) {
                         links_.remove_first_if([&v](const Link& edge) { return v.index() == edge.target_; });
                     }
                     bool has_edge(const Vertex& v) const {
-                        for (auto l = v.cbegin(); l != v.cend(); ++l)
+                        for (auto l = cbegin(); l != cend(); ++l)
                             if (*l == v)
                                 return true;
                         return false;
+                    }
+                    E* get_edge(const Vertex& v) {
+                        for (auto e = edges_begin(); e != edges_end(); ++e)
+                            if (e->target() == v)
+                                return e->edge_;
+                        return nullptr;
                     }
             };
 
@@ -245,14 +249,18 @@ namespace Graph {
                 private:
                     using Base = Iterator<T_is_const>;
                     using vertex_type = std::conditional_t<T_is_const, const Vertex, Vertex>;
+                    using link_type = typename Base::link_type;
                     using links_type = typename Base::links_type;
                     using links_iterator_type = typename Base::links_iterator_type;
                     using entry_type = Edges_iterator_entry<Vertex, E, T_is_const>;
 
                     entry_type entry_;
 
+                    static auto links_end(Forward_list<link_type>& links) { return links.end(); }
+                    static auto links_end(const Forward_list<link_type>& links) { return links.cend(); }
+
                     void update_entry() {
-                        if (Base::it_ != Base::vertex_->links_.end()) {
+                        if (Base::it_ != links_end(Base::vertex_->links_)) {
                             entry_.target_ = &Base::vertex_->adjacency_lists_->vertices_[Base::it_->target_];
                             entry_.edge_ = &*Base::it_;
                         }

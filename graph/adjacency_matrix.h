@@ -20,7 +20,8 @@ namespace Graph {
                     Edge(const T& t) :weight_(t) {}
                     T weight() const { return weight_; }
                     void set_weight(const T& weight) { weight_ = weight; }
-                    operator bool() const { return weight_ != empty_value(); }
+                    bool exists() const { return weight_ != empty_value(); }
+                    operator bool() const { return exists(); }
             };
 
         template<>
@@ -83,8 +84,9 @@ namespace Graph {
                     bool has_edge(const vertex_type& v, const vertex_type& w) {
                         return edges_[v][w];
                     }
-                    typename E::value_type get_edge_weight(const vertex_type& v, const vertex_type& w) {
-                        return edges_[v][w].weight();
+                    E* get_edge(const vertex_type& v, const vertex_type& w) {
+                        auto& edge = edges_[v][w];
+                        return edge.exists() ? &edge : nullptr;
                     }
 
                     auto begin() { return vertices_.begin(); }
