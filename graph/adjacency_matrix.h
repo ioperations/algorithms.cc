@@ -254,10 +254,17 @@ namespace Graph {
                         update_entry();
                         return *this;
                     }
+                    template<typename VV, typename EE, bool TT_is_const, typename It>
+                        static void update_edge_p(Edges_iterator_entry<VV, EE, TT_is_const>& entry, const It& it) {
+                            entry.edge_ = &*it;
+                        }
+                    template<typename VV, bool TT_is_const, typename It>
+                        static void update_edge_p(Edges_iterator_entry<VV, Edge<bool>, TT_is_const>& entry,
+                                                  const It& it) {}
                     void update_entry() {
                         if (Base::it_ != Base::edges_.end()) {
                             entry_.target_ = &Base::vertices_[Base::it_ - Base::edges_.begin()];
-                            entry_.edge_ = &*Base::it_;
+                            update_edge_p(entry_, Base::it_);
                         }
                     }
                 public:

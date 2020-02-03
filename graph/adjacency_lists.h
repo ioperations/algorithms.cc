@@ -135,10 +135,23 @@ namespace Graph {
                     }
             };
 
+        template<typename E>
+            class Vertex_link : public E {
+                public:
+                    size_t target_;
+                    Vertex_link(size_t target, const E& edge) :E(edge), target_(target) {}
+            };
+
+        template<>
+            class Vertex_link<Edge<bool>> {
+                public:
+                    size_t target_;
+                    Vertex_link(size_t target, const Edge<bool>& edge) :target_(target) {}
+            };
+
         template<typename V, typename E>
             class Adjacency_lists_base<V, E>::Vertex : public Vertex_base<V> {
                 private:
-                    class Link;
                     template<bool T_is_const>
                         class Iterator;
                     template<bool T_is_const>
@@ -150,19 +163,19 @@ namespace Graph {
                     friend class Vector<Vertex>;
 
                     Adjacency_lists_base* adjacency_lists_;
-                    Forward_list<Link> links_;
+                    Forward_list<Vertex_link<E>> links_;
 
                     Vertex(V value, Adjacency_lists_base* adjacency_lists)
                         :Vertex_base<V>(value), adjacency_lists_(adjacency_lists)
                     {}
                     Vertex() :adjacency_lists_(nullptr) {}
 
-                    void add_link(const Vertex& v, const E& edge) { // todo rename?
+                    void add_link(const Vertex& v, const E& edge) {
                         bool found = false;
                         for (auto link = links_.begin(); link != links_.end() && !found; ++link)
                             found = link->target_ == v.index();
                         if (!found)
-                            links_.emplace_back(v.index(), edge); // todo hardcoded
+                            links_.emplace_back(v.index(), edge);
                     }
                 public:
                     using iterator = Iterator<false>;
@@ -184,7 +197,7 @@ namespace Graph {
                     const_edges_iterator cedges_end() const { return {this, links_.cend()}; }
 
                     void remove_edge(const Vertex& v) {
-                        links_.remove_first_if([&v](const Link& edge) { return v.index() == edge.target_; });
+                        links_.remove_first_if([&v](const Vertex_link<E>& edge) { return v.index() == edge.target_; });
                     }
                     bool has_edge(const Vertex& v) const {
                         for (auto l = cbegin(); l != cend(); ++l)
@@ -201,17 +214,10 @@ namespace Graph {
             };
 
         template<typename V, typename E>
-            class Adjacency_lists_base<V, E>::Vertex::Link : public E { // todo const / non-const versions?
-                public:
-                    size_t target_;
-                    Link(size_t target, const E& edge) :E(edge), target_(target) {}
-            };
-
-        template<typename V, typename E>
             template<bool T_is_const>
             class Adjacency_lists_base<V, E>::Vertex::Iterator {
                 protected:
-                    using link_type = typename Vertex::Link;
+                    using link_type = Vertex_link<E>;
                     using links_type = Forward_list<link_type>;
                     using links_iterator_type = std::conditional_t<T_is_const,
                           typename links_type::const_iterator, typename links_type::iterator>;
@@ -259,10 +265,18 @@ namespace Graph {
                     static auto links_end(Forward_list<link_type>& links) { return links.end(); }
                     static auto links_end(const Forward_list<link_type>& links) { return links.cend(); }
 
+                    template<typename VV, typename EE, bool TT_is_const, typename It>
+                        static void update_edge_p(Edges_iterator_entry<VV, EE, TT_is_const>& entry, const It& it) {
+                            entry.edge_ = &*it;
+                        }
+                    template<typename VV, bool TT_is_const, typename It>
+                        static void update_edge_p(Edges_iterator_entry<VV, Edge<bool>, TT_is_const>& entry,
+                                                  const It& it) {}
+
                     void update_entry() {
                         if (Base::it_ != links_end(Base::vertex_->links_)) {
                             entry_.target_ = &Base::vertex_->adjacency_lists_->vertices_[Base::it_->target_];
-                            entry_.edge_ = &*Base::it_;
+                            update_edge_p(entry_, Base::it_);
                         }
                     }
                 public:

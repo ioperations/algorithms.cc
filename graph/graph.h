@@ -151,22 +151,38 @@ namespace Graph {
                 }
         };
 
-        template<typename V, typename E, bool T_is_const>
-            class Edges_iterator_entry {
-                private:
-                    using vertex_type = std::conditional_t<T_is_const, const V, V>;
-                    using edge_type = std::conditional_t<T_is_const, const E, E>;
-                public:
-                    vertex_type* source_;
-                    vertex_type* target_;
-                    edge_type* edge_;
+    template<typename V, bool T_is_const>
+        class Edges_iterator_entry_base {
+            protected:
+                using vertex_type = std::conditional_t<T_is_const, const V, V>;
+            public:
+                vertex_type* source_;
+                vertex_type* target_;
+                Edges_iterator_entry_base(vertex_type* source) :source_(source) {}
+                vertex_type& source() const { return *source_; }
+                vertex_type& target() const { return *target_; }
+        };
 
-                    Edges_iterator_entry(vertex_type* source) :source_(source) {}
+    template<typename V, typename E, bool T_is_const, typename ET = typename E::value_type>
+        class Edges_iterator_entry : public Edges_iterator_entry_base<V, T_is_const> {
+            private:
+                using Base = Edges_iterator_entry_base<V, T_is_const>;
+                using vertex_type = typename Base::vertex_type;
+                using edge_type = std::conditional_t<T_is_const, const E, E>;
+            public:
+                edge_type* edge_;
+                Edges_iterator_entry(vertex_type* source) :Base(source) {}
+                edge_type& edge() const { return *edge_; }
+        };
 
-                    vertex_type& source() const { return *source_; }
-                    vertex_type& target() const { return *target_; }
-                    edge_type& edge() const { return *edge_; }
-            };
+    template<typename V, typename E, bool T_is_const>
+        class Edges_iterator_entry<V, E, T_is_const, bool> : public Edges_iterator_entry_base<V, T_is_const> {
+            private:
+                using Base = Edges_iterator_entry_base<V, T_is_const>;
+                using vertex_type = typename Base::vertex_type;
+            public:
+                Edges_iterator_entry(vertex_type* source) :Base(source) {}
+        };
 
     template<typename V>
         auto count_vertex_edges(const V& v) {
