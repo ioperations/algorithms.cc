@@ -23,6 +23,18 @@ void base_test() {
 
     ASSERT_EQ(nullptr, g.get_edge(v2, v3));
 
+    {
+        const auto& gr = g;
+        auto& v1 = gr.vertex_at(0);
+        auto& v2 = gr.vertex_at(1);
+        auto& v3 = gr.vertex_at(2);
+
+        ASSERT_EQ(4, gr.get_edge(v1, v2)->weight());
+        ASSERT_EQ(8, gr.get_edge(v1, v3)->weight());
+
+        ASSERT_EQ(nullptr, gr.get_edge(v2, v3));
+    }
+
     g.get_edge(v1, v2)->set_weight(10);
     g.get_edge(v1, v3)->set_weight(15);
 

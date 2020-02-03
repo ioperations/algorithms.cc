@@ -84,9 +84,12 @@ namespace Graph {
                     bool has_edge(const vertex_type& v, const vertex_type& w) {
                         return edges_[v][w];
                     }
-                    E* get_edge(const vertex_type& v, const vertex_type& w) {
+                    const E* get_edge(const vertex_type& v, const vertex_type& w) const {
                         auto& edge = edges_[v][w];
                         return edge.exists() ? &edge : nullptr;
+                    }
+                    E* get_edge(const vertex_type& v, const vertex_type& w) {
+                        return const_cast<E*>(static_cast<const Adjacency_matrix_base*>(this)->get_edge(v, w));
                     }
 
                     auto begin() { return vertices_.begin(); }

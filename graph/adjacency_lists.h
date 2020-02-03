@@ -15,12 +15,11 @@ namespace Graph {
                 private:
                     T weight_;
                 public:
-                    using value_type = T; // rename to weight_type?
+                    using value_type = T;
                     Edge(const T& t) :weight_(t) {}
                     T weight() const { return weight_; }
                     void set_weight(const T& weight) { weight_ = weight; }
             };
-        // todo Edge<bool> specialization
 
         template<typename V, typename E>
             class Adjacency_lists_base {
@@ -63,6 +62,8 @@ namespace Graph {
                     Vertex& vertex_at(size_t index) { return vertices_[index]; }
 
                     bool has_edge(const Vertex& v, const Vertex& w) const { return v.has_edge(w); }
+
+                    const E* get_edge(const Vertex& v, const Vertex& w) const { return v.get_edge(w); }
                     E* get_edge(Vertex& v, const Vertex& w) { return v.get_edge(w); }
 
                     auto cbegin() const { return vertices_.cbegin(); }
@@ -85,8 +86,9 @@ namespace Graph {
 
         template<Graph_type T_graph_type, typename V, typename E = Edge<bool>>
             class Adjacency_lists : public Adjacency_lists_base<V, E> {
+                public:
+                    using vertex_type = typename Adjacency_lists_base<V, E>::vertex_type;
                 private:
-                    using Base = Adjacency_lists_base<V, E>;
                     template<Graph_type TT_graph_type, typename VV, typename EE>
                         struct Base_edges_handler {};
                     template<typename VV, typename EE>
@@ -119,14 +121,14 @@ namespace Graph {
                                 Base_edges_handler<TT_graph_type, VV, Edge<bool>>::add_edge(v1, v2, true);
                             }
                         };
-                public:
-                    using vertex_type = typename Base::vertex_type;
+
                     Edges_handler<T_graph_type, vertex_type, E> edges_handler_;
-                    Adjacency_lists& add_edge(vertex_type& v1, vertex_type& v2, const E& edge) { // todo rename to set_edge
+                public:
+                    Adjacency_lists& add_edge(vertex_type& v1, vertex_type& v2, const E& edge) {
                         edges_handler_.add_edge(v1, v2, edge);
                         return *this;
                     }
-                    Adjacency_lists& add_edge(vertex_type& v1, vertex_type& v2) { // todo rename to set_edge
+                    Adjacency_lists& add_edge(vertex_type& v1, vertex_type& v2) {
                         edges_handler_.add_edge(v1, v2);
                         return *this;
                     }
@@ -205,6 +207,12 @@ namespace Graph {
                                 return true;
                         return false;
                     }
+                    const E* get_edge(const Vertex& v) const {
+                        for (auto e = cedges_begin(); e != cedges_end(); ++e)
+                            if (e->target() == v)
+                                return e->edge_;
+                        return nullptr;
+                    }
                     E* get_edge(const Vertex& v) {
                         for (auto e = edges_begin(); e != edges_end(); ++e)
                             if (e->target() == v)
@@ -235,15 +243,9 @@ namespace Graph {
                         ++it_;
                         return *this;
                     }
-                    bool operator==(const Iterator& o) const {
-                        return it_ == o.it_;
-                    }
-                    bool operator!=(const Iterator& o) const {
-                        return !operator==(o);
-                    }
-                    value_type* operator->() const {
-                        return &operator*();
-                    }
+                    bool operator==(const Iterator& o) const { return it_ == o.it_; }
+                    bool operator!=(const Iterator& o) const { return !operator==(o); }
+                    value_type* operator->() const { return &operator*(); }
                     value_type& operator*() const {
                         return vertex_->adjacency_lists_->vertices_[it_->target_];
                     }
