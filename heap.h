@@ -10,20 +10,20 @@ class Incomplete_tree_exception : public std::invalid_argument{
         Incomplete_tree_exception() :std::invalid_argument("incomplete tree") {}
 };
 
-template<typename A>
-void heap_fix_up(A& array_, size_t i) {
+template<typename A, typename C>
+void heap_fix_up(A& array_, size_t i, C c) {
     ++i;
-    for (; i > 1 && array_[i / 2 - 1] < array_[i - 1]; i /= 2)
+    for (; i > 1 && c(array_[i / 2 - 1], array_[i - 1]); i /= 2)
         std::swap(array_[i - 1], array_[i / 2 - 1]);
 }
 
-template<typename A>
-void heap_fix_down(A& a, size_t i, size_t size_) {
+template<typename A, typename C>
+void heap_fix_down(A& a, size_t i, size_t size_, C c) {
     ++i;
     while (i * 2 <= size_) {
         size_t j = 2 * i;
-        if (j < size_ && a[j - 1] < a[j]) ++j;
-        if (a[i - 1] < a[j - 1])
+        if (j < size_ && c(a[j - 1], a[j])) ++j;
+        if (c(a[i - 1], a[j - 1]))
             std::swap(a[i - 1], a[j - 1]);
         i = j;
     }
@@ -31,29 +31,28 @@ void heap_fix_down(A& a, size_t i, size_t size_) {
 
 template<typename It>
 void heap_sort(const It& begin, const It& end) {
+    std::less<typename std::iterator_traits<It>::value_type> c;
     for (size_t i = (end - begin) / 2 + 1; i > 0;) {
-        heap_fix_down(begin, i - 1, end - begin);
+        heap_fix_down(begin, i - 1, end - begin, c);
         --i;
     }
     for (int n = end - begin - 1; n > 0; --n) {
         std::swap(begin[0], begin[n]);
-        heap_fix_down(begin, 0, n);
+        heap_fix_down(begin, 0, n, c);
     }
 }
 
-template<typename T>
+template<typename T, typename C = std::less<>>
 class Heap {
     private:
-
         size_t array_size_;
         size_t size_;
         T* array_;
+        C comparator_;
     public:
-        Heap(size_t size) :array_size_(size), size_(0), array_(new T[array_size_]) {}
+        Heap(size_t size, C c = {}) :array_size_(size), size_(0), array_(new T[array_size_]), comparator_(c) {}
         Heap() :Heap(100) {}
-        ~Heap() {
-            delete[] array_;
-        }
+        ~Heap() { delete[] array_; }
 
         Heap(const Heap&) = delete;
         Heap& operator=(const Heap&) = delete;
@@ -82,13 +81,13 @@ class Heap {
                     array_ = new_array;
                 }
                 array_[size_] = std::forward<TT>(t);
-                heap_fix_up(array_, size_);
+                heap_fix_up(array_, size_, comparator_);
                 ++size_;
             }
         T pop() {
             --size_;
             std::swap(array_[0], array_[size_]);
-            heap_fix_down(array_, 0, size_);
+            heap_fix_down(array_, 0, size_, comparator_);
             return std::move(array_[size_]);
         }
         inline bool empty() const {
@@ -99,8 +98,8 @@ class Heap {
         }
 };
 
-template<typename T>
-Heap<T>::Heap(const Binary_tree_node<T>& root) :array_size_(0), size_(0) {
+template<typename T, typename C>
+Heap<T, C>::Heap(const Binary_tree_node<T>& root) :array_size_(0), size_(0) {
     Forward_list<const Binary_tree_node<T>*> queue;
     queue.push_back(&root);
     bool incomplete_occurred = false;
@@ -126,7 +125,7 @@ Heap<T>::Heap(const Binary_tree_node<T>& root) :array_size_(0), size_(0) {
     for (size_t index = 0; !queue.empty(); ++index) {
         auto node = queue.pop_front();
         array_[index] = node->value_;
-        heap_fix_up(array_, index);
+        heap_fix_up(array_, index, comparator_);
         if (node->l_)
             queue.push_back(node->l_);
         if (node->r_)
@@ -134,8 +133,8 @@ Heap<T>::Heap(const Binary_tree_node<T>& root) :array_size_(0), size_(0) {
     }
 }
 
-template<typename T>
-Binary_tree_node<T> Heap<T>::to_tree() const {
+template<typename T, typename C>
+Binary_tree_node<T> Heap<T, C>::to_tree() const {
     Binary_tree_node<T> root(array_[0]);
     Array<Binary_tree_node<T>*> nodes(size_);
     nodes[0] = &root;
@@ -153,8 +152,8 @@ Binary_tree_node<T> Heap<T>::to_tree() const {
     return root;
 }
 
-template<typename T>
-std::ostream& operator<<(std::ostream& stream, const Heap<T>& heap) {
+template<typename T, typename C>
+std::ostream& operator<<(std::ostream& stream, const Heap<T, C>& heap) {
     return stream << heap.to_tree() << std::endl;
 }
 

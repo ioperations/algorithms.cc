@@ -158,6 +158,21 @@ namespace Graph {
                     .build();
             }
 
+        template<typename G>
+            G weighted_graph_sample() {
+                Graph::Builder<G> b;
+                for (int i = 0; i < 8; ++i)
+                    b.for_vertex(i);
+                return b
+                    .for_vertex(0).add_edge(1, .32).add_edge(2, .29).add_edge(5, .60).add_edge(6, .51).add_edge(7, .31)
+                    .for_vertex(1).add_edge(7, .21)
+                    .for_vertex(3).add_edge(5, .18).add_edge(4, .34)
+                    .for_vertex(4).add_edge(5, .40).add_edge(6, .51).add_edge(7, .46)
+                    .for_vertex(5)
+                    .for_vertex(6).add_edge(7, .25)
+                    .for_vertex(7)
+                    .build();
+            }
     }
 
 }

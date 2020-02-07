@@ -44,6 +44,7 @@ namespace Graph {
                     Vector<Vector<E>> edges_;
                 public:
                     using value_type = V;
+                    using edge_type = E;
 
                     Adjacency_matrix_base() :edges_(100) {
                         for (auto& l : edges_) l = Vector<E>(100);
@@ -110,7 +111,7 @@ namespace Graph {
                     }
             };
 
-    template<Graph_type graph_type, typename V, typename E = Edge<bool>>
+    template<Graph_type graph_type, typename V, typename E>
         class Adjacency_matrix : public Adjacency_matrix_base<V, E> {
             public:
                 using vertex_type = typename Adjacency_matrix_base<V, E>::vertex_type;
@@ -224,18 +225,10 @@ namespace Graph {
                         move_to_non_empty();
                         return *this;
                     }
-                    bool operator==(const Iterator& o) const {
-                        return it_ == o.it_;
-                    }
-                    bool operator!=(const Iterator& o) const {
-                        return !operator==(o);
-                    }
-                    value_type& operator*() const {
-                        return vertices_[it_ - edges_.begin()];
-                    }
-                    value_type* operator->() const {
-                        return &operator*();
-                    }
+                    bool operator==(const Iterator& o) const { return it_ == o.it_; }
+                    bool operator!=(const Iterator& o) const { return !operator==(o); }
+                    value_type& operator*() const { return vertices_[it_ - edges_.begin()]; }
+                    value_type* operator->() const { return &operator*(); }
             };
 
         template<typename V, typename E>
@@ -279,13 +272,9 @@ namespace Graph {
                         return *this;
                     }
             };
-
     }
 
-    template<Graph_type graph_type, typename V, typename E = Adjacency_matrix_ns::Edge<bool>>
+    template<Graph_type graph_type, typename V, typename TE = bool, typename E = Adjacency_matrix_ns::Edge<TE>>
     using Adjacency_matrix = Adjacency_matrix_ns::Adjacency_matrix<graph_type, V, E>;
-
-    template<Graph_type T_type, typename VV, typename EE = bool>
-        Adjacency_matrix<T_type, VV, Adjacency_matrix_ns::Edge<EE>> create_adj_matrix() { return {}; }
 
 }

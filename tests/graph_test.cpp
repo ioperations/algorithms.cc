@@ -74,8 +74,8 @@ void bool_edges_test() {
 }
 
 TEST(Graph_test, base) {
-    base_test<Adjacency_matrix<Graph_type::DIGRAPH, int, Adjacency_matrix_ns::Edge<int>>>();
-    base_test<Adjacency_lists<Graph_type::DIGRAPH, int, Adjacency_lists_ns::Edge<int>>>();
+    base_test<Adjacency_matrix<Graph_type::DIGRAPH, int, int>>();
+    base_test<Adjacency_lists<Graph_type::DIGRAPH, int, int>>();
 
     bool_edges_test<Adjacency_matrix<Graph_type::GRAPH, int>>();
     bool_edges_test<Adjacency_lists<Graph_type::GRAPH, int>>();

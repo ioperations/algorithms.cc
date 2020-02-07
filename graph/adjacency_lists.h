@@ -30,10 +30,27 @@ namespace Graph {
                         for (auto& v : vertices_)
                             v.adjacency_lists_ = this;
                     }
+                    template<typename VV, typename EE>
+                        struct Internal_printer {
+                            static void print(const typename Adjacency_lists_base<VV, EE>::Vertex& v,
+                                              std::ostream& stream) {
+                                for (auto w = v.cedges_begin(); w != v.cedges_end(); ++w)
+                                    stream << w->target().index() << "(" << w->edge().weight() << ") ";
+                            }
+                        };
+                    template<typename VV>
+                        struct Internal_printer<VV, Edge<bool>> {
+                            static void print(const typename Adjacency_lists_base<VV, Edge<bool>>::Vertex& v,
+                                              std::ostream& stream) {
+                                for (auto w = v.cbegin(); w != v.cend(); ++w)
+                                    stream << w->index() << " ";
+                            }
+                        };
                 protected:
                     using vertex_type = Vertex;
                 public:
                     using value_type = V;
+                    using edge_type = E;
                     Adjacency_lists_base() = default;
                     Adjacency_lists_base(const Adjacency_lists_base& o) :vertices_(o.vertices_) {
                         update_vertices_this_link();
@@ -77,14 +94,13 @@ namespace Graph {
                     void print_internal(std::ostream& stream) {
                         for (auto& v : vertices_) {
                             stream << v.index() << ": ";
-                            for (auto& w : v)
-                                stream << w.index() << " ";
+                            Internal_printer<V, E>::print(v, stream);
                             stream << std::endl;
                         }
                     }
             };
 
-        template<Graph_type T_graph_type, typename V, typename E = Edge<bool>>
+        template<Graph_type T_graph_type, typename V, typename E>
             class Adjacency_lists : public Adjacency_lists_base<V, E> {
                 public:
                     using vertex_type = typename Adjacency_lists_base<V, E>::vertex_type;
@@ -254,13 +270,14 @@ namespace Graph {
         template<typename V, typename E>
             template<bool T_is_const>
             class Adjacency_lists_base<V, E>::Vertex::Edges_iterator : public Iterator<T_is_const> {
+                public:
+                    using entry_type = Edges_iterator_entry<Vertex, E, T_is_const>;
                 private:
                     using Base = Iterator<T_is_const>;
                     using vertex_type = std::conditional_t<T_is_const, const Vertex, Vertex>;
                     using link_type = typename Base::link_type;
                     using links_type = typename Base::links_type;
                     using links_iterator_type = typename Base::links_iterator_type;
-                    using entry_type = Edges_iterator_entry<Vertex, E, T_is_const>;
 
                     entry_type entry_;
 
@@ -296,9 +313,7 @@ namespace Graph {
 
     }
 
-    template<Graph_type graph_type, typename V, typename E = Adjacency_lists_ns::Edge<bool>>
+    template<Graph_type graph_type, typename V, typename TE = bool, typename E = Adjacency_lists_ns::Edge<TE>>
         using Adjacency_lists = Adjacency_lists_ns::Adjacency_lists<graph_type, V, E>;
 
-    template<Graph_type T_type, typename VV, typename EE = bool>
-        Adjacency_lists<T_type, VV, Adjacency_lists_ns::Edge<EE>> create_adj_lists() { return {}; }
 }

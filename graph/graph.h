@@ -53,6 +53,7 @@ namespace Graph {
                 friend class Vertex;
                 using value_type = typename G::value_type;
                 using vertex_type = typename G::vertex_type;
+                using edge_value_type = typename G::edge_type::value_type;
 
                 G g_;
                 std::map<value_type, vertex_type* const> map_;
@@ -65,6 +66,9 @@ namespace Graph {
                         return p;
                     } else
                         return vertex->second;
+                }
+                void add_edge(vertex_type* const v, const value_type& w, const edge_value_type& e) {
+                    g_.add_edge(*v, *get_or_create_vertex(w), e);
                 }
                 template<typename E, typename... Es>
                     void add_edges(Vertex& vertex, E&& edge, Es&&... edges) {
@@ -85,11 +89,16 @@ namespace Graph {
                 using builder_type = Builder<G>;
                 using vertex_type = typename G::vertex_type;
                 using value_type = typename G::value_type;
+                using edge_value_type = typename G::edge_type::value_type;
                 builder_type& builder_;
             public:
                 vertex_type* const vertex_;
                 Vertex(builder_type& b, vertex_type* const v) :builder_(b), vertex_(v) {}
 
+                Vertex& add_edge(const value_type& v, const edge_value_type& e) {
+                    builder_.add_edge(vertex_, v, e);
+                    return *this;
+                }
                 template<typename... E>
                     Vertex& add_edges(E&&... edges) {
                         builder_.add_edges(*this, std::forward<E>(edges)...);
@@ -158,7 +167,9 @@ namespace Graph {
             public:
                 vertex_type* source_;
                 vertex_type* target_;
-                Edges_iterator_entry_base(vertex_type* source) :source_(source) {}
+                Edges_iterator_entry_base(vertex_type* source = nullptr, vertex_type* target = nullptr) 
+                    :source_(source), target_(target)
+                {}
                 vertex_type& source() const { return *source_; }
                 vertex_type& target() const { return *target_; }
         };
@@ -171,7 +182,10 @@ namespace Graph {
                 using edge_type = std::conditional_t<T_is_const, const E, E>;
             public:
                 edge_type* edge_;
-                Edges_iterator_entry(vertex_type* source) :Base(source) {}
+                Edges_iterator_entry(vertex_type* source = nullptr, vertex_type* target = nullptr,
+                                     edge_type* edge = nullptr) 
+                    :Base(source, target), edge_(edge)
+                {}
                 edge_type& edge() const { return *edge_; }
         };
 
@@ -181,7 +195,7 @@ namespace Graph {
                 using Base = Edges_iterator_entry_base<V, T_is_const>;
                 using vertex_type = typename Base::vertex_type;
             public:
-                Edges_iterator_entry(vertex_type* source) :Base(source) {}
+                Edges_iterator_entry(vertex_type* source = nullptr, vertex_type* target = nullptr) :Base(source, target) {}
         };
 
     template<typename V>
@@ -493,7 +507,7 @@ namespace Graph {
                     inverted.add_edge(inverted.vertex_at(*w), inverted.vertex_at(*v));
             return inverted;
         }
-    
+
     template<typename G>
         Array<size_t> topological_sort_rearrange(const G& g) {
             using namespace Dfs;
