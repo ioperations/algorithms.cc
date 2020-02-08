@@ -257,6 +257,8 @@ void test_digraph() {
     std::cout << "topological sort (rearrange): " << std::endl << topological_sort_rearrange(g) << std::endl;
     std::cout << "topological sort (relabel): " << std::endl << topological_sort_relabel(g) << std::endl;
 
+    std::cout << "DAG is valid: " << is_dag(Samples::dag_sample<G>()) << std::endl;
+
     topological_sort_sinks_queue(g);
 
     g = Samples::strong_components_sample<decltype(g)>();
@@ -284,21 +286,15 @@ int main() {
 
     auto g1 = Samples::weighted_graph_sample<Adjacency_lists<Graph_type::GRAPH, int, double>>();
 
-    // mst_prim(g1);
+    mst_prim(g1);
 
     auto mst = pq_mst(g1);
 
-    // dfs(mst, [](auto& v) {
-    //     std::cout << v << std::endl;
-    // }, [](auto& v, auto& w) {
-    //     std::cout << v << " " << w << std::endl;
-    // });
-
-    // dfs_2(mst, [](auto& v) {
-    //     std::cout << v << std::endl;
-    // }, [](auto& e) {
-    //     std::cout << e.source() << " " << e.target() << " " << e.edge().weight() << std::endl;
-    // });
+    dfs(mst, [](auto& v) {
+        std::cout << v << std::endl;
+    }, [](auto& e) {
+        std::cout << e.source() << " " << e.target() << " " << e.edge().weight() << std::endl;
+    });
 
     trace_dfs(mst);
     trace_dfs_topo_sorted(mst);

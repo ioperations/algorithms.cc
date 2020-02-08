@@ -434,12 +434,12 @@ namespace Graph {
         }
 
     template<typename G, typename D>
-        class Dfs_tracer_base : public Weighted_post_dfs<G, size_t, size_t, D> {
+        class Dfs_tracer_base : public Weighted_post_dfs_base<G, size_t, size_t, D> {
             private:
                 int depth_;
                 Stack<std::string> lines_stack_;
             protected:
-                using Base = Weighted_post_dfs<G, size_t, size_t, D>;
+                using Base = Weighted_post_dfs_base<G, size_t, size_t, D>;
                 using vertex_type = typename Base::vertex_type;
                 using edge_type = typename Base::edge_type;
                 size_t last_root_id_;
@@ -535,29 +535,26 @@ namespace Graph {
 
     template<typename G>
         Array<size_t> topological_sort_rearrange(const G& g) {
-            using namespace Dfs;
             auto inverted = invert(g);
-            Dfs_searcher<G, Post_dfs<G, bool>> s(inverted);
-            s.search_pairs();
-            return s.post_.to_array();
+            Weighted_post_dfs<G, size_t, size_t> d(inverted);
+            d.search();
+            return d.post_.to_array();
         }
 
     template<typename G>
         Array<size_t> topological_sort_relabel(const G& g) {
-            using V = typename G::vertex_type;
-            using namespace Dfs;
-            struct Searcher : public Post_dfs<G, bool> {
-                using Base = Post_dfs<G, bool>;
+            auto inverted = invert(g);
+            struct Searcher : public Weighted_post_dfs_base<G, size_t, size_t, Searcher> {
+                using Base = Weighted_post_dfs_base<G, size_t, size_t, Searcher>;
                 Array<size_t> post_i_;
                 Searcher(const G& g) :Base(g), post_i_(g.vertices_count()) {}
-                void search_post_process(const V& v) {
+                void search_post_process(const typename Base::vertex_type& v) {
                     Base::search_post_process(v);
                     post_i_[Base::post_[v]] = v;
                 }
             };
-            auto inverted = invert(g);
-            Dfs_searcher<G, Searcher> s(inverted);
-            s.search_pairs();
+            Searcher s(inverted);
+            s.search();
             return std::move(s.post_i_);
         }
 
@@ -617,17 +614,18 @@ namespace Graph {
     template<typename G, typename V = typename G::vertex_type>
         bool is_dag(const G& g) {
             class Invalid_dag_exception {};
-            using namespace Dfs;
-            struct Searcher : public Post_dfs<G> {
-                using Base = Post_dfs<G>;
+            struct Searcher : public Weighted_post_dfs_base<G, size_t, size_t, Searcher> {
+                using Base = Weighted_post_dfs_base<G, size_t, size_t, Searcher>;
                 Searcher(const G& g) :Base(g) {}
-                void visit_edge(const V& v, const V& w) {
+                void visit_edge(const typename Base::edge_type& e) {
+                    auto& v = e.source();
+                    auto& w = e.target();
                     if (Base::pre_[w] < Base::pre_[v] && Base::post_.is_unset(w))
                         throw Invalid_dag_exception(); // back link found
                 }
             };
             try {
-                Dfs_searcher<G, Searcher>(g).search_pairs();
+                Searcher(g).search();
                 return true;
             } catch (const Invalid_dag_exception&) {
                 return false;
@@ -659,12 +657,11 @@ namespace Graph {
 
     template<typename G, typename V = typename G::vertex_type>
         Array<size_t> strong_components_kosaraju(const G& g) {
-            using namespace Dfs;
-            struct Foo {
+            struct Searcher {
                 const G& g_;
                 Array<size_t> ids_;
                 size_t group_id_;
-                Foo(const G& g) 
+                Searcher(const G& g) 
                     :g_(g), ids_(g.vertices_count()), group_id_(-1) 
                 { 
                     ids_.fill(-1);
@@ -687,9 +684,9 @@ namespace Graph {
                 }
             };
 
-            Foo f(g);
-            f.search();
-            return std::move(f.ids_);
+            Searcher s(g);
+            s.search();
+            return std::move(s.ids_);
         }
 
     template<typename G>

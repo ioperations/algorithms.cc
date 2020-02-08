@@ -104,19 +104,19 @@ namespace Graph {
         template<typename G>
             auto dag_sample() {
                 G g;
-                auto v0 = g.create_vertex(0);
-                auto v1 = g.create_vertex(1);
-                auto v2 = g.create_vertex(2);
-                auto v3 = g.create_vertex(3);
-                auto v4 = g.create_vertex(4);
-                auto v5 = g.create_vertex(5);
-                auto v6 = g.create_vertex(6);
-                auto v7 = g.create_vertex(7);
-                auto v8 = g.create_vertex(8);
-                auto v9 = g.create_vertex(9);
-                auto v10 = g.create_vertex(10);
-                auto v11 = g.create_vertex(11);
-                auto v12 = g.create_vertex(12);
+                auto& v0 = g.create_vertex(0);
+                auto& v1 = g.create_vertex(1);
+                auto& v2 = g.create_vertex(2);
+                auto& v3 = g.create_vertex(3);
+                auto& v4 = g.create_vertex(4);
+                auto& v5 = g.create_vertex(5);
+                auto& v6 = g.create_vertex(6);
+                auto& v7 = g.create_vertex(7);
+                auto& v8 = g.create_vertex(8);
+                auto& v9 = g.create_vertex(9);
+                auto& v10 = g.create_vertex(10);
+                auto& v11 = g.create_vertex(11);
+                auto& v12 = g.create_vertex(12);
                 return g
                     .add_edge(v0, v1)
                     .add_edge(v0, v2)

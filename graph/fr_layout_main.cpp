@@ -27,7 +27,9 @@ Drawables_stream& print_graph(Drawables_stream& stream, const G& graph) {
                [&calculator, &map](const auto& v) {
                    map[v.index()] = calculator.add_vertex(std::to_string(v.value()));
                },
-               [&calculator, &map](const auto& v, const auto& w) {
+               [&calculator, &map](const auto& e) {
+                   auto& v = e.source();
+                   auto& w = e.target();
                    if (v.index() < w.index())
                        calculator.add_edge(map.find(v.index())->second, map.find(w.index())->second);
                });
