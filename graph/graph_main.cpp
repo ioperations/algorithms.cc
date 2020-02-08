@@ -261,6 +261,7 @@ void test_digraph() {
 
     g = Samples::strong_components_sample<decltype(g)>();
 
+    std::cout << "    TRACE    " << std::endl;
     trace_dfs(g);
     std::cout << "dfs with topological sort:" << std::endl;
     trace_dfs_topo_sorted(g);
@@ -287,26 +288,18 @@ int main() {
 
     auto mst = pq_mst(g1);
 
-    dfs(mst, [](auto& v) {
-        std::cout << v << std::endl;
-    }, [](auto& v, auto& w) {
-        std::cout << v << " " << w << std::endl;
-    });
-
-    dfs_2(mst, [](auto& v) {
-        std::cout << v << std::endl;
-    }, [](auto& e) {
-        std::cout << e.source() << " " << e.target() << " " << e.edge().weight() << std::endl;
-    });
-
-    trace_dfs(mst);
-    trace_dfs_2(mst);
-    // trace_dfs_topo_sorted_2(mst);
-
-    // auto g = Samples::euler_tour_sample<Adjacency_matrix<int>>();
-    // dfs(g, [](auto& v) {
+    // dfs(mst, [](auto& v) {
     //     std::cout << v << std::endl;
     // }, [](auto& v, auto& w) {
     //     std::cout << v << " " << w << std::endl;
     // });
+
+    // dfs_2(mst, [](auto& v) {
+    //     std::cout << v << std::endl;
+    // }, [](auto& e) {
+    //     std::cout << e.source() << " " << e.target() << " " << e.edge().weight() << std::endl;
+    // });
+
+    trace_dfs(mst);
+    trace_dfs_topo_sorted(mst);
 }

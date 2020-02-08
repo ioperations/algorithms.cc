@@ -234,10 +234,11 @@ namespace Graph {
         template<typename V, typename E>
             template<bool T_is_const>
             class Adjacency_matrix_base<V, E>::Vertex::Edges_iterator : public Iterator<T_is_const> {
+                public:
+                    using entry_type = Edges_iterator_entry<Vertex, E, T_is_const>;
                 private:
                     using Base = Iterator<T_is_const>;
                     using vertex_type = std::conditional_t<T_is_const, const Vertex, Vertex>;
-                    using entry_type = Edges_iterator_entry<Vertex, E, T_is_const>;
                     friend class Vertex;
 
                     entry_type entry_;

@@ -127,25 +127,24 @@ namespace Graph {
 
     template<typename G, typename T_pre, typename D>
         class Weighted_dfs_base {
-            private:
-                const G& g_;
             protected:
                 using vertex_type = typename G::vertex_type;
                 using edge_type = typename G::vertex_type::const_edges_iterator::entry_type;
+                const G& g_;
                 Counters<T_pre> pre_;
             public:
                 Weighted_dfs_base(const G& g) :g_(g), pre_(g.vertices_count()) {}
                 void search() {
                     for (auto v = g_.cbegin(); v != g_.cend(); ++v)
                         if (pre_.is_unset(*v))
-                            search(*v);
+                            search_vertex(*v);
                 }
-                void search(const vertex_type& v) {
+                void search_vertex(const vertex_type& v) {
                     static_cast<D*>(this)->visit_vertex(v);
                     pre_.set_next(v);
                     for (auto e = v.cedges_begin(); e != v.cedges_end(); ++e) {
                         if (pre_.is_unset(e->target()))
-                            search(e->target());
+                            search_vertex(e->target());
                         static_cast<D*>(this)->visit_edge(*e);
                     }
                     static_cast<D*>(this)->search_post_process(v);
