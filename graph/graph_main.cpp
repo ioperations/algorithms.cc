@@ -1,6 +1,7 @@
 #include "adjacency_matrix.h"
 #include "adjacency_lists.h"
 #include "graphs.h"
+#include "heap.h"
 
 #include <string>
 #include <stdexcept>
@@ -97,7 +98,6 @@ void mst_prim(const G& g) {
             mst_.fill(nullptr);
         }
         void search() {
-
             using edge_type_2 = typename G::vertex_type::const_edges_iterator::entry_type;
             Array<edge_type_2> frr(g_.vertices_count());
             Array<edge_type_2> mstt(g_.vertices_count());
@@ -182,6 +182,67 @@ void mst_prim(const G& g) {
 }
 
 template<typename G>
+G pq_mst(const G& g) {
+    using vertex_t = typename G::vertex_type;
+    using w_t = typename G::edge_type::value_type;
+
+    struct Pq_mst_searcher {
+        const G& g_;
+        Array<w_t> weights_;
+        Array<typename G::vertex_type::const_edges_iterator::entry_type> fr_, mst_;
+        Pq_mst_searcher(const G& g, size_t size) :g_(g), weights_(size), fr_(size), mst_(size)
+        {
+            for (auto& e : fr_) e.target_ = nullptr;
+            for (auto& e : mst_) e.target_ = nullptr;
+        }
+        void search(const vertex_t& v) {
+            auto comparator = [this](const vertex_t* i1, const vertex_t* i2) {
+                return weights_[*i1] > weights_[*i2]; 
+            };
+            auto index_convertor = [](const vertex_t* v) -> size_t { return *v; };
+            Multiway_heap<const vertex_t*, decltype(comparator), decltype(index_convertor)>
+                heap(g_.vertices_count(), comparator, index_convertor);
+            heap.push(&v);
+            while (!heap.empty()) {
+                const vertex_t& w = *heap.pop();
+                mst_[w] = fr_[w];
+                for (auto e = w.cedges_begin(); e != w.cedges_end(); ++e) {
+                    const vertex_t& t = e->target();
+                    w_t weight = e->edge().weight();
+                    if (!fr_[t].target_) {
+                        weights_[t] = weight;
+                        heap.push(&t);
+                        fr_[t] = *e;
+                    } else if (!mst_[t].target_ && weight < weights_[t]) {
+                        weights_[t] = weight;
+                        heap.move_up(&w);
+                        fr_[t] = *e;
+                    }
+                }
+            }
+        }
+        void search() {
+            for (auto v = g_.cbegin(); v != g_.cend(); ++v)
+                if (!mst_[*v].target_)
+                    search(*v);
+        }
+    };
+
+    Pq_mst_searcher s(g, g.vertices_count());
+    s.search();
+    for (auto& e : s.mst_)
+        std::cout << e.target() << " " << e.source() << ", ";
+    std::cout << std::endl;
+
+    G mst;
+    for (auto v = g.cbegin(); v != g.cend(); ++v)
+        mst.create_vertex(v->value());
+    for (auto& e : s.mst_)
+        mst.add_edge(mst.vertex_at(e.source()), mst.vertex_at(e.target()), e.edge().weight());
+    return mst;
+}
+
+template<typename G>
 void test_digraph() {
     std::cout << "dfs transitive closure" << std::endl;
     auto g = Samples::digraph_sample<G>();
@@ -209,22 +270,24 @@ void test_digraph() {
 }
 
 int main() {
-    test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>("adjacency matrix");
-    test_graph<Adjacency_lists<Graph_type::GRAPH, int>>("adjacency lists");
+    // test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>("adjacency matrix");
+    // test_graph<Adjacency_lists<Graph_type::GRAPH, int>>("adjacency lists");
 
-    std::cout << "Warshall transitive closure" << std::endl;
-    auto g = Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
-    auto transitive_closure = warshall_transitive_closure(g);
-    transitive_closure.print_internal(std::cout);
+    // std::cout << "Warshall transitive closure" << std::endl;
+    // auto g = Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
+    // auto transitive_closure = warshall_transitive_closure(g);
+    // transitive_closure.print_internal(std::cout);
 
-    test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
-    test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
+    // test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
+    // test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
 
     auto g1 = Samples::weighted_graph_sample<Adjacency_lists<Graph_type::GRAPH, int, double>>();
-    g1.print_internal(std::cout);
+    // g1.print_internal(std::cout);
 
-    mst_prim(g1);
+    // mst_prim(g1);
 
+    pq_mst(g1);
+    
     // auto g = Samples::euler_tour_sample<Adjacency_matrix<int>>();
     // dfs(g, [](auto& v) {
     //     std::cout << v << std::endl;

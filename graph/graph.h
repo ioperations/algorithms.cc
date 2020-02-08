@@ -167,9 +167,8 @@ namespace Graph {
             public:
                 vertex_type* source_;
                 vertex_type* target_;
-                Edges_iterator_entry_base(vertex_type* source = nullptr, vertex_type* target = nullptr) 
-                    :source_(source), target_(target)
-                {}
+                Edges_iterator_entry_base() = default; 
+                Edges_iterator_entry_base(vertex_type* source) :source_(source) {}
                 vertex_type& source() const { return *source_; }
                 vertex_type& target() const { return *target_; }
         };
@@ -182,10 +181,8 @@ namespace Graph {
                 using edge_type = std::conditional_t<T_is_const, const E, E>;
             public:
                 edge_type* edge_;
-                Edges_iterator_entry(vertex_type* source = nullptr, vertex_type* target = nullptr,
-                                     edge_type* edge = nullptr) 
-                    :Base(source, target), edge_(edge)
-                {}
+                Edges_iterator_entry() = default;
+                Edges_iterator_entry(vertex_type* source) :Base(source) {}
                 edge_type& edge() const { return *edge_; }
         };
 
@@ -195,7 +192,8 @@ namespace Graph {
                 using Base = Edges_iterator_entry_base<V, T_is_const>;
                 using vertex_type = typename Base::vertex_type;
             public:
-                Edges_iterator_entry(vertex_type* source = nullptr, vertex_type* target = nullptr) :Base(source, target) {}
+                Edges_iterator_entry() = default;
+                Edges_iterator_entry(vertex_type* source) :Base(source) {}
         };
 
     template<typename V>

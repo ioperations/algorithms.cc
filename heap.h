@@ -42,33 +42,49 @@ void heap_sort(const It& begin, const It& end) {
     }
 }
 
-template<typename T, typename C = std::less<>>
-class Heap {
-    private:
+template<typename T, typename C, typename D>
+class Heap_base {
+    protected:
         size_t array_size_;
         size_t size_;
         T* array_;
         C comparator_;
     public:
-        Heap(size_t size, C c = {}) :array_size_(size), size_(0), array_(new T[array_size_]), comparator_(c) {}
-        Heap() :Heap(100) {}
-        ~Heap() { delete[] array_; }
+        Heap_base(size_t size, C c = {}) :array_size_(size), size_(0), array_(new T[array_size_]), comparator_(c) {}
+        Heap_base() :Heap_base(100) {}
+        ~Heap_base() { delete[] array_; }
 
-        Heap(const Heap&) = delete;
-        Heap& operator=(const Heap&) = delete;
+        Heap_base(const Heap_base&) = delete;
+        Heap_base& operator=(const Heap_base&) = delete;
 
-        Heap(Heap&& o) :array_size_(o.array_size_), size_(o.size_), array_(o.array_) {
+        Heap_base(Heap_base&& o) :array_size_(o.array_size_), size_(o.size_), array_(o.array_) {
             o.array_ = nullptr;
         }
-        Heap& operator=(Heap&& o) {
+        Heap_base& operator=(Heap_base&& o) {
             std::swap(array_size_, o.array_size_);
             std::swap(size_, o.size_);
             std::swap(array_, o.array_);
             return *this;
         }
 
-        Heap(const Binary_tree_node<T>& root);
+        Heap_base(const Binary_tree_node<T>& root);
         Binary_tree_node<T> to_tree() const;
+
+        void fix_up(size_t i) {
+            ++i;
+            for (; i > 1 && comparator_(array_[i / 2 - 1], array_[i - 1]); i /= 2)
+                static_cast<D*>(this)->swap(i - 1, i / 2 - 1);
+        }
+        void fix_down(size_t i) {
+            ++i;
+            while (i * 2 <= size_) {
+                size_t j = 2 * i;
+                if (j < size_ && comparator_(array_[j - 1], array_[j])) ++j;
+                if (comparator_(array_[i - 1], array_[j - 1]))
+                    static_cast<D*>(this)->swap(i - 1, j - 1);
+                i = j;
+            }
+        }
 
         template<typename TT>
             void push(TT&& t) {
@@ -81,13 +97,13 @@ class Heap {
                     array_ = new_array;
                 }
                 array_[size_] = std::forward<TT>(t);
-                heap_fix_up(array_, size_, comparator_);
+                fix_up(size_);
                 ++size_;
             }
         T pop() {
             --size_;
-            std::swap(array_[0], array_[size_]);
-            heap_fix_down(array_, 0, size_, comparator_);
+            static_cast<D*>(this)->swap(0, size_);
+            fix_down(0);
             return std::move(array_[size_]);
         }
         inline bool empty() const {
@@ -98,8 +114,8 @@ class Heap {
         }
 };
 
-template<typename T, typename C>
-Heap<T, C>::Heap(const Binary_tree_node<T>& root) :array_size_(0), size_(0) {
+template<typename T, typename C, typename D>
+Heap_base<T, C, D>::Heap_base(const Binary_tree_node<T>& root) :array_size_(0), size_(0) {
     Forward_list<const Binary_tree_node<T>*> queue;
     queue.push_back(&root);
     bool incomplete_occurred = false;
@@ -125,7 +141,7 @@ Heap<T, C>::Heap(const Binary_tree_node<T>& root) :array_size_(0), size_(0) {
     for (size_t index = 0; !queue.empty(); ++index) {
         auto node = queue.pop_front();
         array_[index] = node->value_;
-        heap_fix_up(array_, index, comparator_);
+        fix_up(index);
         if (node->l_)
             queue.push_back(node->l_);
         if (node->r_)
@@ -133,8 +149,8 @@ Heap<T, C>::Heap(const Binary_tree_node<T>& root) :array_size_(0), size_(0) {
     }
 }
 
-template<typename T, typename C>
-Binary_tree_node<T> Heap<T, C>::to_tree() const {
+template<typename T, typename C, typename D>
+Binary_tree_node<T> Heap_base<T, C, D>::to_tree() const {
     Binary_tree_node<T> root(array_[0]);
     Array<Binary_tree_node<T>*> nodes(size_);
     nodes[0] = &root;
@@ -152,8 +168,51 @@ Binary_tree_node<T> Heap<T, C>::to_tree() const {
     return root;
 }
 
-template<typename T, typename C>
-std::ostream& operator<<(std::ostream& stream, const Heap<T, C>& heap) {
+template<typename T, typename C, typename D>
+std::ostream& operator<<(std::ostream& stream, const Heap_base<T, C, D>& heap) {
     return stream << heap.to_tree() << std::endl;
 }
 
+template<typename T, typename C = std::less<T>>
+class Heap : public Heap_base<T, C, Heap<T, C>> {
+    private:
+        using Base = Heap_base<T, C, Heap<T, C>>;
+    public:
+        Heap(size_t size, C c = {}) :Base(size, c) {}
+        Heap() :Heap(100) {}
+        void swap(size_t i, size_t j) {
+            std::swap(Base::array_[i], Base::array_[j]);
+        }
+};
+
+struct Default_index_convertor {
+    size_t operator()(size_t index) { return index; }
+};
+
+template<typename T, typename C = std::less<T>, typename CR = Default_index_convertor>
+class Multiway_heap : public Heap_base<T, C, Multiway_heap<T, C, CR>> {
+    private:
+        using Base = Heap_base<T, C, Multiway_heap<T, C, CR>>;
+        size_t* inverted_;
+        CR index_convertor_;
+    public:
+        Multiway_heap(size_t size, C c = {}, CR index_convertor = {}) 
+            :Base(size, c), inverted_(new size_t[size]), index_convertor_(index_convertor)
+            {}
+        ~Multiway_heap() { delete inverted_; }
+        void swap(size_t i, size_t j) {
+            auto& array = Base::array_;
+            std::swap(array[i], array[j]);
+            inverted_[index_convertor_(array[i])] = i;
+            inverted_[index_convertor_(array[j])] = j;
+        }
+        void move_up(const T& value) {
+            Base::fix_up(inverted_[index_convertor_(value)]);
+        }
+        void move_down(const T& value) {
+            Base::fix_down(inverted_[index_convertor_(value)]);
+        }
+        size_t get_index(T value) {
+            return index_convertor_(value);
+        }
+};
