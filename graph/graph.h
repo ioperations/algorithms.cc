@@ -434,6 +434,61 @@ namespace Graph {
         }
 
     template<typename G>
+    class Dfs_tracer_2 : public Weighted_post_dfs<G, size_t, size_t, Dfs_tracer_2<G>> {
+        private:
+            using Base = Weighted_post_dfs<G, size_t, size_t, Dfs_tracer_2<G>>;
+            using vertex_type = typename Base::vertex_type;
+            using edge_type = typename Base::edge_type;
+
+            int depth_;
+            Stack<std::string> lines_stack_;
+            size_t last_root_id_;
+        public:
+            Dfs_tracer_2(const G& g) :Base(g), depth_(-1), last_root_id_(-1) {}
+            void print_stack() {
+                while (!lines_stack_.empty())
+                    std::cout << lines_stack_.pop() << std::endl;
+            }
+            void search() {
+                Base::search();
+                std::cout << last_root_id_ << std::endl;
+                print_stack();
+            }
+            void visit_vertex(const vertex_type& v) {
+                ++depth_;
+                if (depth_ == 0) {
+                    if (lines_stack_.empty()) {
+                        std::cout << v << std::endl;
+                    } else
+                        print_stack();
+                    last_root_id_ = v;
+                }
+            }
+            void visit_edge(const edge_type& e) {
+                auto& v = e.source();
+                auto& w = e.target();
+                std::string str;
+                if (Base::pre_[w] > Base::pre_[v])
+                    str = "down";
+                else if (Base::post_.is_unset(w))
+                    str = "back";
+                else
+                    str = "cross";
+                lines_stack_.push(compose_stack_line(str, v, w));
+            }
+            void search_post_process(const vertex_type& v) {
+                --depth_;
+                Base::search_post_process(v);
+            }
+            std::string compose_stack_line(const std::string label, const vertex_type& v, const vertex_type& w) {
+                std::stringstream ss;
+                for (int i = 0; i < depth_; ++i) ss << " ";
+                ss << " " << w << " (" << label << ")";
+                return ss.str();
+            }
+    };
+
+    template<typename G>
         struct Dfs_tracer : public Dfs::Post_dfs<G> {
             using Base = Dfs::Post_dfs<G>;
             using V = typename G::vertex_type;
@@ -478,6 +533,11 @@ namespace Graph {
                 return ss.str();
             }
         };
+
+    template<typename G>
+        void trace_dfs_2(const G& g) {
+            Dfs_tracer_2(g).search();
+        }
 
     template<typename G, typename V = typename G::vertex_type>
         void trace_dfs(const G& g) {
@@ -532,6 +592,11 @@ namespace Graph {
             Dfs_searcher<G, Searcher> s(inverted);
             s.search_pairs();
             return std::move(s.post_i_);
+        }
+    
+    template<typename G>
+        void trace_dfs_topo_sorted_2(const G& g) {
+            Dfs_tracer_2(g).search();
         }
 
     template<typename G, typename V = typename G::vertex_type>
