@@ -626,7 +626,7 @@ namespace Graph {
             }
         }
 
-    template<typename G, typename V = typename G::vertex_type>
+    template<typename G>
         bool is_dag(const G& g) {
             class Invalid_dag_exception {};
             struct Searcher : public Weighted_post_dfs_base<G, size_t, size_t, Searcher> {

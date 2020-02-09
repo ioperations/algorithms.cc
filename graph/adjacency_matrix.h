@@ -111,40 +111,57 @@ namespace Graph {
                     }
             };
 
-    template<Graph_type graph_type, typename V, typename E>
-        class Adjacency_matrix : public Adjacency_matrix_base<V, E> {
-            public:
-                using vertex_type = typename Adjacency_matrix_base<V, E>::vertex_type;
-            private:
-                template<typename TT, typename EE>
-                    static void set_edge(Adjacency_matrix<Graph_type::GRAPH, TT, EE>& m,
-                                         const vertex_type& v1, const vertex_type& v2, const E& e) {
-                        m.edges_[v1][v2] = e;
-                        m.edges_[v2][v1] = e;
+        template<typename D, Graph_type graph_type, typename V, typename E, typename ET = typename E::value_type>
+            class Edges_handler : public Adjacency_matrix_base<V, E> {
+                public:
+                    using vertex_type = typename Adjacency_matrix_base<V, E>::vertex_type;
+                    D& add_edge(const vertex_type& v1, const vertex_type& v2, typename E::value_type e) {
+                        auto& d = *static_cast<D*>(this);
+                        d.set_edge(v1, v2, e);
+                        return d;
                     }
-                template<typename TT, typename EE>
-                    static void set_edge(Adjacency_matrix<Graph_type::DIGRAPH, TT, EE>& m,
-                                         const vertex_type& v1, const vertex_type& v2, const E& e) {
-                        m.edges_[v1][v2] = e;
+                    void remove_edge(const vertex_type& v1, const vertex_type& v2) {
+                        static_cast<D*>(this)->set_edge(v1, v2, E::empty_value());
                     }
-                template<Graph_type gt, typename TT>
-                    static void set_edge(Adjacency_matrix<gt, TT, Edge<bool>>& m,
-                                         const vertex_type& v1, const vertex_type& v2) {
-                        set_edge(m, v1, v2, {true});
+            };
+
+        template<typename D, Graph_type graph_type, typename V, typename E>
+            class Edges_handler<D, graph_type, V, E, bool> : public Adjacency_matrix_base<V, E> {
+                public:
+                    using vertex_type = typename Adjacency_matrix_base<V, E>::vertex_type;
+                    D& add_edge(const vertex_type& v1, const vertex_type& v2) {
+                        auto& d = *static_cast<D*>(this);
+                        d.set_edge(v1, v2, true);
+                        return d;
                     }
-            public:
-                Adjacency_matrix& add_edge(const vertex_type& v1, const vertex_type& v2, typename E::value_type e) {
-                    set_edge(*this, v1, v2, {e});
-                    return *this;
-                }
-                Adjacency_matrix& add_edge(const vertex_type& v1, const vertex_type& v2) {
-                    set_edge(*this, v1, v2);
-                    return *this;
-                }
-                void remove_edge(vertex_type& v1, vertex_type& v2) {
-                    set_edge(*this, v1, v2, E::empty_value());
-                }
-        };
+                    void remove_edge(const vertex_type& v1, const vertex_type& v2) {
+                        static_cast<D*>(this)->set_edge(v1, v2, false);
+                    }
+            };
+
+        template<Graph_type graph_type, typename V, typename E, typename ET = typename E::value_type>
+            class Adjacency_matrix 
+            : public Edges_handler<Adjacency_matrix<graph_type, V, E, ET>, graph_type, V, E, ET> {
+                public:
+                    using Base = Edges_handler<Adjacency_matrix<graph_type, V, E, ET>, graph_type, V, E, ET>;
+                    using vertex_type = typename Base::vertex_type;
+                    void set_edge(const vertex_type& v1, const vertex_type& v2, typename E::value_type e) {
+                        Base::edges_[v1][v2] = e;
+                        Base::edges_[v2][v1] = e;
+                    }
+            };
+
+        template<typename V, typename E, typename ET>
+            class Adjacency_matrix<Graph_type::DIGRAPH, V, E, ET> 
+            : public Edges_handler<Adjacency_matrix<Graph_type::DIGRAPH, V, E, ET>, Graph_type::DIGRAPH, V, E, ET> {
+                public:
+                    using Base = Edges_handler<Adjacency_matrix<Graph_type::DIGRAPH, V, E, ET>,
+                          Graph_type::DIGRAPH, V, E, ET>;
+                    using vertex_type = typename Base::vertex_type;
+                    void set_edge(const vertex_type& v1, const vertex_type& v2, typename E::value_type e) {
+                        Base::edges_[v1][v2] = e;
+                    }
+            };
 
         template<typename V, typename E>
             class Adjacency_matrix_base<V, E>::Vertex : public Vertex_base<V> {
@@ -276,6 +293,6 @@ namespace Graph {
     }
 
     template<Graph_type graph_type, typename V, typename TE = bool, typename E = Adjacency_matrix_ns::Edge<TE>>
-    using Adjacency_matrix = Adjacency_matrix_ns::Adjacency_matrix<graph_type, V, E>;
+        using Adjacency_matrix = Adjacency_matrix_ns::Adjacency_matrix<graph_type, V, E>;
 
 }
