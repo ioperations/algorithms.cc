@@ -160,10 +160,11 @@ namespace Graph {
                 }
         };
 
-    template<typename V, bool T_is_const>
+    template<typename V, typename E, bool T_is_const>
         class Edges_iterator_entry_base {
             protected:
                 using vertex_type = std::conditional_t<T_is_const, const V, V>;
+                using edge_type = std::conditional_t<T_is_const, const E, E>;
             public:
                 vertex_type* source_;
                 vertex_type* target_;
@@ -174,12 +175,12 @@ namespace Graph {
         };
 
     template<typename V, typename E, bool T_is_const, typename ET = typename E::value_type>
-        class Edges_iterator_entry : public Edges_iterator_entry_base<V, T_is_const> {
+        class Edges_iterator_entry : public Edges_iterator_entry_base<V, E, T_is_const> {
             private:
-                using Base = Edges_iterator_entry_base<V, T_is_const>;
-                using vertex_type = typename Base::vertex_type;
-                using edge_type = std::conditional_t<T_is_const, const E, E>;
+                using Base = Edges_iterator_entry_base<V, E, T_is_const>;
             public:
+                using vertex_type = typename Base::vertex_type;
+                using edge_type = typename Base::edge_type;
                 edge_type* edge_;
                 Edges_iterator_entry() = default;
                 Edges_iterator_entry(vertex_type* source) :Base(source) {}
@@ -187,11 +188,12 @@ namespace Graph {
         };
 
     template<typename V, typename E, bool T_is_const>
-        class Edges_iterator_entry<V, E, T_is_const, bool> : public Edges_iterator_entry_base<V, T_is_const> {
+        class Edges_iterator_entry<V, E, T_is_const, bool> : public Edges_iterator_entry_base<V, E, T_is_const> {
             private:
-                using Base = Edges_iterator_entry_base<V, T_is_const>;
-                using vertex_type = typename Base::vertex_type;
+                using Base = Edges_iterator_entry_base<V, E, T_is_const>;
             public:
+                using vertex_type = typename Base::vertex_type;
+                using edge_type = typename Base::edge_type;
                 Edges_iterator_entry() = default;
                 Edges_iterator_entry(vertex_type* source) :Base(source) {}
         };
@@ -474,18 +476,31 @@ namespace Graph {
                         str = "back";
                     else
                         str = "cross";
-                    lines_stack_.push(compose_stack_line(str, v, w));
+                    lines_stack_.push(compose_stack_line(str, e));
                 }
                 void search_post_process(const vertex_type& v) {
                     --depth_;
                     Base::search_post_process(v);
                 }
-                std::string compose_stack_line(const std::string label, const vertex_type& v, const vertex_type& w) {
+                template<typename E, typename ET = typename E::edge_type::value_type>
+                    struct Edge_appender {
+                        static void append(std::ostream& stream, const E& e) {
+                            stream << " (" << e.edge().weight() << ")";
+                        }
+                    };
+                template<typename E>
+                    struct Edge_appender<E, bool> {
+                        static void append(std::ostream& stream, const E& e) {}
+                    };
+                std::string compose_stack_line(const std::string label, const edge_type& e) {
                     std::stringstream ss;
                     for (int i = 0; i < depth_; ++i) ss << " ";
-                    ss << " " << w << " (" << label << ")";
+                    ss << " " << e.target();
+                    Edge_appender<edge_type>::append(ss, e);
+                    ss << " (" << label << ")";
                     return ss.str();
                 }
+
         };
 
     template<typename G>

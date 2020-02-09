@@ -84,104 +84,6 @@ void print_aligned_collection(const C& c) {
 }
 
 template<typename G>
-void mst_prim(const G& g) {
-    using edge_type = typename G::edge_type;
-    using vertex_type = typename G::vertex_type;
-    struct Searcher {
-        const G& g_;
-        Array<double> weights_;
-        Array<const edge_type*> fr_, mst_;
-
-        Searcher(const G& g, size_t size) :g_(g), weights_(size), fr_(size), mst_(size) {
-            weights_.fill(size); // todo why g size?
-            fr_.fill(nullptr);
-            mst_.fill(nullptr);
-        }
-        void search() {
-            using edge_type_2 = typename G::vertex_type::const_edges_iterator::entry_type;
-            Array<edge_type_2> frr(g_.vertices_count());
-            Array<edge_type_2> mstt(g_.vertices_count());
-
-            mstt.fill(edge_type_2());
-            frr.fill(edge_type_2());
-
-            for (const vertex_type* v = g_.cbegin(); v; ) {
-                std::cout << "vertex: " << *v << std::endl;
-                const vertex_type* next = nullptr;
-                for (auto edge = v->cedges_begin(); edge != v->cedges_end(); ++edge) {
-                    auto& w = edge->target();
-                    if (mstt[w].target_ == nullptr) {
-                        std::cout << edge->source() << " " << edge->target() << std::endl;
-                        auto weight = edge->edge().weight();
-                        if (weight < weights_[w]) {
-                            weights_[w] = weight;
-                            frr[w] = *edge;
-                        }
-                        if (next == nullptr || weights_[w] < weights_[*next])
-                            next = &w;
-                    }
-                }
-                if (next)
-                    mstt[*next] = frr[*next];
-                v = next;
-            }
-
-            for (auto mm : mstt) {
-                if (mm.source_)
-                    std::cout << mm.source() << " - " << mm.target();
-                else
-                    std::cout << "null";
-                std::cout << "  ";
-            }
-            std::cout << std::endl;
-
-            for (auto mm : frr) {
-                if (mm.source_)
-                    std::cout << mm.source() << " - " << mm.target();
-                else
-                    std::cout << "null";
-                std::cout << "  ";
-            }
-            std::cout << std::endl;
-
-
-            // size_t min = -1;
-            // for (size_t v = 0; min != 0; v = min) {
-            //     std::cout << "v = " << v << std::endl;
-            //     min = 0;
-            //     for (auto ww = g_.cbegin() + 1; ww != g_.cend(); ++ww) {
-            //         if (mst_[*ww] == nullptr) {
-            //         std::cout << "aaa " << *ww << std::endl;
-            //             auto edge = g_.get_edge(g_.vertex_at(v), *ww);
-            //             if (edge) {
-            //                 std::cout << g_.vertex_at(v) << " - " << *ww << std::endl;
-            //                 auto weight = edge->weight();
-            //                 if (weight < weights_[*ww]) {
-            //                     weights_[*ww] = weight;
-            //                     fr_[*ww] = edge;
-            //                 }
-            //                 if (weights_[*ww] < weights_[min])
-            //                     min = *ww;
-            //             }
-            //         }
-            //     }
-            //     if (min)
-            //         mst_[min] = fr_[min];
-            // }
-        }
-    };
-    Searcher s(g, g.vertices_count());
-    s.search();
-
-    std::cout << s.weights_ << std::endl;
-    std::cout << s.mst_ << std::endl;
-    std::cout << s.fr_ << std::endl;
-    for (auto e : s.mst_)
-        if (e)
-            std::cout << e->weight() << std::endl;
-}
-
-template<typename G>
 G pq_mst(const G& g) {
     using vertex_t = typename G::vertex_type;
     using w_t = typename G::edge_type::value_type;
@@ -230,10 +132,6 @@ G pq_mst(const G& g) {
 
     Pq_mst_searcher s(g, g.vertices_count());
     s.search();
-    for (auto& e : s.mst_)
-        std::cout << e.target() << " " << e.source() << ", ";
-    std::cout << std::endl;
-
     G mst;
     for (auto v = g.cbegin(); v != g.cend(); ++v)
         mst.create_vertex(v->value());
@@ -263,7 +161,7 @@ void test_digraph() {
 
     g = Samples::strong_components_sample<decltype(g)>();
 
-    std::cout << "    TRACE    " << std::endl;
+    std::cout << "dfs trace" << std::endl;
     trace_dfs(g);
     std::cout << "dfs with topological sort:" << std::endl;
     trace_dfs_topo_sorted(g);
@@ -284,18 +182,6 @@ int main() {
     test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
     test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
 
-    auto g1 = Samples::weighted_graph_sample<Adjacency_lists<Graph_type::GRAPH, int, double>>();
-
-    mst_prim(g1);
-
-    auto mst = pq_mst(g1);
-
-    dfs(mst, [](auto& v) {
-        std::cout << v << std::endl;
-    }, [](auto& e) {
-        std::cout << e.source() << " " << e.target() << " " << e.edge().weight() << std::endl;
-    });
-
-    trace_dfs(mst);
-    trace_dfs_topo_sorted(mst);
+    auto gw = Samples::weighted_graph_sample<Adjacency_lists<Graph_type::GRAPH, int, double>>();
+    trace_dfs(pq_mst(gw));
 }

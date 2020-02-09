@@ -6,7 +6,7 @@
 using namespace Graph;
 
 template<typename G>
-void base_test() {
+void weighted_graphs_test(bool digraph = false) {
     G g;
     auto& v1 = g.create_vertex(1);
     auto& v2 = g.create_vertex(2);
@@ -22,6 +22,13 @@ void base_test() {
     ASSERT_EQ(8, g.get_edge(v1, v3)->weight());
 
     ASSERT_EQ(nullptr, g.get_edge(v2, v3));
+    if (digraph) {
+        ASSERT_EQ(nullptr, g.get_edge(v2, v1));
+        ASSERT_EQ(nullptr, g.get_edge(v3, v1));
+    } else {
+        ASSERT_EQ(4, g.get_edge(v2, v1)->weight());
+        ASSERT_EQ(8, g.get_edge(v3, v1)->weight());
+    }
 
     {
         const auto& gr = g;
@@ -58,6 +65,24 @@ void base_test() {
     for (auto e = v1.cedges_begin(); e != v1.cedges_end(); ++e)
         ss << e->source() << " " << e->target() << " " << e->edge().weight() << std::endl;
     ASSERT_EQ(expected, ss.str());
+
+    g.remove_edge(v1, v2);
+    ASSERT_EQ(nullptr, g.get_edge(v1, v2));
+
+    if (digraph) {
+        g.add_edge(v1, v2, 4);
+        g.add_edge(v2, v1, 4);
+        g.remove_edge(v1, v2);
+        ASSERT_EQ(nullptr, g.get_edge(v1, v2));
+        ASSERT_EQ(4, g.get_edge(v2, v1)->weight());
+    } else {
+        g.add_edge(v1, v2, 4);
+        ASSERT_EQ(4, g.get_edge(v1, v2)->weight());
+        ASSERT_EQ(4, g.get_edge(v2, v1)->weight());
+        g.remove_edge(v1, v2);
+        ASSERT_EQ(nullptr, g.get_edge(v1, v2));
+        ASSERT_EQ(nullptr, g.get_edge(v2, v1));
+    }
 }
 
 template<typename G>
@@ -71,11 +96,16 @@ void bool_edges_test() {
     for (auto e = v1.cedges_begin(); e != v1.cedges_end(); ++e)
         ss << e->source() << " " << e->target();
     ASSERT_EQ("1 2", ss.str());
+
+    g.remove_edge(v1, v2);
+    ASSERT_FALSE(g.has_edge(v1, v2));
 }
 
 TEST(Graph_test, base) {
-    base_test<Adjacency_matrix<Graph_type::DIGRAPH, int, int>>();
-    base_test<Adjacency_lists<Graph_type::DIGRAPH, int, int>>();
+    weighted_graphs_test<Adjacency_lists<Graph_type::GRAPH, int, int>>();
+    weighted_graphs_test<Adjacency_lists<Graph_type::DIGRAPH, int, int>>(true);
+    weighted_graphs_test<Adjacency_matrix<Graph_type::GRAPH, int, int>>();
+    weighted_graphs_test<Adjacency_matrix<Graph_type::DIGRAPH, int, int>>(true);
 
     bool_edges_test<Adjacency_matrix<Graph_type::GRAPH, int>>();
     bool_edges_test<Adjacency_lists<Graph_type::GRAPH, int>>();
