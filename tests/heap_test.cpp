@@ -13,7 +13,7 @@ TEST(Heap_test, test_1) {
     test_sort({1, 2, 3}, {1, 3, 2});
 
     {
-        Heap<int> heap;
+        Heap<int> heap(30);
         for (auto i : {11, 5, 1, 3, 9, 2})
             heap.push(i);
 
@@ -26,7 +26,7 @@ TEST(Heap_test, test_1) {
         ASSERT_TRUE(heap.empty());
     }
     {
-        Heap<int, std::greater<int>> heap;
+        Heap<int, std::greater<int>> heap(30);
         for (auto i : {11, 5, 1, 3, 9, 2})
             heap.push(i);
         

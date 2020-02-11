@@ -11,10 +11,10 @@ class Incomplete_tree_exception : public std::invalid_argument{
 };
 
 template<typename A, typename C>
-void heap_fix_up(A& array_, size_t i, C c) {
+void heap_fix_up(A& array, size_t i, C c) {
     ++i;
-    for (; i > 1 && c(array_[i / 2 - 1], array_[i - 1]); i /= 2)
-        std::swap(array_[i - 1], array_[i / 2 - 1]);
+    for (; i > 1 && c(array[i / 2 - 1], array[i - 1]); i /= 2)
+        std::swap(array[i - 1], array[i / 2 - 1]);
 }
 
 template<typename A, typename C>
@@ -42,16 +42,15 @@ void heap_sort(const It& begin, const It& end) {
     }
 }
 
-template<typename T, typename C, typename D>
+template<typename T, typename D>
 class Heap_base {
     protected:
         size_t array_size_;
         size_t size_;
         T* array_;
-        C comparator_;
+        D* const d_;
     public:
-        Heap_base(size_t size, C c = {}) :array_size_(size), size_(0), array_(new T[array_size_]), comparator_(c) {}
-        Heap_base() :Heap_base(100) {}
+        Heap_base(size_t size) :array_size_(size), size_(0), array_(new T[array_size_]), d_(static_cast<D*>(this)) {}
         ~Heap_base() { delete[] array_; }
 
         Heap_base(const Heap_base&) = delete;
@@ -72,16 +71,16 @@ class Heap_base {
 
         void fix_up(size_t i) {
             ++i;
-            for (; i > 1 && comparator_(array_[i / 2 - 1], array_[i - 1]); i /= 2)
-                static_cast<D*>(this)->swap(i - 1, i / 2 - 1);
+            for (; i > 1 && d_->compare(array_[i / 2 - 1], array_[i - 1]); i /= 2)
+                do_swap(i - 1, i / 2 - 1);
         }
         void fix_down(size_t i) {
             ++i;
             while (i * 2 <= size_) {
                 size_t j = 2 * i;
-                if (j < size_ && comparator_(array_[j - 1], array_[j])) ++j;
-                if (comparator_(array_[i - 1], array_[j - 1]))
-                    static_cast<D*>(this)->swap(i - 1, j - 1);
+                if (j < size_ && d_->compare(array_[j - 1], array_[j])) ++j;
+                if (d_->compare(array_[i - 1], array_[j - 1]))
+                    do_swap(i - 1, j - 1);
                 i = j;
             }
         }
@@ -96,13 +95,22 @@ class Heap_base {
                     delete[] array_;
                     array_ = new_array;
                 }
-                array_[size_] = std::forward<TT>(t);
+                d_->set_value(size_, std::forward<TT>(t));
                 fix_up(size_);
                 ++size_;
             }
+        void do_swap(size_t i, size_t j) {
+            T t = std::move(array_[i]);
+            d_->set_value(i, std::move(array_[j]));
+            d_->set_value(j, std::move(t));
+        }
+        template<typename TT>
+            void set_value(size_t i, TT&& t) {
+                array_[i] = std::forward<TT>(t);
+            }
         T pop() {
             --size_;
-            static_cast<D*>(this)->swap(0, size_);
+            do_swap(0, size_);
             fix_down(0);
             return std::move(array_[size_]);
         }
@@ -114,8 +122,8 @@ class Heap_base {
         }
 };
 
-template<typename T, typename C, typename D>
-Heap_base<T, C, D>::Heap_base(const Binary_tree_node<T>& root) :array_size_(0), size_(0) {
+template<typename T, typename D>
+Heap_base<T, D>::Heap_base(const Binary_tree_node<T>& root) :array_size_(0), size_(0) {
     Forward_list<const Binary_tree_node<T>*> queue;
     queue.push_back(&root);
     bool incomplete_occurred = false;
@@ -149,8 +157,8 @@ Heap_base<T, C, D>::Heap_base(const Binary_tree_node<T>& root) :array_size_(0), 
     }
 }
 
-template<typename T, typename C, typename D>
-Binary_tree_node<T> Heap_base<T, C, D>::to_tree() const {
+template<typename T, typename D>
+Binary_tree_node<T> Heap_base<T, D>::to_tree() const {
     Binary_tree_node<T> root(array_[0]);
     Array<Binary_tree_node<T>*> nodes(size_);
     nodes[0] = &root;
@@ -168,20 +176,20 @@ Binary_tree_node<T> Heap_base<T, C, D>::to_tree() const {
     return root;
 }
 
-template<typename T, typename C, typename D>
-std::ostream& operator<<(std::ostream& stream, const Heap_base<T, C, D>& heap) {
+template<typename T, typename D>
+std::ostream& operator<<(std::ostream& stream, const Heap_base<T, D>& heap) {
     return stream << heap.to_tree() << std::endl;
 }
 
 template<typename T, typename C = std::less<T>>
-class Heap : public Heap_base<T, C, Heap<T, C>> {
+class Heap : public Heap_base<T, Heap<T, C>> {
     private:
-        using Base = Heap_base<T, C, Heap<T, C>>;
+        using Base = Heap_base<T, Heap<T, C>>;
+        C comparator_;
     public:
-        Heap(size_t size, C c = {}) :Base(size, c) {}
-        Heap() :Heap(100) {}
-        void swap(size_t i, size_t j) {
-            std::swap(Base::array_[i], Base::array_[j]);
+        Heap(size_t size, C c = {}) :Base(size), comparator_(c) {}
+        bool compare(const T& t1, const T& t2) {
+            return comparator_(t1, t2);
         }
 };
 
@@ -189,30 +197,45 @@ struct Default_index_convertor {
     size_t operator()(size_t index) { return index; }
 };
 
-template<typename T, typename C = std::less<T>, typename CR = Default_index_convertor>
-class Multiway_heap : public Heap_base<T, C, Multiway_heap<T, C, CR>> {
+template<typename T, typename D>
+class Multiway_heap_base : public Heap_base<T, D> {
     private:
-        using Base = Heap_base<T, C, Multiway_heap<T, C, CR>>;
+        using Base = Heap_base<T, D>;
         size_t* inverted_;
+    public:
+        Multiway_heap_base(size_t size) :Base(size), inverted_(new size_t[size]) {}
+        ~Multiway_heap_base() { delete inverted_; }
+        template<typename TT>
+            void set_value(size_t i, TT&& t) {
+                Base::array_[i] = std::forward<TT>(t);
+                inverted_[Base::d_->get_index(Base::array_[i])] = i;
+            }
+        void move_up(const T& value) {
+            Base::fix_up(inverted_[Base::d_->get_index(value)]);
+        }
+        void move_down(const T& value) {
+            Base::fix_down(inverted_[Base::d_->get_index(value)]);
+        }
+        size_t get_index(T value) {
+            return Base::d_->get_index(value);
+        }
+};
+
+template<typename T, typename C = std::less<T>, typename CR = Default_index_convertor>
+class Multiway_heap : public Multiway_heap_base<T, Multiway_heap<T, C, CR>> {
+    private:
+        using Base = Multiway_heap_base<T, Multiway_heap<T, C, CR>>;
+        C comparator_;
         CR index_convertor_;
     public:
         Multiway_heap(size_t size, C c = {}, CR index_convertor = {}) 
-            :Base(size, c), inverted_(new size_t[size]), index_convertor_(index_convertor)
+            :Base(size), comparator_(c), index_convertor_(index_convertor)
             {}
-        ~Multiway_heap() { delete inverted_; }
-        void swap(size_t i, size_t j) {
-            auto& array = Base::array_;
-            std::swap(array[i], array[j]);
-            inverted_[index_convertor_(array[i])] = i;
-            inverted_[index_convertor_(array[j])] = j;
+        bool compare(const T& t1, const T& t2) {
+            return comparator_(t1, t2);
         }
-        void move_up(const T& value) {
-            Base::fix_up(inverted_[index_convertor_(value)]);
-        }
-        void move_down(const T& value) {
-            Base::fix_down(inverted_[index_convertor_(value)]);
-        }
-        size_t get_index(T value) {
+        size_t get_index(const T& value) {
             return index_convertor_(value);
         }
 };
+

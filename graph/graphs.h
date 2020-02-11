@@ -173,6 +173,19 @@ namespace Graph {
                     .for_vertex(7)
                     .build();
             }
+
+        template<typename G>
+            G spt_sample() {
+                Graph::Builder<G> b;
+                for (int i = 0; i < 6; ++i)
+                    b.for_vertex(i);
+                return b
+                    .for_vertex(0).add_edge(1, .41).add_edge(3, .45).add_edge(5, .29)
+                    .for_vertex(1).add_edge(2, .51).add_edge(4, .21).add_edge(5, .29)
+                    .for_vertex(2).add_edge(3, .5).add_edge(4, .32)
+                    .for_vertex(4).add_edge(5, .21)
+                    .build();
+            }
     }
 
 }

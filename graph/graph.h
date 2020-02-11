@@ -147,6 +147,7 @@ namespace Graph {
                 Vertex_base(const T& value) :value_(value) {}
                 Vertex_base() = default;
             public:
+                using value_type = T;
                 const T& value() const { return value_; }
                 void set_value(const T& value) { value_ = value; }
                 bool operator==(const Vertex_base& o) const {
@@ -436,12 +437,12 @@ namespace Graph {
         }
 
     template<typename G, typename D>
-        class Dfs_tracer_base : public Weighted_post_dfs_base<G, size_t, size_t, D> {
+        class Dfs_tracer_base : public Post_dfs_base<G, size_t, size_t, D> {
             private:
                 int depth_;
                 Stack<std::string> lines_stack_;
             protected:
-                using Base = Weighted_post_dfs_base<G, size_t, size_t, D>;
+                using Base = Post_dfs_base<G, size_t, size_t, D>;
                 using vertex_type = typename Base::vertex_type;
                 using edge_type = typename Base::edge_type;
                 size_t last_root_id_;
@@ -551,7 +552,7 @@ namespace Graph {
     template<typename G>
         Array<size_t> topological_sort_rearrange(const G& g) {
             auto inverted = invert(g);
-            Weighted_post_dfs<G, size_t, size_t> d(inverted);
+            Post_dfs<G, size_t, size_t> d(inverted);
             d.search();
             return d.post_.to_array();
         }
@@ -559,8 +560,8 @@ namespace Graph {
     template<typename G>
         Array<size_t> topological_sort_relabel(const G& g) {
             auto inverted = invert(g);
-            struct Searcher : public Weighted_post_dfs_base<G, size_t, size_t, Searcher> {
-                using Base = Weighted_post_dfs_base<G, size_t, size_t, Searcher>;
+            struct Searcher : public Post_dfs_base<G, size_t, size_t, Searcher> {
+                using Base = Post_dfs_base<G, size_t, size_t, Searcher>;
                 Array<size_t> post_i_;
                 Searcher(const G& g) :Base(g), post_i_(g.vertices_count()) {}
                 void search_post_process(const typename Base::vertex_type& v) {
@@ -629,8 +630,8 @@ namespace Graph {
     template<typename G>
         bool is_dag(const G& g) {
             class Invalid_dag_exception {};
-            struct Searcher : public Weighted_post_dfs_base<G, size_t, size_t, Searcher> {
-                using Base = Weighted_post_dfs_base<G, size_t, size_t, Searcher>;
+            struct Searcher : public Post_dfs_base<G, size_t, size_t, Searcher> {
+                using Base = Post_dfs_base<G, size_t, size_t, Searcher>;
                 Searcher(const G& g) :Base(g) {}
                 void visit_edge(const typename Base::edge_type& e) {
                     auto& v = e.source();

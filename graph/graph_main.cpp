@@ -83,8 +83,29 @@ void print_aligned_collection(const C& c) {
     std::cout << std::endl;
 }
 
+template<typename V, typename W>
+class Vertex_heap : public Multiway_heap_base<V, Vertex_heap<V, W>> {
+    private:
+        using Base = Multiway_heap_base<V, Vertex_heap<V, W>>;
+        Array<W>& weights_;
+    public:
+        Vertex_heap(size_t size, Array<W>& weights) :Base(size), weights_(weights) {}
+        bool compare(const V& v1, const V& v2) { return weights_[*v1] > weights_[*v2]; }
+        size_t get_index(const V& v) { return *v; }
+};
+
+template<typename G, typename E>
+auto compose_path_tree(const G& g, const E& edges_b, const E& edges_e) {
+    Adjacency_lists<Graph_type::DIGRAPH, typename G::vertex_type::value_type, typename G::edge_type::value_type> mst;
+    for (auto v = g.cbegin(); v != g.cend(); ++v)
+        mst.create_vertex(v->value());
+    for (auto e = edges_b; e != edges_e; ++e)
+        mst.add_edge(mst.vertex_at(e->source()), mst.vertex_at(e->target()), e->edge().weight());
+    return mst;
+}
+
 template<typename G>
-G pq_mst(const G& g) {
+auto pq_mst(const G& g) {
     using vertex_t = typename G::vertex_type;
     using w_t = typename G::edge_type::value_type;
 
@@ -98,12 +119,7 @@ G pq_mst(const G& g) {
             for (auto& e : mst_) e.target_ = nullptr;
         }
         void search(const vertex_t& v) {
-            auto comparator = [this](const vertex_t* i1, const vertex_t* i2) {
-                return weights_[*i1] > weights_[*i2]; 
-            };
-            auto index_convertor = [](const vertex_t* v) -> size_t { return *v; };
-            Multiway_heap<const vertex_t*, decltype(comparator), decltype(index_convertor)>
-                heap(g_.vertices_count(), comparator, index_convertor);
+            Vertex_heap<const vertex_t*, w_t> heap(g_.vertices_count(), weights_);
             heap.push(&v);
             while (!heap.empty()) {
                 const vertex_t& w = *heap.pop();
@@ -132,12 +148,7 @@ G pq_mst(const G& g) {
 
     Pq_mst_searcher s(g, g.vertices_count());
     s.search();
-    G mst;
-    for (auto v = g.cbegin(); v != g.cend(); ++v)
-        mst.create_vertex(v->value());
-    for (auto& e : s.mst_)
-        mst.add_edge(mst.vertex_at(e.source()), mst.vertex_at(e.target()), e.edge().weight());
-    return mst;
+    return compose_path_tree(g, s.mst_.cbegin(), s.mst_.cend());
 }
 
 template<typename G>
@@ -170,6 +181,51 @@ void test_digraph() {
     std::cout << "strong components (Tarjan)" << std::endl << strong_components_tarjan(g) << std::endl;
 }
 
+template<typename G>
+auto compose_spt(const G& g, const typename G::vertex_type& vertex) {
+    using vertex_t = typename G::vertex_type;
+    using edge_type = typename G::vertex_type::const_edges_iterator::entry_type;
+    using w_t = typename G::edge_type::value_type;
+    struct Spt {
+        const G& g_;
+        Array<double> weights_;
+        Array<edge_type> spt_;
+        Spt(const G& g) 
+            :g_(g), weights_(g.vertices_count()), spt_(g.vertices_count()) 
+        {
+            weights_.fill(g.vertices_count()); // todo
+            for (auto& e : spt_) e.target_ = nullptr;
+        }
+        void search(const vertex_t& vertex) {
+            Vertex_heap<const vertex_t*, w_t> heap(g_.vertices_count(), weights_);
+            for (const vertex_t* v = g_.cbegin(); v != g_.cend(); ++v)
+                heap.push(v);
+            weights_[vertex] = 0;
+            heap.move_up(&vertex);
+            while (!heap.empty()) {
+                const vertex_t* v = heap.pop();
+                if (v != &vertex && !spt_[*v].target_)
+                    return;
+                for (auto e = v->cedges_begin(); e != v->cedges_end(); ++e) {
+                    const vertex_t* w = e->target_;
+                    w_t weight = weights_[*v] + e->edge().weight();
+                    if (weight < weights_[*w]) {
+                        weights_[*w] = weight;
+                        heap.move_up(w);
+                        spt_[*w] = *e;
+                    }
+                }
+            }
+        }
+    };
+    Spt s(g);
+    s.search(vertex);
+    auto e_b = s.spt_.cbegin();
+    if (e_b != s.spt_.cend())
+        ++e_b; // first entry target_ == nullptr
+    return compose_path_tree(g, e_b, s.spt_.cend());
+}
+
 int main() {
     test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>("adjacency matrix");
     test_graph<Adjacency_lists<Graph_type::GRAPH, int>>("adjacency lists");
@@ -184,4 +240,8 @@ int main() {
 
     auto gw = Samples::weighted_graph_sample<Adjacency_lists<Graph_type::GRAPH, int, double>>();
     trace_dfs(pq_mst(gw));
+
+    gw = Samples::spt_sample<decltype(gw)>();
+    auto spt = compose_spt(gw, gw.vertex_at(0));
+    trace_dfs(spt);
 }

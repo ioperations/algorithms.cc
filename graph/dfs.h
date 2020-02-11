@@ -44,68 +44,69 @@ namespace Graph {
         };
 
     template<typename G, typename T_pre, typename D>
-        class Weighted_dfs_base {
+        class Dfs_base {
             protected:
                 using vertex_type = typename G::vertex_type;
                 using edge_type = typename G::vertex_type::const_edges_iterator::entry_type;
                 const G& g_;
                 Counters<T_pre> pre_;
+                D* d_;
             public:
-                Weighted_dfs_base(const G& g) :g_(g), pre_(g.vertices_count()) {}
+                Dfs_base(const G& g) :g_(g), pre_(g.vertices_count()), d_(static_cast<D*>(this)) {}
                 void search() {
                     for (auto v = g_.cbegin(); v != g_.cend(); ++v)
                         if (pre_.is_unset(*v))
                             search_vertex(*v);
                 }
                 void search_vertex(const vertex_type& v) {
-                    static_cast<D*>(this)->visit_vertex(v);
+                    d_->visit_vertex(v);
                     pre_.set_next(v);
                     for (auto e = v.cedges_begin(); e != v.cedges_end(); ++e) {
                         if (pre_.is_unset(e->target()))
                             search_vertex(e->target());
-                        static_cast<D*>(this)->visit_edge(*e);
+                        d_->visit_edge(*e);
                     }
-                    static_cast<D*>(this)->search_post_process(v);
+                    d_->search_post_process(v);
                 }
         };
 
     template<typename G, typename T_pre, typename D>
-        class Weighted_dfs : public Weighted_dfs_base<G, T_pre, D> {
+        class Dfs : public Dfs_base<G, T_pre, D> {
             private:
-                using Base = Weighted_dfs_base<G, T_pre, D>;
+                using Base = Dfs_base<G, T_pre, D>;
             public:
-                Weighted_dfs(const G& g) :Base(g) {}
+                Dfs(const G& g) :Base(g) {}
                 void search_post_process(const typename Base::vertex_type& v) {}
         };
 
     template<typename G, typename T_pre, typename T_post, typename D>
-        class Weighted_post_dfs_base : public Weighted_dfs_base<G, T_pre, D> {
+        class Post_dfs_base : public Dfs_base<G, T_pre, D> {
             private:
-                using Base = Weighted_dfs_base<G, T_pre, D>;
+                using Base = Dfs_base<G, T_pre, D>;
             protected:
                 using vertex_type = typename Base::vertex_type;
                 using edge_type = typename Base::edge_type;
             public:
                 Counters<T_post> post_;
-                Weighted_post_dfs_base(const G& g) :Base(g), post_(g.vertices_count()) {}
+                Post_dfs_base(const G& g) :Base(g), post_(g.vertices_count()) {}
                 void visit_vertex(const vertex_type& v) {}
                 void visit_edge(const edge_type& e) {}
                 void search_post_process(const vertex_type& v) { post_.set_next(v); }
         };
 
     template<typename G, typename T_pre, typename T_post>
-        class Weighted_post_dfs : public Weighted_post_dfs_base<G, T_pre, T_post, Weighted_post_dfs<G, T_pre, T_post>> {
+        class Post_dfs : public Post_dfs_base<G, T_pre, T_post, Post_dfs<G, T_pre, T_post>> {
             private:
-                using Base = Weighted_post_dfs_base<G, T_pre, T_post, Weighted_post_dfs<G, T_pre, T_post>>;
+                using Base = Post_dfs_base<G, T_pre, T_post, Post_dfs<G, T_pre, T_post>>;
             public:
-                Weighted_post_dfs(const G& g) :Base(g) {}
+                Post_dfs(const G& g) :Base(g) {}
         };
 
     template<typename G, typename V = typename G::vertex_type, typename T_v_visitor, typename T_e_visitor>
         void dfs(const G& g, T_v_visitor v_visitor, T_e_visitor e_visitor) {
-            class Searcher : public Weighted_dfs<G, bool, Searcher> {
+            class Searcher : public Dfs<G, bool, Searcher> {
                 private:
-                    using Base = Weighted_dfs<G, bool, Searcher>;
+                    using Base = Dfs<G, bool, Searcher>;
                     using vertex_type = typename Base::vertex_type;
                     using edge_type = typename Base::edge_type;
                     T_v_visitor v_visitor_;
