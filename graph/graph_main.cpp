@@ -182,49 +182,75 @@ void test_digraph() {
 }
 
 template<typename G>
-auto compose_spt(const G& g, const typename G::vertex_type& vertex) {
+struct Spt {
     using vertex_t = typename G::vertex_type;
-    using edge_type = typename G::vertex_type::const_edges_iterator::entry_type;
-    using w_t = typename G::edge_type::value_type;
-    struct Spt {
-        const G& g_;
-        Array<double> weights_;
-        Array<edge_type> spt_;
-        Spt(const G& g) 
-            :g_(g), weights_(g.vertices_count()), spt_(g.vertices_count()) 
-        {
-            weights_.fill(g.vertices_count()); // todo
-            for (auto& e : spt_) e.target_ = nullptr;
-        }
-        void search(const vertex_t& vertex) {
-            Vertex_heap<const vertex_t*, w_t> heap(g_.vertices_count(), weights_);
-            for (const vertex_t* v = g_.cbegin(); v != g_.cend(); ++v)
-                heap.push(v);
-            weights_[vertex] = 0;
-            heap.move_up(&vertex);
-            while (!heap.empty()) {
-                const vertex_t* v = heap.pop();
-                if (v != &vertex && !spt_[*v].target_)
-                    return;
-                for (auto e = v->cedges_begin(); e != v->cedges_end(); ++e) {
-                    const vertex_t* w = e->target_;
-                    w_t weight = weights_[*v] + e->edge().weight();
-                    if (weight < weights_[*w]) {
-                        weights_[*w] = weight;
-                        heap.move_up(w);
-                        spt_[*w] = *e;
-                    }
+    using edge_t = typename G::vertex_type::const_edges_iterator::entry_type;
+    using weight_t = typename G::edge_type::value_type;
+
+    Array<weight_t> weights_;
+    Array<edge_t> spt_;
+    Spt(const G& g, const vertex_t& vertex, weight_t max_weight) 
+        :weights_(g.vertices_count()), spt_(g.vertices_count()) 
+    {
+        weights_.fill(max_weight);
+        for (auto& e : spt_) e.target_ = nullptr;
+
+        Vertex_heap<const vertex_t*, weight_t> heap(g.vertices_count(), weights_);
+        for (const vertex_t* v = g.cbegin(); v != g.cend(); ++v)
+            heap.push(v);
+        weights_[vertex] = 0;
+        heap.move_up(&vertex);
+        while (!heap.empty()) {
+            const vertex_t* v = heap.pop();
+            if (v != &vertex && !spt_[*v].target_)
+                return;
+            for (auto e = v->cedges_begin(); e != v->cedges_end(); ++e) {
+                const vertex_t* w = e->target_;
+                weight_t weight = weights_[*v] + e->edge().weight();
+                if (weight < weights_[*w]) {
+                    weights_[*w] = weight;
+                    heap.move_up(w);
+                    spt_[*w] = *e;
                 }
             }
         }
-    };
-    Spt s(g);
-    s.search(vertex);
-    auto e_b = s.spt_.cbegin();
-    if (e_b != s.spt_.cend())
-        ++e_b; // first entry target_ == nullptr
-    return compose_path_tree(g, e_b, s.spt_.cend());
-}
+    }
+};
+
+template<typename G>
+struct Full_spts {
+    using vertex_t = typename G::vertex_type;
+    using w_t = typename G::edge_type::value_type;
+    using edge_t = typename G::vertex_type::const_edges_iterator::entry_type;
+    const G& g_;
+    Array<Array<w_t>> weights_;
+    Array<Array<edge_t>> spts_;
+    Full_spts(const G& g, w_t max_weight) 
+        :g_(g), weights_(g.vertices_count()), spts_(g.vertices_count()) 
+    {
+        size_t i = 0;
+        for (auto v = g.cbegin(); v != g.cend(); ++v) {
+            Spt spt(g, *v, max_weight);
+            weights_[i] = std::move(spt.weights_);
+            spts_[i] = std::move(spt.spt_);
+            ++i;
+        }
+    }
+    w_t distance(size_t v, size_t w) { return weights_[v][w]; }
+    const edge_t& path(size_t v, size_t w) { return spts_[w][v]; }
+    const edge_t& path_r(size_t v, size_t w) { return spts_[v][w]; }
+    std::pair<const vertex_t*, const vertex_t*> diameter() {
+        size_t v_max = 0;
+        size_t w_max = 0;
+        for (auto v = g_.cbegin(); v != g_.cend(); ++v)
+            for (auto w = g_.cbegin(); w != g_.cend(); ++w)
+                if (path(*v, *w).target_ && distance(*v, *w) > distance(v_max, w_max)) {
+                    v_max = *v;
+                    w_max = *w;
+                }
+        return {&g_.vertex_at(v_max), &g_.vertex_at(w_max)};
+    }
+};
 
 int main() {
     test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>("adjacency matrix");
@@ -242,6 +268,18 @@ int main() {
     trace_dfs(pq_mst(gw));
 
     gw = Samples::spt_sample<decltype(gw)>();
-    auto spt = compose_spt(gw, gw.vertex_at(0));
-    trace_dfs(spt);
+    Spt spt(gw, gw.vertex_at(0), 1);
+    trace_dfs(compose_path_tree(gw, spt.spt_.cbegin() + 1, spt.spt_.cend()));
+
+    Full_spts full_spts(gw, 1);
+    auto diameter = full_spts.diameter();
+    std::cout << *diameter.first << " " << *diameter.second << std::endl;
+
+    std::cout << "diameter: " << *diameter.first;
+    for (auto v = diameter.first; v != diameter.second; ) {
+        v = full_spts.path(*v, *diameter.second).source_;
+        std::cout << " - " << *v;
+    }
+    std::cout << " (" << full_spts.distance(*diameter.first, *diameter.second) << ")" << std::endl;
+
 }
