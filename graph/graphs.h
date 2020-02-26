@@ -186,6 +186,23 @@ namespace Graph {
                     .for_vertex(4).add_edge(5, .21)
                     .build();
             }
+
+        template<typename G>
+            G weighted_dag_sample() {
+                Graph::Builder<G> b;
+                for (int i = 0; i < 9; ++i)
+                    b.for_vertex(i);
+                return b
+                    .for_vertex(0).add_edge(1, .41).add_edge(7, .41).add_edge(9, .41)
+                    .for_vertex(1).add_edge(2, .51)
+                    .for_vertex(2).add_edge(.50)
+                    .for_vertex(6).add_edge(3, .21).add_edge(8, .21)
+                    .for_vertex(7).add_edge(3, .32).add_edge(8, .32)
+                    .for_vertex(8).add_edge(2, .32)
+                    .for_vertex(9).add_edge(4, .29).add_edge(6, .29)
+                    .build();
+
+            }
     }
 
 }

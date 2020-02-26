@@ -204,7 +204,7 @@ class Multiway_heap_base : public Heap_base<T, D> {
         size_t* inverted_;
     public:
         Multiway_heap_base(size_t size) :Base(size), inverted_(new size_t[size]) {}
-        ~Multiway_heap_base() { delete inverted_; }
+        ~Multiway_heap_base() { delete[] inverted_; }
         template<typename TT>
             void set_value(size_t i, TT&& t) {
                 Base::array_[i] = std::forward<TT>(t);

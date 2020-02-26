@@ -11,7 +11,7 @@ using namespace Graph;
 
 template<typename P>
 void print_path(const P& p) {
-    print_collection(p.cbegin(), p.cend(), " - ", [](auto p) { return *p; }, std::cout);
+    print_collection(p.cbegin(), p.cend(), " - ", [](auto p) -> auto& { return *p; }, std::cout);
 }
 
 template<typename G>
@@ -166,7 +166,8 @@ void test_digraph() {
     std::cout << "topological sort (rearrange): " << std::endl << topological_sort_rearrange(g) << std::endl;
     std::cout << "topological sort (relabel): " << std::endl << topological_sort_relabel(g) << std::endl;
 
-    std::cout << "DAG is valid: " << is_dag(Samples::dag_sample<G>()) << std::endl;
+    g = Samples::dag_sample<G>();
+    std::cout << "DAG is valid: " << is_dag(g) << std::endl;
 
     topological_sort_sinks_queue(g);
 
@@ -229,11 +230,10 @@ struct Full_spts {
         :g_(g), weights_(g.vertices_count()), spts_(g.vertices_count()) 
     {
         size_t i = 0;
-        for (auto v = g.cbegin(); v != g.cend(); ++v) {
+        for (auto v = g.cbegin(); v != g.cend(); ++v, ++i) {
             Spt spt(g, *v, max_weight);
             weights_[i] = std::move(spt.weights_);
             spts_[i] = std::move(spt.spt_);
-            ++i;
         }
     }
     w_t distance(size_t v, size_t w) { return weights_[v][w]; }
@@ -249,6 +249,31 @@ struct Full_spts {
                     w_max = *w;
                 }
         return {&g_.vertex_at(v_max), &g_.vertex_at(w_max)};
+    }
+};
+
+template<typename G>
+struct Dag_lpt {
+    using w_t = typename G::edge_type::value_type;
+    using edge_t = typename G::vertex_type::const_edges_iterator::entry_type;
+    Array<w_t> weights_;
+    Array<edge_t> lpt_;
+    Dag_lpt(const G& g) :weights_(g.vertices_count()), lpt_(g.vertices_count()) {
+        weights_.fill(0);
+        for (auto& e : lpt_) e.target_ = nullptr;
+        auto t_sort = topological_sort_rearrange(g);
+        for (auto index = t_sort.cbegin(); index != t_sort.cend(); ++index) {
+            auto& v = g.vertex_at(*index);
+            for (auto e = v.cedges_begin(); e != v.cedges_end(); ++e) {
+                auto& w = e->target();
+                auto weight = e->edge().weight();
+                if (weights_[w] < weights_[v] + weight) {
+                    weights_[w] = weights_[v] + weight;
+                    lpt_[w] = *e;
+                }
+            }
+
+        }
     }
 };
 
@@ -282,4 +307,9 @@ int main() {
     }
     std::cout << " (" << full_spts.distance(*diameter.first, *diameter.second) << ")" << std::endl;
 
+    gw = Samples::weighted_graph_sample<decltype(gw)>();
+
+    Dag_lpt dag_lpt(gw);
+    auto t = compose_path_tree(gw, dag_lpt.lpt_.cbegin(), dag_lpt.lpt_.cend());
+    trace_dfs(t);
 }

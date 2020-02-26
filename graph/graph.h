@@ -661,9 +661,9 @@ namespace Graph {
                 if (in[*v] == 0)
                     queue.push_back(&*v);
             Array<size_t> ordered(g.vertices_count());
-            for (size_t index = 0; !queue.empty(); ++index) {
+            for (auto ordered_it = ordered.begin(); !queue.empty(); ++ordered_it) {
                 auto v = queue.pop_front();
-                ordered[index] = *v;
+                *ordered_it = *v;
                 for (auto w = v->cbegin(); w != v->cend(); ++w)
                     if (--in[*w] == 0)
                         queue.push_back(&*w);
