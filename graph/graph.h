@@ -558,10 +558,10 @@ namespace Graph {
         }
 
     template<typename G>
-        struct Relabel_topo_sorter : public Post_dfs_base<G, size_t, size_t, Relabel_topo_sorter<G>> {
-            using Base = Post_dfs_base<G, size_t, size_t, Relabel_topo_sorter<G>>;
+        struct Topological_sorter : public Post_dfs_base<G, size_t, size_t, Topological_sorter<G>> {
+            using Base = Post_dfs_base<G, size_t, size_t, Topological_sorter<G>>;
             Array<size_t> post_i_;
-            Relabel_topo_sorter(const G& g) :Base(g), post_i_(g.vertices_count()) {}
+            Topological_sorter(const G& g) :Base(g), post_i_(g.vertices_count()) {}
             void search_post_process(const typename Base::vertex_type& v) {
                 Base::search_post_process(v);
                 post_i_[Base::post_[v]] = v;
@@ -571,7 +571,7 @@ namespace Graph {
     template<typename G>
         Array<size_t> topological_sort_relabel(const G& g) {
             auto inverted = invert(g);
-            Relabel_topo_sorter s(inverted);
+            Topological_sorter s(inverted);
             s.search();
             return std::move(s.post_i_);
         }
@@ -629,9 +629,13 @@ namespace Graph {
             }
         }
 
+    class Invalid_dag_exception : public std::runtime_error {
+        public:
+            Invalid_dag_exception() :std::runtime_error("invalid dag") {}
+    };
+
     template<typename G>
-        bool is_dag(const G& g) {
-            class Invalid_dag_exception {};
+        void validate_dag(const G& g) {
             struct Searcher : public Post_dfs_base<G, size_t, size_t, Searcher> {
                 using Base = Post_dfs_base<G, size_t, size_t, Searcher>;
                 Searcher(const G& g) :Base(g) {}
@@ -642,8 +646,13 @@ namespace Graph {
                         throw Invalid_dag_exception(); // back link found
                 }
             };
+            Searcher(g).search();
+        }
+
+    template<typename G>
+        bool is_dag(const G& g) {
             try {
-                Searcher(g).search();
+                validate_dag(g);
                 return true;
             } catch (const Invalid_dag_exception&) {
                 return false;

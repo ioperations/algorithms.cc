@@ -263,7 +263,7 @@ struct Dag_lpt {
         weights_.fill(0);
         for (auto& e : lpt_) e.target_ = nullptr;
 
-        Relabel_topo_sorter sorter(g);
+        Topological_sorter sorter(g);
         sorter.search();
         auto& t_sorted = sorter.post_i_;
 
@@ -281,6 +281,38 @@ struct Dag_lpt {
     }
 };
 
+template<typename G>
+void test_weighted_graph() {
+    auto g = Samples::weighted_graph_sample<G>();
+    trace_dfs(pq_mst(g));
+
+    g = Samples::spt_sample<G>();
+    Spt spt(g, g.vertex_at(0), g.vertices_count());
+    trace_dfs(compose_path_tree(g, spt.spt_.cbegin() + 1, spt.spt_.cend()));
+
+    Full_spts full_spts(g, 1);
+    auto diameter = full_spts.diameter();
+    std::cout << *diameter.first << " " << *diameter.second << std::endl;
+
+    std::cout << "diameter: " << *diameter.first;
+    for (auto v = diameter.first; v != diameter.second; ) {
+        v = full_spts.path(*v, *diameter.second).source_;
+        std::cout << " - " << *v;
+    }
+    std::cout << " (" << full_spts.distance(*diameter.first, *diameter.second) << ")" << std::endl;
+}
+
+template<typename G>
+void test_weighted_dag() {
+    auto g = Samples::weighted_dag_sample<G>();
+    validate_dag(g);
+
+    Dag_lpt dag_lpt(g);
+    auto lpt = compose_path_tree(g, dag_lpt.lpt_.cbegin(), dag_lpt.lpt_.cend());
+    std::cout << "lpt:" << std::endl;
+    trace_dfs(lpt);
+}
+
 int main() {
     test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>("adjacency matrix");
     test_graph<Adjacency_lists<Graph_type::GRAPH, int>>("adjacency lists");
@@ -295,32 +327,9 @@ int main() {
     test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
     test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
 
-    {
-        auto g = Samples::weighted_graph_sample<Adjacency_lists<Graph_type::GRAPH, int, double>>();
-        trace_dfs(pq_mst(g));
+    test_weighted_graph<Adjacency_matrix<Graph_type::GRAPH, int, double>>();
+    test_weighted_graph<Adjacency_lists<Graph_type::GRAPH, int, double>>();
 
-        g = Samples::spt_sample<decltype(g)>();
-        Spt spt(g, g.vertex_at(0), g.vertices_count());
-        trace_dfs(compose_path_tree(g, spt.spt_.cbegin() + 1, spt.spt_.cend()));
-
-        Full_spts full_spts(g, 1);
-        auto diameter = full_spts.diameter();
-        std::cout << *diameter.first << " " << *diameter.second << std::endl;
-
-        std::cout << "diameter: " << *diameter.first;
-        for (auto v = diameter.first; v != diameter.second; ) {
-            v = full_spts.path(*v, *diameter.second).source_;
-            std::cout << " - " << *v;
-        }
-        std::cout << " (" << full_spts.distance(*diameter.first, *diameter.second) << ")" << std::endl;
-    }
-    {
-        auto g = Samples::weighted_dag_sample<Adjacency_lists<Graph_type::DIGRAPH, int, double>>();
-        std::cout << "is dag: " << is_dag(g) << std::endl;
-
-        Dag_lpt dag_lpt(g);
-        auto lpt = compose_path_tree(g, dag_lpt.lpt_.cbegin(), dag_lpt.lpt_.cend());
-        std::cout << "lpt:" << std::endl;
-        trace_dfs(lpt);
-    }
+    test_weighted_dag<Adjacency_matrix<Graph_type::DIGRAPH, int, double>>();
+    test_weighted_dag<Adjacency_lists<Graph_type::DIGRAPH, int, double>>();
 }
