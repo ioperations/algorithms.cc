@@ -558,18 +558,20 @@ namespace Graph {
         }
 
     template<typename G>
+        struct Relabel_topo_sorter : public Post_dfs_base<G, size_t, size_t, Relabel_topo_sorter<G>> {
+            using Base = Post_dfs_base<G, size_t, size_t, Relabel_topo_sorter<G>>;
+            Array<size_t> post_i_;
+            Relabel_topo_sorter(const G& g) :Base(g), post_i_(g.vertices_count()) {}
+            void search_post_process(const typename Base::vertex_type& v) {
+                Base::search_post_process(v);
+                post_i_[Base::post_[v]] = v;
+            }
+        };
+
+    template<typename G>
         Array<size_t> topological_sort_relabel(const G& g) {
             auto inverted = invert(g);
-            struct Searcher : public Post_dfs_base<G, size_t, size_t, Searcher> {
-                using Base = Post_dfs_base<G, size_t, size_t, Searcher>;
-                Array<size_t> post_i_;
-                Searcher(const G& g) :Base(g), post_i_(g.vertices_count()) {}
-                void search_post_process(const typename Base::vertex_type& v) {
-                    Base::search_post_process(v);
-                    post_i_[Base::post_[v]] = v;
-                }
-            };
-            Searcher s(inverted);
+            Relabel_topo_sorter s(inverted);
             s.search();
             return std::move(s.post_i_);
         }

@@ -89,7 +89,7 @@ Forward_list<std::string> Tree_printer_base::compose_text_lines(Lines& lines) {
         Appender(): Base_appender<std::stringstream>(std::stringstream()) {}
         void new_line() {
             lines_.push_back(stream_.str());
-            stream_ = {};
+            stream_ = std::stringstream();
         }
     };
     Appender appender;

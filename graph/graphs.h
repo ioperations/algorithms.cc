@@ -195,7 +195,6 @@ namespace Graph {
                 return b
                     .for_vertex(0).add_edge(1, .41).add_edge(7, .41).add_edge(9, .41)
                     .for_vertex(1).add_edge(2, .51)
-                    .for_vertex(2).add_edge(.50)
                     .for_vertex(6).add_edge(3, .21).add_edge(8, .21)
                     .for_vertex(7).add_edge(3, .32).add_edge(8, .32)
                     .for_vertex(8).add_edge(2, .32)

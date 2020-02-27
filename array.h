@@ -2,6 +2,7 @@
 
 #include <climits>
 
+#include "collections.h"
 #include "forward_list.h"
 
 template<typename A, typename T>
@@ -52,6 +53,8 @@ class Array {
 
         using iterator = T*;
         using const_iterator = T* const;
+        using reverse_iterator = Collections::Reverse_iterator<T, false>;
+        using const_reverse_iterator = Collections::Reverse_iterator<T, true>;
 
         Array() :Array(nullptr, 0) {}
         Array(size_t size) :Array(new T[size], size) {}
@@ -102,8 +105,12 @@ class Array {
 
         iterator begin() { return ptr_; }
         iterator end() { return ptr_ + size_; }
-        const_iterator cbegin() const { return ptr_; } // todo code duplication
+        const_iterator cbegin() const { return ptr_; }
         const_iterator cend() const { return ptr_ + size_; }
+        reverse_iterator rbegin() { return {ptr_ + size_ - 1}; }
+        reverse_iterator rend() { return {ptr_ - 1}; }
+        const_reverse_iterator crbegin() const { return {ptr_ + size_ - 1}; }
+        const_reverse_iterator crend() const { return {ptr_ - 1}; }
 
         template<typename... Args>
             static auto build_array(Args&&... args) {

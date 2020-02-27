@@ -100,7 +100,8 @@ auto compose_path_tree(const G& g, const E& edges_b, const E& edges_e) {
     for (auto v = g.cbegin(); v != g.cend(); ++v)
         mst.create_vertex(v->value());
     for (auto e = edges_b; e != edges_e; ++e)
-        mst.add_edge(mst.vertex_at(e->source()), mst.vertex_at(e->target()), e->edge().weight());
+        if (e->target_)
+            mst.add_edge(mst.vertex_at(e->source()), mst.vertex_at(e->target()), e->edge().weight());
     return mst;
 }
 
@@ -261,18 +262,21 @@ struct Dag_lpt {
     Dag_lpt(const G& g) :weights_(g.vertices_count()), lpt_(g.vertices_count()) {
         weights_.fill(0);
         for (auto& e : lpt_) e.target_ = nullptr;
-        auto t_sort = topological_sort_rearrange(g);
-        for (auto index = t_sort.cbegin(); index != t_sort.cend(); ++index) {
-            auto& v = g.vertex_at(*index);
+
+        Relabel_topo_sorter sorter(g);
+        sorter.search();
+        auto& t_sorted = sorter.post_i_;
+
+        for (auto i = t_sorted.crbegin(); i != t_sorted.crend(); ++i) {
+            auto& v = g.vertex_at(*i);
             for (auto e = v.cedges_begin(); e != v.cedges_end(); ++e) {
                 auto& w = e->target();
-                auto weight = e->edge().weight();
-                if (weights_[w] < weights_[v] + weight) {
-                    weights_[w] = weights_[v] + weight;
+                auto distance = weights_[v] + e->edge().weight();
+                if (weights_[w] < distance) {
+                    weights_[w] = distance;
                     lpt_[w] = *e;
                 }
             }
-
         }
     }
 };
@@ -281,35 +285,42 @@ int main() {
     test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>("adjacency matrix");
     test_graph<Adjacency_lists<Graph_type::GRAPH, int>>("adjacency lists");
 
-    std::cout << "Warshall transitive closure" << std::endl;
-    auto g = Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
-    auto transitive_closure = warshall_transitive_closure(g);
-    transitive_closure.print_internal(std::cout);
+    {
+        std::cout << "Warshall transitive closure" << std::endl;
+        auto g = Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
+        auto transitive_closure = warshall_transitive_closure(g);
+        transitive_closure.print_internal(std::cout);
+    }
 
     test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
     test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
 
-    auto gw = Samples::weighted_graph_sample<Adjacency_lists<Graph_type::GRAPH, int, double>>();
-    trace_dfs(pq_mst(gw));
+    {
+        auto g = Samples::weighted_graph_sample<Adjacency_lists<Graph_type::GRAPH, int, double>>();
+        trace_dfs(pq_mst(g));
 
-    gw = Samples::spt_sample<decltype(gw)>();
-    Spt spt(gw, gw.vertex_at(0), 1);
-    trace_dfs(compose_path_tree(gw, spt.spt_.cbegin() + 1, spt.spt_.cend()));
+        g = Samples::spt_sample<decltype(g)>();
+        Spt spt(g, g.vertex_at(0), g.vertices_count());
+        trace_dfs(compose_path_tree(g, spt.spt_.cbegin() + 1, spt.spt_.cend()));
 
-    Full_spts full_spts(gw, 1);
-    auto diameter = full_spts.diameter();
-    std::cout << *diameter.first << " " << *diameter.second << std::endl;
+        Full_spts full_spts(g, 1);
+        auto diameter = full_spts.diameter();
+        std::cout << *diameter.first << " " << *diameter.second << std::endl;
 
-    std::cout << "diameter: " << *diameter.first;
-    for (auto v = diameter.first; v != diameter.second; ) {
-        v = full_spts.path(*v, *diameter.second).source_;
-        std::cout << " - " << *v;
+        std::cout << "diameter: " << *diameter.first;
+        for (auto v = diameter.first; v != diameter.second; ) {
+            v = full_spts.path(*v, *diameter.second).source_;
+            std::cout << " - " << *v;
+        }
+        std::cout << " (" << full_spts.distance(*diameter.first, *diameter.second) << ")" << std::endl;
     }
-    std::cout << " (" << full_spts.distance(*diameter.first, *diameter.second) << ")" << std::endl;
+    {
+        auto g = Samples::weighted_dag_sample<Adjacency_lists<Graph_type::DIGRAPH, int, double>>();
+        std::cout << "is dag: " << is_dag(g) << std::endl;
 
-    gw = Samples::weighted_graph_sample<decltype(gw)>();
-
-    Dag_lpt dag_lpt(gw);
-    auto t = compose_path_tree(gw, dag_lpt.lpt_.cbegin(), dag_lpt.lpt_.cend());
-    trace_dfs(t);
+        Dag_lpt dag_lpt(g);
+        auto lpt = compose_path_tree(g, dag_lpt.lpt_.cbegin(), dag_lpt.lpt_.cend());
+        std::cout << "lpt:" << std::endl;
+        trace_dfs(lpt);
+    }
 }

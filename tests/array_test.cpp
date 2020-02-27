@@ -64,3 +64,15 @@ TEST(Array_test, initializer_list) {
     ASSERT_EQ("1 2 3 4 5 ", to_string(a));
 }
 
+TEST(Array_test, reverse_iterator) {
+    Array<int> a{1, 2, 3, 4, 5};
+    std::stringstream ss;
+    for (auto it = a.crbegin(); it != a.crend(); ++it)
+        ss << *it << " ";
+    ASSERT_EQ("5 4 3 2 1 ", ss.str());
+    ss = std::stringstream();
+    for (auto it = a.rbegin(); it != a.rend(); ++it)
+        ss << *it << " ";
+    ASSERT_EQ("5 4 3 2 1 ", ss.str());
+}
+
