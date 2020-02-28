@@ -57,7 +57,8 @@ class Array {
         using const_reverse_iterator = Collections::Reverse_iterator<T, true>;
 
         Array() :Array(nullptr, 0) {}
-        Array(size_t size) :Array(new T[size], size) {}
+        explicit Array(size_t size) :Array(new T[size], size) {}
+        Array(size_t size, const T& t) :Array(size) { fill(t); }
         Array(const std::initializer_list<T>& i_list) :Array(i_list.size()) {
             size_t i = -1;
             for (auto& el : i_list)

@@ -24,7 +24,7 @@ class Vector {
         using reverse_iterator = Collections::Reverse_iterator<T, false>;
         using const_reverse_iterator = Collections::Reverse_iterator<T, true>;
 
-        Vector(size_t size) :array_(new T[size]), array_size_(size), size_(size) { 
+        explicit Vector(size_t size) :array_(new T[size]), array_size_(size), size_(size) { 
             fill_defaults();
         }
         Vector() :array_(new T[DEFAULT_SIZE]), array_size_(DEFAULT_SIZE), size_(0) { 

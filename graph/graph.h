@@ -1,13 +1,14 @@
 #pragma once
 
+#include <map>
+#include <iostream>
+
 #include "dfs.h"
 #include "array.h"
 #include "stack.h"
 #include "string_utils.h"
 #include "two_dimensional_array.h"
-
-#include <map>
-#include <iostream>
+#include "heap.h"
 
 namespace Graph {
 
@@ -761,5 +762,115 @@ namespace Graph {
             s.search();
             return std::move(s.ids_);
         }
+
+    template<typename V, typename W>
+        class Vertex_heap : public Multiway_heap_base<V, Vertex_heap<V, W>> {
+            private:
+                using Base = Multiway_heap_base<V, Vertex_heap<V, W>>;
+                Array<W>& weights_;
+            public:
+                Vertex_heap(size_t size, Array<W>& weights) :Base(size), weights_(weights) {}
+                bool compare(const V& v1, const V& v2) { return weights_[*v1] > weights_[*v2]; }
+                size_t get_index(const V& v) { return *v; }
+        };
+
+    template<typename G>
+        struct Spt {
+            using vertex_t = typename G::vertex_type;
+            using edge_t = typename G::vertex_type::const_edges_iterator::entry_type;
+            using weight_t = typename G::edge_type::value_type;
+
+            Array<weight_t> distances_;
+            Array<edge_t> spt_;
+            Spt(const G& g, const vertex_t& vertex, weight_t max_weight) 
+                :distances_(g.vertices_count()), spt_(g.vertices_count()) 
+            {
+                distances_.fill(max_weight);
+                for (auto& e : spt_) e.target_ = nullptr;
+
+                Vertex_heap<const vertex_t*, weight_t> heap(g.vertices_count(), distances_);
+                for (const vertex_t* v = g.cbegin(); v != g.cend(); ++v)
+                    heap.push(v);
+                distances_[vertex] = 0;
+                heap.move_up(&vertex);
+                while (!heap.empty()) {
+                    const vertex_t* v = heap.pop();
+                    if (v != &vertex && !spt_[*v].target_)
+                        return;
+                    for (auto e = v->cedges_begin(); e != v->cedges_end(); ++e) {
+                        const vertex_t* w = e->target_;
+                        weight_t distance = distances_[*v] + e->edge().weight();
+                        if (distance < distances_[*w]) {
+                            distances_[*w] = distance;
+                            heap.move_up(w);
+                            spt_[*w] = *e;
+                        }
+                    }
+                }
+            }
+        };
+
+    template<typename G>
+        struct Full_spts {
+            using vertex_t = typename G::vertex_type;
+            using w_t = typename G::edge_type::value_type;
+            using edge_t = typename G::vertex_type::const_edges_iterator::entry_type;
+            const G& g_;
+            Array<Array<w_t>> distances_;
+            Array<Array<edge_t>> spts_;
+            Full_spts(const G& g, w_t max_weight) 
+                :g_(g), distances_(g.vertices_count()), spts_(g.vertices_count()) 
+            {
+                size_t i = 0;
+                for (auto v = g.cbegin(); v != g.cend(); ++v, ++i) {
+                    Spt spt(g, *v, max_weight);
+                    distances_[i] = std::move(spt.distances_);
+                    spts_[i] = std::move(spt.spt_);
+                }
+            }
+            w_t distance(size_t v, size_t w) { return distances_[v][w]; }
+            const edge_t& path(size_t v, size_t w) { return spts_[w][v]; }
+            const edge_t& path_r(size_t v, size_t w) { return spts_[v][w]; }
+            std::pair<const vertex_t*, const vertex_t*> diameter() {
+                size_t v_max = 0;
+                size_t w_max = 0;
+                for (auto v = g_.cbegin(); v != g_.cend(); ++v)
+                    for (auto w = g_.cbegin(); w != g_.cend(); ++w)
+                        if (path(*v, *w).target_ && distance(*v, *w) > distance(v_max, w_max)) {
+                            v_max = *v;
+                            w_max = *w;
+                        }
+                return {&g_.vertex_at(v_max), &g_.vertex_at(w_max)};
+            }
+        };
+
+    template<typename G>
+        struct Dag_lpt {
+            using w_t = typename G::edge_type::value_type;
+            using edge_t = typename G::vertex_type::const_edges_iterator::entry_type;
+            Array<w_t> distances_;
+            Array<edge_t> lpt_;
+            Dag_lpt(const G& g) :distances_(g.vertices_count()), lpt_(g.vertices_count()) {
+                distances_.fill(0);
+                for (auto& e : lpt_) e.target_ = nullptr;
+
+                Topological_sorter sorter(g);
+                sorter.search();
+                auto& t_sorted = sorter.post_i_;
+
+                for (auto i = t_sorted.crbegin(); i != t_sorted.crend(); ++i) {
+                    auto& v = g.vertex_at(*i);
+                    for (auto e = v.cedges_begin(); e != v.cedges_end(); ++e) {
+                        auto& w = e->target();
+                        auto distance = distances_[v] + e->edge().weight();
+                        if (distances_[w] < distance) {
+                            distances_[w] = distance;
+                            lpt_[w] = *e;
+                        }
+                    }
+                }
+            }
+        };
+
 }
 
