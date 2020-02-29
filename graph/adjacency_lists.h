@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-#include "graph.h"
-#include "vector"
+#include "graph_common.h"
+#include "vector.h"
 #include "forward_list.h"
 
 namespace Graph {

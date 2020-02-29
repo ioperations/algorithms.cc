@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "graph.h"
+#include "graph_common.h"
 #include "vector.h"
 
 namespace Graph {

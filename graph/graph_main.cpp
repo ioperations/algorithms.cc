@@ -82,64 +82,6 @@ void print_aligned_collection(const C& c) {
     std::cout << std::endl;
 }
 
-template<typename G, typename E>
-auto compose_path_tree(const G& g, const E& edges_b, const E& edges_e) {
-    Adjacency_lists<Graph_type::DIGRAPH, typename G::vertex_type::value_type, typename G::edge_type::value_type> mst;
-    for (auto v = g.cbegin(); v != g.cend(); ++v)
-        mst.create_vertex(v->value());
-    for (auto e = edges_b; e != edges_e; ++e)
-        if (e->target_)
-            mst.add_edge(mst.vertex_at(e->source()), mst.vertex_at(e->target()), e->edge().weight());
-    return mst;
-}
-
-template<typename G>
-auto pq_mst(const G& g) {
-    using vertex_t = typename G::vertex_type;
-    using w_t = typename G::edge_type::value_type;
-
-    struct Pq_mst_searcher {
-        const G& g_;
-        Array<w_t> weights_;
-        Array<typename G::vertex_type::const_edges_iterator::entry_type> fr_, mst_;
-        Pq_mst_searcher(const G& g, size_t size) :g_(g), weights_(size), fr_(size), mst_(size)
-        {
-            for (auto& e : fr_) e.target_ = nullptr;
-            for (auto& e : mst_) e.target_ = nullptr;
-        }
-        void search(const vertex_t& v) {
-            Vertex_heap<const vertex_t*, w_t> heap(g_.vertices_count(), weights_);
-            heap.push(&v);
-            while (!heap.empty()) {
-                const vertex_t& w = *heap.pop();
-                mst_[w] = fr_[w];
-                for (auto e = w.cedges_begin(); e != w.cedges_end(); ++e) {
-                    const vertex_t& t = e->target();
-                    w_t weight = e->edge().weight();
-                    if (!fr_[t].target_) {
-                        weights_[t] = weight;
-                        heap.push(&t);
-                        fr_[t] = *e;
-                    } else if (!mst_[t].target_ && weight < weights_[t]) {
-                        weights_[t] = weight;
-                        heap.move_up(&w);
-                        fr_[t] = *e;
-                    }
-                }
-            }
-        }
-        void search() {
-            for (auto v = g_.cbegin(); v != g_.cend(); ++v)
-                if (!mst_[*v].target_)
-                    search(*v);
-        }
-    };
-
-    Pq_mst_searcher s(g, g.vertices_count());
-    s.search();
-    return compose_path_tree(g, s.mst_.cbegin(), s.mst_.cend());
-}
-
 template<typename G>
 void test_digraph() {
     std::cout << "dfs transitive closure" << std::endl;

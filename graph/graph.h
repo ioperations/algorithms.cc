@@ -9,12 +9,9 @@
 #include "string_utils.h"
 #include "two_dimensional_array.h"
 #include "heap.h"
+#include "adjacency_lists.h"
 
 namespace Graph {
-
-    enum class Graph_type {
-        GRAPH, DIGRAPH
-    };
 
     template<typename G, typename T = typename G::value_type>
         class Constructor {
@@ -139,65 +136,6 @@ namespace Graph {
                         std::swap(array_[i], array_[index_ - i - 1]);
                     return std::move(array_);
                 }
-        };
-
-    template<typename T>
-        class Vertex_base {
-            protected:
-                T value_;
-                Vertex_base(const T& value) :value_(value) {}
-                Vertex_base() = default;
-            public:
-                using value_type = T;
-                const T& value() const { return value_; }
-                void set_value(const T& value) { value_ = value; }
-                bool operator==(const Vertex_base& o) const {
-                    return this == &o;
-                }
-                bool operator!=(const Vertex_base& o) const {
-                    return !operator==(o);
-                }
-                friend std::ostream& operator<<(std::ostream& stream, const Vertex_base& v) {
-                    return stream << v.value_;
-                }
-        };
-
-    template<typename V, typename E, bool T_is_const>
-        class Edges_iterator_entry_base {
-            protected:
-                using vertex_type = std::conditional_t<T_is_const, const V, V>;
-                using edge_type = std::conditional_t<T_is_const, const E, E>;
-            public:
-                vertex_type* source_;
-                vertex_type* target_;
-                Edges_iterator_entry_base() = default; 
-                Edges_iterator_entry_base(vertex_type* source) :source_(source) {}
-                vertex_type& source() const { return *source_; }
-                vertex_type& target() const { return *target_; }
-        };
-
-    template<typename V, typename E, bool T_is_const, typename ET = typename E::value_type>
-        class Edges_iterator_entry : public Edges_iterator_entry_base<V, E, T_is_const> {
-            private:
-                using Base = Edges_iterator_entry_base<V, E, T_is_const>;
-            public:
-                using vertex_type = typename Base::vertex_type;
-                using edge_type = typename Base::edge_type;
-                edge_type* edge_;
-                Edges_iterator_entry() = default;
-                Edges_iterator_entry(vertex_type* source) :Base(source) {}
-                edge_type& edge() const { return *edge_; }
-        };
-
-    template<typename V, typename E, bool T_is_const>
-        class Edges_iterator_entry<V, E, T_is_const, bool> : public Edges_iterator_entry_base<V, E, T_is_const> {
-            private:
-                using Base = Edges_iterator_entry_base<V, E, T_is_const>;
-            public:
-                using vertex_type = typename Base::vertex_type;
-                using edge_type = typename Base::edge_type;
-                Edges_iterator_entry() = default;
-                Edges_iterator_entry(vertex_type* source) :Base(source) {}
         };
 
     template<typename V>
@@ -763,6 +701,18 @@ namespace Graph {
             return std::move(s.ids_);
         }
 
+template<typename G, typename E>
+auto compose_path_tree(const G& g, const E& edges_b, const E& edges_e) {
+    Adjacency_lists<Graph_type::DIGRAPH, typename G::vertex_type::value_type, typename G::edge_type::value_type> mst;
+    for (auto v = g.cbegin(); v != g.cend(); ++v)
+        mst.create_vertex(v->value());
+    for (auto e = edges_b; e != edges_e; ++e)
+        if (e->target_)
+            mst.add_edge(mst.vertex_at(e->source()), mst.vertex_at(e->target()), e->edge().weight());
+    return mst;
+}
+
+
     template<typename V, typename W>
         class Vertex_heap : public Multiway_heap_base<V, Vertex_heap<V, W>> {
             private:
@@ -773,6 +723,53 @@ namespace Graph {
                 bool compare(const V& v1, const V& v2) { return weights_[*v1] > weights_[*v2]; }
                 size_t get_index(const V& v) { return *v; }
         };
+
+template<typename G>
+auto pq_mst(const G& g) {
+    using vertex_t = typename G::vertex_type;
+    using w_t = typename G::edge_type::value_type;
+
+    struct Pq_mst_searcher {
+        const G& g_;
+        Array<w_t> weights_;
+        Array<typename G::vertex_type::const_edges_iterator::entry_type> fr_, mst_;
+        Pq_mst_searcher(const G& g, size_t size) :g_(g), weights_(size), fr_(size), mst_(size)
+        {
+            for (auto& e : fr_) e.target_ = nullptr;
+            for (auto& e : mst_) e.target_ = nullptr;
+        }
+        void search(const vertex_t& v) {
+            Vertex_heap<const vertex_t*, w_t> heap(g_.vertices_count(), weights_);
+            heap.push(&v);
+            while (!heap.empty()) {
+                const vertex_t& w = *heap.pop();
+                mst_[w] = fr_[w];
+                for (auto e = w.cedges_begin(); e != w.cedges_end(); ++e) {
+                    const vertex_t& t = e->target();
+                    w_t weight = e->edge().weight();
+                    if (!fr_[t].target_) {
+                        weights_[t] = weight;
+                        heap.push(&t);
+                        fr_[t] = *e;
+                    } else if (!mst_[t].target_ && weight < weights_[t]) {
+                        weights_[t] = weight;
+                        heap.move_up(&w);
+                        fr_[t] = *e;
+                    }
+                }
+            }
+        }
+        void search() {
+            for (auto v = g_.cbegin(); v != g_.cend(); ++v)
+                if (!mst_[*v].target_)
+                    search(*v);
+        }
+    };
+
+    Pq_mst_searcher s(g, g.vertices_count());
+    s.search();
+    return compose_path_tree(g, s.mst_.cbegin(), s.mst_.cend());
+}
 
     template<typename G>
         struct Spt {
