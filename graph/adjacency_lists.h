@@ -67,9 +67,8 @@ namespace Graph {
                         friend class Adjacency_lists;
                     using adj_lists_type = Adjacency_lists_base<T_graph_type, V, E>;
                     using vertex_link_type = Vertex_link<T_graph_type, E>;
-
-                    adj_lists_type* adjacency_lists_;
                 protected:
+                    adj_lists_type* adjacency_lists_;
                     Forward_list<vertex_link_type> links_;
 
                     Adj_lists_vertex_base(V value, adj_lists_type* adjacency_lists)
@@ -94,15 +93,15 @@ namespace Graph {
                     }
                     operator size_t() const { return index(); }
 
-                    iterator begin() { return {this, links_.begin()}; }
-                    iterator end() { return {this, links_.end()}; }
-                    const_iterator cbegin() const { return {this, links_.cbegin()}; }
-                    const_iterator cend() const { return {this, links_.cend()}; }
+                    iterator begin() { return {static_cast<D*>(this), links_.begin()}; }
+                    iterator end() { return {static_cast<D*>(this), links_.end()}; }
+                    const_iterator cbegin() const { return {static_cast<const D*>(this), links_.cbegin()}; }
+                    const_iterator cend() const { return {static_cast<const D*>(this), links_.cend()}; }
 
-                    edges_iterator edges_begin() { return {this, links_.begin()}; }
-                    edges_iterator edges_end() { return {this, links_.end()}; }
-                    const_edges_iterator cedges_begin() const { return {this, links_.cbegin()}; }
-                    const_edges_iterator cedges_end() const { return {this, links_.cend()}; }
+                    edges_iterator edges_begin() { return {static_cast<D*>(this), links_.begin()}; }
+                    edges_iterator edges_end() { return {static_cast<D*>(this), links_.end()}; }
+                    const_edges_iterator cedges_begin() const { return {static_cast<const D*>(this), links_.cbegin()}; }
+                    const_edges_iterator cedges_end() const { return {static_cast<const D*>(this), links_.cend()}; }
 
                     void remove_edge(const Adj_lists_vertex_base& v) {
                         links_.remove_first_if([&v](const vertex_link_type& edge) { return v.index() == edge.target(); });
@@ -343,13 +342,13 @@ namespace Graph {
         template<Graph_type T_graph_type, typename V, typename E, typename D>
             template<bool T_is_const>
             class Adj_lists_vertex_base<T_graph_type, V, E, D>::Iterator {
+                private:
+                    using value_type = std::conditional_t<T_is_const, const D, D>;
                 protected:
                     using link_type = Vertex_link<T_graph_type, E>;
                     using links_type = Forward_list<link_type>;
                     using links_iterator_type = std::conditional_t<T_is_const,
                           typename links_type::const_iterator, typename links_type::iterator>;
-                    using value_type = std::conditional_t<T_is_const, const Adj_lists_vertex_base, Adj_lists_vertex_base>;
-
                     value_type* vertex_;
                 private:
                     friend class Adj_lists_vertex_base;
@@ -377,9 +376,9 @@ namespace Graph {
                     using Base = Iterator<T_is_const>;
                     using link_type = typename Base::link_type;
                 public:
-                    using entry_type = Edges_iterator_entry<Adj_lists_vertex_base, link_type, T_is_const>;
+                    using entry_type = Edges_iterator_entry<D, link_type, T_is_const>;
                 private:
-                    using vertex_type = std::conditional_t<T_is_const, const Adj_lists_vertex_base, Adj_lists_vertex_base>;
+                    using vertex_base_type = typename Base::value_type;
                     using links_type = typename Base::links_type;
                     using links_iterator_type = typename Base::links_iterator_type;
 
@@ -401,7 +400,7 @@ namespace Graph {
                         }
                     }
                 public:
-                    Edges_iterator(vertex_type* vertex, const links_iterator_type& it)
+                    Edges_iterator(vertex_base_type* vertex, const links_iterator_type& it)
                         :Base(vertex, it), entry_(vertex)
                     { update_entry(); }
                     const entry_type& operator*() const { return entry_; }

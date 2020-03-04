@@ -188,25 +188,24 @@ void test_weighted_dag() {
 }
 
 int main(int argc, char** argv) {
-    // test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>("adjacency matrix");
-    // test_graph<Adjacency_lists<Graph_type::GRAPH, int>>("adjacency lists");
+    test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>("adjacency matrix");
+    test_graph<Adjacency_lists<Graph_type::GRAPH, int>>("adjacency lists");
 
-    // {
-    //     std::cout << "Warshall transitive closure" << std::endl;
-    //     auto g = Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
-    //     auto transitive_closure = warshall_transitive_closure(g);
-    //     transitive_closure.print_internal(std::cout);
-    // }
+    {
+        std::cout << "Warshall transitive closure" << std::endl;
+        auto g = Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
+        auto transitive_closure = warshall_transitive_closure(g);
+        transitive_closure.print_internal(std::cout);
+    }
 
-    // test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
-    // test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
+    test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
+    test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
 
-    // test_weighted_graph<Adjacency_matrix<Graph_type::GRAPH, int, double>>();
-    // test_weighted_graph<Adjacency_lists<Graph_type::GRAPH, int, double>>();
+    test_weighted_graph<Adjacency_matrix<Graph_type::GRAPH, int, double>>();
+    test_weighted_graph<Adjacency_lists<Graph_type::GRAPH, int, double>>();
 
-    // test_weighted_dag<Adjacency_matrix<Graph_type::DIGRAPH, int, double>>();
-    // test_weighted_dag<Adjacency_lists<Graph_type::DIGRAPH, int, double>>();
-
+    test_weighted_dag<Adjacency_matrix<Graph_type::DIGRAPH, int, double>>();
+    test_weighted_dag<Adjacency_lists<Graph_type::DIGRAPH, int, double>>();
 
     std::cout << std::endl << "action" << std::endl;
     {
