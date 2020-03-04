@@ -67,6 +67,9 @@ namespace Graph {
                         friend class Adjacency_lists;
                     using adj_lists_type = Adjacency_lists_base<T_graph_type, V, E>;
                     using vertex_link_type = Vertex_link<T_graph_type, E>;
+
+                    inline D* derived() { return static_cast<D*>(this); }
+                    inline const D* derived() const { return static_cast<const D*>(this); }
                 protected:
                     adj_lists_type* adjacency_lists_;
                     Forward_list<vertex_link_type> links_;
@@ -89,19 +92,19 @@ namespace Graph {
                     using const_edges_iterator = Edges_iterator<true>;
 
                     size_t index() const { 
-                        return static_cast<const D*>(this) - adjacency_lists_->vertices_.cbegin(); 
+                        return derived() - adjacency_lists_->vertices_.cbegin(); 
                     }
                     operator size_t() const { return index(); }
 
-                    iterator begin() { return {static_cast<D*>(this), links_.begin()}; }
-                    iterator end() { return {static_cast<D*>(this), links_.end()}; }
-                    const_iterator cbegin() const { return {static_cast<const D*>(this), links_.cbegin()}; }
-                    const_iterator cend() const { return {static_cast<const D*>(this), links_.cend()}; }
+                    iterator begin() { return {derived(), links_.begin()}; }
+                    iterator end() { return {derived(), links_.end()}; }
+                    const_iterator cbegin() const { return {derived(), links_.cbegin()}; }
+                    const_iterator cend() const { return {derived(), links_.cend()}; }
 
-                    edges_iterator edges_begin() { return {static_cast<D*>(this), links_.begin()}; }
-                    edges_iterator edges_end() { return {static_cast<D*>(this), links_.end()}; }
-                    const_edges_iterator cedges_begin() const { return {static_cast<const D*>(this), links_.cbegin()}; }
-                    const_edges_iterator cedges_end() const { return {static_cast<const D*>(this), links_.cend()}; }
+                    edges_iterator edges_begin() { return {derived(), links_.begin()}; }
+                    edges_iterator edges_end() { return {derived(), links_.end()}; }
+                    const_edges_iterator cedges_begin() const { return {derived(), links_.cbegin()}; }
+                    const_edges_iterator cedges_end() const { return {derived(), links_.cend()}; }
 
                     void remove_edge(const Adj_lists_vertex_base& v) {
                         links_.remove_first_if([&v](const vertex_link_type& edge) { return v.index() == edge.target(); });
