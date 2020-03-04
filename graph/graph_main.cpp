@@ -187,23 +187,40 @@ void test_weighted_dag() {
     std::cout << dd.distances_[0] << std::endl;
 }
 
-int main() {
-    test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>("adjacency matrix");
-    test_graph<Adjacency_lists<Graph_type::GRAPH, int>>("adjacency lists");
+int main(int argc, char** argv) {
+    // test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>("adjacency matrix");
+    // test_graph<Adjacency_lists<Graph_type::GRAPH, int>>("adjacency lists");
 
+    // {
+    //     std::cout << "Warshall transitive closure" << std::endl;
+    //     auto g = Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
+    //     auto transitive_closure = warshall_transitive_closure(g);
+    //     transitive_closure.print_internal(std::cout);
+    // }
+
+    // test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
+    // test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
+
+    // test_weighted_graph<Adjacency_matrix<Graph_type::GRAPH, int, double>>();
+    // test_weighted_graph<Adjacency_lists<Graph_type::GRAPH, int, double>>();
+
+    // test_weighted_dag<Adjacency_matrix<Graph_type::DIGRAPH, int, double>>();
+    // test_weighted_dag<Adjacency_lists<Graph_type::DIGRAPH, int, double>>();
+
+
+    std::cout << std::endl << "action" << std::endl;
     {
-        std::cout << "Warshall transitive closure" << std::endl;
-        auto g = Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
-        auto transitive_closure = warshall_transitive_closure(g);
-        transitive_closure.print_internal(std::cout);
+        Adjacency_lists<Graph_type::GRAPH, int, double> g;
+        auto& v0 = g.create_vertex(0);
+        auto& v1 = g.create_vertex(1);
+        g.add_edge(v0, v1, 45);
+        g.print_internal(std::cout);
     }
-
-    test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
-    test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
-
-    test_weighted_graph<Adjacency_matrix<Graph_type::GRAPH, int, double>>();
-    test_weighted_graph<Adjacency_lists<Graph_type::GRAPH, int, double>>();
-
-    test_weighted_dag<Adjacency_matrix<Graph_type::DIGRAPH, int, double>>();
-    test_weighted_dag<Adjacency_lists<Graph_type::DIGRAPH, int, double>>();
+    {
+        Adjacency_lists<Graph_type::FLOW, int, double> g;
+        auto& v0 = g.create_vertex(0);
+        auto& v1 = g.create_vertex(1);
+        g.add_edge(v0, v1, 45);
+        g.print_internal(std::cout);
+    }
 }

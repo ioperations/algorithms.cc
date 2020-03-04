@@ -3,7 +3,7 @@
 namespace Graph {
 
     enum class Graph_type {
-        GRAPH, DIGRAPH
+        GRAPH, DIGRAPH, FLOW
     };
 
     template<typename T>
