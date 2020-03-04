@@ -27,42 +27,22 @@ namespace Graph {
                 }
         };
 
-    template<typename V, typename E, bool T_is_const>
-        class Edges_iterator_entry_base {
-            protected:
+    template<typename V, typename E, bool T_is_const, typename ET = typename E::value_type>
+        class Edges_iterator_entry {
+            public:
                 using vertex_type = std::conditional_t<T_is_const, const V, V>;
                 using edge_type = std::conditional_t<T_is_const, const E, E>;
-            public:
+
                 vertex_type* source_;
-                vertex_type* target_;
-                Edges_iterator_entry_base() = default; 
-                Edges_iterator_entry_base(vertex_type* source) :source_(source) {}
+                vertex_type* target_; // todo delete
+                edge_type* edge_;
+
+                Edges_iterator_entry() = default;
+                Edges_iterator_entry(vertex_type* source) :source_(source) {}
+
                 vertex_type& source() const { return *source_; }
                 vertex_type& target() const { return *target_; }
-        };
-
-    template<typename V, typename E, bool T_is_const, typename ET = typename E::value_type>
-        class Edges_iterator_entry : public Edges_iterator_entry_base<V, E, T_is_const> {
-            private:
-                using Base = Edges_iterator_entry_base<V, E, T_is_const>;
-            public:
-                using vertex_type = typename Base::vertex_type;
-                using edge_type = typename Base::edge_type;
-                edge_type* edge_;
-                Edges_iterator_entry() = default;
-                Edges_iterator_entry(vertex_type* source) :Base(source) {}
                 edge_type& edge() const { return *edge_; }
-        };
-
-    template<typename V, typename E, bool T_is_const>
-        class Edges_iterator_entry<V, E, T_is_const, bool> : public Edges_iterator_entry_base<V, E, T_is_const> {
-            private:
-                using Base = Edges_iterator_entry_base<V, E, T_is_const>;
-            public:
-                using vertex_type = typename Base::vertex_type;
-                using edge_type = typename Base::edge_type;
-                Edges_iterator_entry() = default;
-                Edges_iterator_entry(vertex_type* source) :Base(source) {}
         };
 
 }

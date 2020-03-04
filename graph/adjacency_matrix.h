@@ -163,6 +163,13 @@ namespace Graph {
                     }
             };
 
+        template<typename V, typename E, typename ET>
+            class Adjacency_matrix<Graph_type::FLOW, V, E, ET> {
+                // Adjacency matrix flow graph not supported
+                private:
+                    Adjacency_matrix() {}
+            };
+
         template<typename V, typename E>
             class Adjacency_matrix_base<V, E>::Vertex : public Vertex_base<V> {
                 private:
@@ -290,6 +297,8 @@ namespace Graph {
                         return *this;
                     }
             };
+
+
     }
 
     template<Graph_type graph_type, typename V, typename TE = bool, typename E = Adjacency_matrix_ns::Edge<TE>>
