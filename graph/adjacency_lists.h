@@ -21,6 +21,15 @@ namespace Graph {
                     void set_weight(const T& weight) { weight_ = weight; }
             };
 
+        template<typename T>
+            class Flow_edge : public Edge<T> { // todo weight = cap ?
+                private:
+                   T flow_;
+                public:
+                   Flow_edge(const T& cap, const T& flow) :Edge<T>(cap), flow_(flow) {}
+                   T flow() { return flow; }
+            };
+
         class Vertex_link_base {
             private:
                 size_t target_;
@@ -203,8 +212,8 @@ namespace Graph {
                             static void print(const Vertex<Graph_type::FLOW, VV, EE>& v, std::ostream& stream) {
                                 for (auto w = v.cedges_begin(); w != v.cedges_end(); ++w) {
                                     auto& e = w->edge();
-                                    stream << w->target().index() 
-                                        << "(" << e.weight() << ", " << (e.is_out() ? "in": "out") << ") ";
+                                    stream << (e.is_out() ? "->" : "<-") << w->target().index() 
+                                        << "(" << e.weight() << ") ";
                                 }
                             }
                         };
@@ -419,5 +428,8 @@ namespace Graph {
 
     template<Graph_type graph_type, typename V, typename TE = bool, typename E = Adjacency_lists_ns::Edge<TE>>
         using Adjacency_lists = Adjacency_lists_ns::Adjacency_lists<graph_type, V, E>;
+
+    template<typename V, typename C>
+        using Network_flow = Adjacency_lists_ns::Adjacency_lists<Graph_type::FLOW, V, Adjacency_lists_ns::Flow_edge<C>>;
 
 }

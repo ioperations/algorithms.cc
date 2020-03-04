@@ -115,7 +115,7 @@ namespace Graph {
             class Edges_handler : public Adjacency_matrix_base<V, E> {
                 public:
                     using vertex_type = typename Adjacency_matrix_base<V, E>::vertex_type;
-                    D& add_edge(const vertex_type& v1, const vertex_type& v2, typename E::value_type e) {
+                    D& add_edge(const vertex_type& v1, const vertex_type& v2, const E& e) {
                         auto& d = *static_cast<D*>(this);
                         d.set_edge(v1, v2, e);
                         return d;
@@ -145,7 +145,7 @@ namespace Graph {
                 public:
                     using Base = Edges_handler<Adjacency_matrix<graph_type, V, E, ET>, graph_type, V, E, ET>;
                     using vertex_type = typename Base::vertex_type;
-                    void set_edge(const vertex_type& v1, const vertex_type& v2, typename E::value_type e) {
+                    void set_edge(const vertex_type& v1, const vertex_type& v2, const E& e) {
                         Base::edges_[v1][v2] = e;
                         Base::edges_[v2][v1] = e;
                     }
@@ -158,7 +158,7 @@ namespace Graph {
                     using Base = Edges_handler<Adjacency_matrix<Graph_type::DIGRAPH, V, E, ET>,
                           Graph_type::DIGRAPH, V, E, ET>;
                     using vertex_type = typename Base::vertex_type;
-                    void set_edge(const vertex_type& v1, const vertex_type& v2, typename E::value_type e) {
+                    void set_edge(const vertex_type& v1, const vertex_type& v2, const E& e) {
                         Base::edges_[v1][v2] = e;
                     }
             };

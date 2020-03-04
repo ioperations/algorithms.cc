@@ -51,7 +51,6 @@ namespace Graph {
                 friend class Vertex;
                 using value_type = typename G::value_type;
                 using vertex_type = typename G::vertex_type;
-                using edge_value_type = typename G::edge_type::value_type;
 
                 G g_;
                 std::map<value_type, vertex_type* const> map_;
@@ -65,7 +64,7 @@ namespace Graph {
                     } else
                         return vertex->second;
                 }
-                void add_edge(vertex_type* const v, const value_type& w, const edge_value_type& e) {
+                void add_edge(vertex_type* const v, const value_type& w, const typename G::edge_type& e) {
                     g_.add_edge(*v, *get_or_create_vertex(w), e);
                 }
                 template<typename E, typename... Es>
@@ -87,13 +86,13 @@ namespace Graph {
                 using builder_type = Builder<G>;
                 using vertex_type = typename G::vertex_type;
                 using value_type = typename G::value_type;
-                using edge_value_type = typename G::edge_type::value_type;
+
                 builder_type& builder_;
             public:
                 vertex_type* const vertex_;
                 Vertex(builder_type& b, vertex_type* const v) :builder_(b), vertex_(v) {}
 
-                Vertex& add_edge(const value_type& v, const edge_value_type& e) {
+                Vertex& add_edge(const value_type& v, const typename G::edge_type& e) {
                     builder_.add_edge(vertex_, v, e);
                     return *this;
                 }

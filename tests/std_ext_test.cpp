@@ -10,7 +10,7 @@ TEST(Std_ext_test, std_array) {
     ss << a[0] << " " << a[1] << " " << a[2];
     ASSERT_EQ(ss.str(), "1 2 3");
 
-    ss = {};
+    ss = std::stringstream();
     Std_ext::for_each(a, [&ss](auto& i) { ss << i << " "; });
     ASSERT_EQ(ss.str(), "1 2 3 ");
 }

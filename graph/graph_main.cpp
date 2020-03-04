@@ -207,19 +207,7 @@ int main(int argc, char** argv) {
     test_weighted_dag<Adjacency_matrix<Graph_type::DIGRAPH, int, double>>();
     test_weighted_dag<Adjacency_lists<Graph_type::DIGRAPH, int, double>>();
 
-    std::cout << std::endl << "action" << std::endl;
-    {
-        Adjacency_lists<Graph_type::GRAPH, int, double> g;
-        auto& v0 = g.create_vertex(0);
-        auto& v1 = g.create_vertex(1);
-        g.add_edge(v0, v1, 45);
-        g.print_internal(std::cout);
-    }
-    {
-        Adjacency_lists<Graph_type::FLOW, int, double> g;
-        auto& v0 = g.create_vertex(0);
-        auto& v1 = g.create_vertex(1);
-        g.add_edge(v0, v1, 45);
-        g.print_internal(std::cout);
-    }
+    auto f = Samples::flow_sample<Network_flow<int, int>>();
+    f.print_internal(std::cout);
+
 }
