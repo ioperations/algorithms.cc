@@ -13,7 +13,7 @@
 
 namespace Graph {
 
-    template<typename G, typename T = typename G::value_type>
+    template<typename G, typename T = typename G::vertex_type::value_type>
         class Constructor {
             private:
                 using vertex_type = typename G::vertex_type;
@@ -49,8 +49,8 @@ namespace Graph {
             private:
                 class Vertex;
                 friend class Vertex;
-                using value_type = typename G::value_type;
                 using vertex_type = typename G::vertex_type;
+                using value_type = typename vertex_type::value_type;
 
                 G g_;
                 std::map<value_type, vertex_type* const> map_;
@@ -85,7 +85,7 @@ namespace Graph {
             private:
                 using builder_type = Builder<G>;
                 using vertex_type = typename G::vertex_type;
-                using value_type = typename G::value_type;
+                using value_type = typename vertex_type::value_type;
 
                 builder_type& builder_;
             public:
