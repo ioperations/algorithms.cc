@@ -26,10 +26,16 @@ namespace Graph {
         };
 
     template<typename VT, typename ET>
-        class Flow_vertex : public Adjacency_lists_ns::Vertex<Graph_type::GRAPH, VT, Flow_edge<ET>> {
+        class Flow_vertex 
+        : public Adjacency_lists_ns::Adj_lists_vertex_base<Graph_type::GRAPH, VT, Flow_edge<ET>, Flow_vertex<VT, ET>>
+    {
             private:
-                using Base = Adjacency_lists_ns::Vertex<Graph_type::GRAPH, VT, Flow_edge<ET>>;
+                using Base = Adjacency_lists_ns::Adj_lists_vertex_base<Graph_type::GRAPH, VT, Flow_edge<ET>, Flow_vertex<VT, ET>>;
+                using adj_lists_type = typename Base::adj_lists_type;
             public:
+                Flow_vertex(VT value, adj_lists_type* adjacency_lists)
+                    :Base(value, adjacency_lists)
+                {}
                 Flow_vertex() :Base() {}
                 ~Flow_vertex() {
                     for (auto e = Base::cedges_begin(); e != Base::cedges_end(); ++e) {
@@ -41,9 +47,9 @@ namespace Graph {
         };
 
     template<typename V, typename C>
-        class Flow : public Adjacency_lists_ns::Adjacency_lists<Graph_type::GRAPH, Flow_vertex<V, Flow_edge<C>>, Flow_edge<C>> {
+        class Flow : public Adjacency_lists_ns::Adjacency_lists<Graph_type::GRAPH, Flow_vertex<V, C>> {
             private:
-                using Base = Adjacency_lists_ns::Adjacency_lists<Graph_type::GRAPH, Flow_vertex<V, Flow_edge<C>>, Flow_edge<C>>;
+                using Base = Adjacency_lists_ns::Adjacency_lists<Graph_type::GRAPH, Flow_vertex<V, C>>;
             public:
                 using vertex_type = typename Base::vertex_type;
             void add_edge(const vertex_type& v, const vertex_type& w, C cap, C flow) {
