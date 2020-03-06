@@ -209,7 +209,10 @@ namespace Graph {
                     }
                 public:
                     Adjacency_lists_base() = default;
-                    Adjacency_lists_base(const Adjacency_lists_base& o) :vertices_(o.vertices_) {
+
+                    Adjacency_lists_base(const Adjacency_lists_base& o, bool update_links)
+                        :vertices_(o.vertices_) {}
+                    Adjacency_lists_base(const Adjacency_lists_base& o) :Adjacency_lists_base(o, true) {
                         update_vertices_this_link();
                     }
                     Adjacency_lists_base& operator=(const Adjacency_lists_base& o) {
@@ -223,6 +226,7 @@ namespace Graph {
                     Adjacency_lists_base& operator=(Adjacency_lists_base&& o) {
                         std::swap(vertices_, o.vertices_);
                         update_vertices_this_link();
+                        o.update_vertices_this_link();
                         return *this;
                     }
 
@@ -408,6 +412,7 @@ namespace Graph {
                     }
                 }
             };
+
         template<Graph_type TT_graph_type, typename VV, typename EE>
             struct Internal_printer 
             : public Internal_printer_base<Adjacency_lists<TT_graph_type, Vertex<TT_graph_type, VV, EE>>,

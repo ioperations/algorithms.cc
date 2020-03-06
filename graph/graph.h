@@ -64,9 +64,10 @@ namespace Graph {
                     } else
                         return vertex->second;
                 }
-                void add_edge(vertex_type* const v, const value_type& w, const typename G::edge_type& e) {
-                    g_.add_edge(*v, *get_or_create_vertex(w), e);
-                }
+                template<typename... Args>
+                    void add_edge(vertex_type* const v, const value_type& w, Args&&... args) {
+                        g_.add_edge(*v, *get_or_create_vertex(w), std::forward<Args>(args)...);
+                    }
                 template<typename E, typename... Es>
                     void add_edges(Vertex& vertex, E&& edge, Es&&... edges) {
                         g_.add_edge(*vertex.vertex_, *get_or_create_vertex(std::forward<E>(edge)));
@@ -92,10 +93,11 @@ namespace Graph {
                 vertex_type* const vertex_;
                 Vertex(builder_type& b, vertex_type* const v) :builder_(b), vertex_(v) {}
 
-                Vertex& add_edge(const value_type& v, const typename G::edge_type& e) {
-                    builder_.add_edge(vertex_, v, e);
-                    return *this;
-                }
+                template<typename... Args>
+                    Vertex& add_edge(const value_type& v, Args&&... args) {
+                        builder_.add_edge(vertex_, v, std::forward<Args>(args)...);
+                        return *this;
+                    }
                 template<typename... E>
                     Vertex& add_edges(E&&... edges) {
                         builder_.add_edges(*this, std::forward<E>(edges)...);

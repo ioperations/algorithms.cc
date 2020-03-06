@@ -202,19 +202,17 @@ namespace Graph {
                     .build();
             }
 
-        template<typename G>
-            G flow_sample() {
-                Builder<G> b;
-                for (int i = 0; i < 6; ++i)
-                    b.for_vertex(i);
-                return b
-                    .for_vertex(0).add_edge(1, {2, 0}).add_edge(2, {3, 0})
-                    .for_vertex(1).add_edge(3, {3, 0}).add_edge(4, {1, 0})
-                    .for_vertex(2).add_edge(3, {1, 0}).add_edge(4, {1, 0})
-                    .for_vertex(3).add_edge(5, {2, 0})
-                    .for_vertex(4).add_edge(5, {3, 0})
-                    .build();
-            }
+        auto flow_sample() {
+            Builder<Network_flow<int, int>> b;
+            for (int i = 0; i < 6; ++i)
+                b.for_vertex(i);
+            return b
+                .for_vertex(0).add_edge(1, 2, 0).add_edge(2, 3, 0)
+                .for_vertex(1).add_edge(3, 3, 0).add_edge(4, 1, 0)
+                .for_vertex(2).add_edge(3, 1, 0).add_edge(4, 1, 0)
+                .for_vertex(3).add_edge(5, 2, 0)
+                .for_vertex(4).add_edge(5, 3, 0)
+                .build();
+        }
     }
-
 }
