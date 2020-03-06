@@ -4,7 +4,7 @@ namespace Graph {
 
     enum class Graph_type {
         GRAPH, DIGRAPH, FLOW
-    };
+    }; // todo delete flow value and flow specializations
 
     template<typename T>
         class Vertex_base {

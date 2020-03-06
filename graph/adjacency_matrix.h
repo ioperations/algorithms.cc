@@ -304,4 +304,10 @@ namespace Graph {
     template<Graph_type graph_type, typename V, typename TE = bool, typename E = Adjacency_matrix_ns::Edge<TE>>
         using Adjacency_matrix = Adjacency_matrix_ns::Adjacency_matrix<graph_type, V, E>;
 
+    template<Graph_type graph_type, typename V, typename E>
+        void print_representation(
+            const Adjacency_matrix_ns::Adjacency_matrix<graph_type, V, E>& g, std::ostream& stream) {
+            g.print_internal(stream);
+        }
+
 }
