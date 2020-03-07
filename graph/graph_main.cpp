@@ -1,6 +1,6 @@
 #include "adjacency_matrix.h"
 #include "adjacency_lists.h"
-#include "flow_network.h"
+#include "network_flow.h"
 #include "graphs.h"
 
 #include <string>
