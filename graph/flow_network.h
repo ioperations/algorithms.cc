@@ -41,8 +41,9 @@ namespace Graph {
 
         template<typename V>
             class Flow_edge {
-                private:
+                public:
                     using link_type = Flow_link<V>;
+                private:
                     link_type* link_;
                 public:
                     using value_type = typename V::edge_value_type;

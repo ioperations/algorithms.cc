@@ -188,7 +188,7 @@ void test_weighted_dag() {
     std::cout << dd.distances_[0] << std::endl;
 }
 
-template<typename G> // todo fix
+template<typename G>
 struct Max_flow {
     using vertex_t = typename G::vertex_type;
     using w_t = typename G::edge_type::value_type;
@@ -197,106 +197,84 @@ struct Max_flow {
     vertex_t& s_;
     vertex_t& t_;
     Array<w_t> weights_;
-    Array<edge_it_t> st_; // todo rename st
+    Array<typename vertex_t::edge_type::link_type*> links_;
     w_t sentinel_;
     Max_flow(G& g, vertex_t& s, vertex_t& t, w_t sentinel) 
-        :g_(g), s_(s), t_(t), weights_(g.vertices_count()), st_(g.vertices_count()), sentinel_(sentinel)
+        :g_(g), s_(s), t_(t), weights_(g.vertices_count()), links_(g.vertices_count()), sentinel_(sentinel)
     {
-        while (pfs())
-            augment();
+        while (pfs()) augment();
     }
     bool pfs() {
         Vertex_heap<vertex_t*, w_t> heap(g_.vertices_count(), weights_);
         for (auto v = g_.cbegin(); v != g_.cend(); ++v) {
             weights_[*v] = 0;
-            st_[*v].target_ = nullptr;
+            links_[*v] = nullptr;
             heap.push(v);
         }
         weights_[s_] = -sentinel_;
         heap.move_up(&s_);
 
-        std::cout << weights_ << std::endl;
-
         while (!heap.empty()) {
             vertex_t& v = *heap.pop();
 
             weights_[v] = -sentinel_;
-            if (v == t_ || (v != s_ && st_[v].target_ == nullptr))
+            if (v == t_ || (v != s_ && links_[v] == nullptr))
                 break;
 
             for (auto e = v.edges_begin(); e != v.edges_end(); ++e) {
                 auto link = e->edge().link();
                 auto& w = link->other(v);
-                int cap = link->cap_r_to(w);
+                auto cap = link->cap_r_to(w);
                 auto p = cap < -weights_[v] ? cap : -weights_[v];
-                if (cap > 0 && p > -weights_[w]) {
+                if (cap > 0 && weights_[w] > -p) {
                     weights_[w] = -p;
                     heap.move_up(&w);
-                    st_[w] = *e;
+                    links_[w] = e->edge().link();
                 }
             }
         }
-        return st_[t_].target_ != nullptr;
+        return links_[t_] != nullptr;
     }
-    vertex_t& st(vertex_t& v) { return st_[v].edge().link()->other(v); } // todo rename method
+    vertex_t& other_vertex(vertex_t& v) { return links_[v]->other(v); }
     void augment() {
-        auto link = st_[t_].edge().link();
-        auto cap = link->cap_r_to(t_);
-        for (vertex_t* v = &st(t_); *v != s_; v = &st(*v)) {
-            auto c = st_[*v].edge().link()->cap_r_to(*v);
-            if (cap < c) 
+        auto cap = links_[t_]->cap_r_to(t_);
+        for (vertex_t* v = &other_vertex(t_); *v != s_;) {
+            auto link = links_[*v];
+            auto c = link->cap_r_to(*v);
+            if (cap > c) 
                 cap = c;
+            v = &link->other(*v);
         }
-        st_[t_].edge().link()->add_flow_r_to(t_, cap);
-        for (vertex_t* v = &st(t_); *v != s_; v = &st(*v))
-            st_[*v].edge().link()->add_flow_r_to(*v, cap);
+        links_[t_]->add_flow_r_to(t_, cap);
+        for (vertex_t* v = &other_vertex(t_); *v != s_; v = &other_vertex(*v))
+            links_[*v]->add_flow_r_to(*v, cap);
     }
 };
 
 // todo rename edge.edge() to edge.link() ?
 
 int main(int argc, char** argv) {
-    // test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>("adjacency matrix");
-    // test_graph<Adjacency_lists<Graph_type::GRAPH, int>>("adjacency lists");
+    test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>("adjacency matrix");
+    test_graph<Adjacency_lists<Graph_type::GRAPH, int>>("adjacency lists");
 
-    // {
-    //     std::cout << "Warshall transitive closure" << std::endl;
-    //     auto g = Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
-    //     auto transitive_closure = warshall_transitive_closure(g);
-    //     print_representation(transitive_closure, std::cout);
-    // }
+    {
+        std::cout << "Warshall transitive closure" << std::endl;
+        auto g = Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
+        auto transitive_closure = warshall_transitive_closure(g);
+        print_representation(transitive_closure, std::cout);
+    }
 
-    // test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
-    // test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
+    test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
+    test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
 
-    // test_weighted_graph<Adjacency_matrix<Graph_type::GRAPH, int, double>>();
-    // test_weighted_graph<Adjacency_lists<Graph_type::GRAPH, int, double>>();
+    test_weighted_graph<Adjacency_matrix<Graph_type::GRAPH, int, double>>();
+    test_weighted_graph<Adjacency_lists<Graph_type::GRAPH, int, double>>();
 
-    // test_weighted_dag<Adjacency_matrix<Graph_type::DIGRAPH, int, double>>();
-    // test_weighted_dag<Adjacency_lists<Graph_type::DIGRAPH, int, double>>();
+    test_weighted_dag<Adjacency_matrix<Graph_type::DIGRAPH, int, double>>();
+    test_weighted_dag<Adjacency_lists<Graph_type::DIGRAPH, int, double>>();
 
-    // auto f = Samples::flow_sample<Network_flow<int, int>>();
-    // print_representation(f, std::cout);
-
-    // Max_flow m(f, f.vertex_at(0), f.vertex_at(5), f.vertices_count() * 10);
-    // for (auto v = f.cbegin(); v != f.cend(); ++v) {
-    //     for (auto e = v->cedges_begin(); e != v->cedges_end(); ++e) {
-    //         if (e->edge().is_out())
-    //             std::cout << e->source() << " - " << e->target() << " " << e->edge().cap() << " "
-    //                 << e->edge().flow() << std::endl;
-    //     }
-    // }
-    //
-
-    std::cout << std::endl;
     auto f = Samples::flow_sample();
-    print_representation(f, std::cout);
-    auto& vv = f.vertex_at(0);
-    auto& ww = f.vertex_at(0);
-
-    std::cout << " == " << (vv == ww) << std::endl;
-
     Max_flow m(f, f.vertex_at(0), f.vertex_at(5), f.vertices_count() * 10);
-
+    std::cout << "max flow:" << std::endl;
     print_representation(f, std::cout);
 }
