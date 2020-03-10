@@ -2,6 +2,7 @@
 #include "adjacency_lists.h"
 #include "network_flow.h"
 #include "graphs.h"
+#include "array_queue.h"
 
 #include <string>
 #include <stdexcept>
@@ -197,7 +198,7 @@ struct Max_flow {
     vertex_t& s_;
     vertex_t& t_;
     Array<w_t> weights_;
-    Array<typename vertex_t::edge_type::link_type*> links_;
+    Array<typename G::link_type*> links_;
     w_t sentinel_;
     Max_flow(G& g, vertex_t& s, vertex_t& t, w_t sentinel) 
         :g_(g), s_(s), t_(t), weights_(g.vertices_count()), links_(g.vertices_count()), sentinel_(sentinel)
@@ -253,28 +254,74 @@ struct Max_flow {
 
 // todo rename edge.edge() to edge.link() ?
 
-int main(int argc, char** argv) {
-    test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>("adjacency matrix");
-    test_graph<Adjacency_lists<Graph_type::GRAPH, int>>("adjacency lists");
-
+template<typename G>
+struct Pre_flow_max_flow {
+    using vertex_t = typename G::vertex_type;
+    using w_t = typename G::edge_type::value_type;
+    using edge_it_t = typename G::vertex_type::edges_iterator::entry_type;
+    G& g_;
+    vertex_t& s_;
+    vertex_t& t_;
+    const size_t vertices_count_;
+    Array<size_t> heights_;
+    Pre_flow_max_flow(G& g, vertex_t& s, vertex_t& t, w_t sentinel) 
+        :g_(g), s_(s), t_(t), vertices_count_(g.vertices_count()),
+        heights_(vertices_count_, vertices_count_ + 1) 
     {
-        std::cout << "Warshall transitive closure" << std::endl;
-        auto g = Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
-        auto transitive_closure = warshall_transitive_closure(g);
-        print_representation(transitive_closure, std::cout);
+        init_heights();
+        std::cout << heights_ << std::endl;
     }
+    void init_heights() {
+        Array_queue<std::pair<const vertex_t*, size_t>> queue(vertices_count_);
+        queue.emplace(&t_, 0);
+        heights_[t_] = 0;
+        auto default_height = vertices_count_ + 1;
+        while (!queue.empty()) {
+            auto entry = queue.pop();
+            auto& v = *entry.first;
+            auto next_height = entry.second + 1;
+            for (auto e = v.cedges_begin(); e != v.cedges_end(); ++e) {
+                auto link = e->edge().link();
+                auto& s = link->source();
+                if (heights_[s] == default_height && link->is_to(v)) {
+                    queue.emplace(&s, next_height);
+                    heights_[s] = next_height;
+                }
+            }
+        }
+    }
+};
 
-    test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
-    test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
+int main(int argc, char** argv) {
+    // test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>("adjacency matrix");
+    // test_graph<Adjacency_lists<Graph_type::GRAPH, int>>("adjacency lists");
 
-    test_weighted_graph<Adjacency_matrix<Graph_type::GRAPH, int, double>>();
-    test_weighted_graph<Adjacency_lists<Graph_type::GRAPH, int, double>>();
+    // {
+    //     std::cout << "Warshall transitive closure" << std::endl;
+    //     auto g = Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
+    //     auto transitive_closure = warshall_transitive_closure(g);
+    //     print_representation(transitive_closure, std::cout);
+    // }
 
-    test_weighted_dag<Adjacency_matrix<Graph_type::DIGRAPH, int, double>>();
-    test_weighted_dag<Adjacency_lists<Graph_type::DIGRAPH, int, double>>();
+    // test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
+    // test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
 
-    auto f = Samples::flow_sample();
-    Max_flow m(f, f.vertex_at(0), f.vertex_at(5), f.vertices_count() * 10);
-    std::cout << "max flow:" << std::endl;
-    print_representation(f, std::cout);
+    // test_weighted_graph<Adjacency_matrix<Graph_type::GRAPH, int, double>>();
+    // test_weighted_graph<Adjacency_lists<Graph_type::GRAPH, int, double>>();
+
+    // test_weighted_dag<Adjacency_matrix<Graph_type::DIGRAPH, int, double>>();
+    // test_weighted_dag<Adjacency_lists<Graph_type::DIGRAPH, int, double>>();
+
+    // {
+    //     auto f = Samples::flow_sample();
+    //     Max_flow m(f, f.vertex_at(0), f.vertex_at(5), f.vertices_count() * 10);
+    //     std::cout << "max flow:" << std::endl;
+    //     print_representation(f, std::cout);
+    // }
+    // std::cout << std::endl;
+    // {
+    //     auto f = Samples::flow_sample();
+    //     print_representation(f, std::cout);
+    //     Pre_flow_max_flow m(f, f.vertex_at(0), f.vertex_at(5), f.vertices_count() * 10);
+    // }
 }

@@ -31,6 +31,7 @@ namespace Graph {
                     cap_type flow() const { return flow_; }
 
                     bool is_from(const V& v) const { return source() == v; }
+                    bool is_to(const V& v) const { return target() == v; }
 
                     const V& other(const V& v) const { return v == source() ? target() : source(); }
                     V& other(V& v) { return v == source() ? target() : source(); }
@@ -80,7 +81,7 @@ namespace Graph {
                 ~Flow_vertex() {
                     for (auto e = Base::cedges_begin(); e != Base::cedges_end(); ++e) {
                         auto link = e->edge().link();
-                        if (link->source() == *this)
+                        if (link->is_from(*this))
                             delete link;
                     }
                 }
@@ -95,9 +96,10 @@ namespace Graph {
                     using Base = Adjacency_lists_ns::Adjacency_lists_base<Graph_type::GRAPH, Flow_vertex<V, C>>;
                 public:
                     using vertex_type = typename Base::vertex_type;
+                    using link_type = Flow_link<vertex_type>;
+
                     Flow() = default;
                     Flow(const Flow& o) :Base(o, true) {
-                        using link_type = Flow_link<vertex_type>;
                         std::map<link_type*, link_type*> map;
                         for (auto& v : Base::vertices_) {
                             v.adjacency_lists_ = this;
@@ -126,7 +128,7 @@ namespace Graph {
                     Flow& operator=(Flow&&) = default;
                     Flow& add_edge(vertex_type& v, vertex_type& w, C cap, C flow) {
                         if (!v.link_exists(w)) {
-                            auto link = new Flow_link<vertex_type>(&v, &w, cap, flow);
+                            auto link = new link_type(&v, &w, cap, flow);
                             v.add_link(w, link);
                             w.add_link(v, link);
                         }
