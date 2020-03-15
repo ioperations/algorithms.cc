@@ -56,7 +56,7 @@ namespace Graph {
                 void search() {
                     for (auto v = g_.cbegin(); v != g_.cend(); ++v)
                         if (pre_.is_unset(*v))
-                            search_vertex(*v);
+                            d_->search_vertex(*v);
                 }
                 void search_vertex(const vertex_type& v) {
                     d_->visit_vertex(v);
@@ -75,8 +75,10 @@ namespace Graph {
             private:
                 using Base = Dfs_base<G, T_pre, D>;
             public:
+                using vertex_type = typename Base::vertex_type;
                 Dfs(const G& g) :Base(g) {}
-                void search_post_process(const typename Base::vertex_type& v) {}
+                void visit_vertex(const vertex_type& v) {}
+                void search_post_process(const vertex_type& v) {}
         };
 
     template<typename G, typename T_pre, typename T_post, typename D>

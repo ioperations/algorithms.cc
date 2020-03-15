@@ -267,32 +267,31 @@ class Pre_flow_push_max_flow {
         Array<size_t> heights_;
         Array<w_t> weights_;
         inline void init_heights() {
-            Array_queue<std::pair<const vertex_t*, size_t>> queue(v_count_);
-            queue.emplace(&t_, 0);
-            heights_[t_] = 0;
-            auto default_height = v_count_ + 1;
-            while (!queue.empty()) {
-                auto entry = queue.pop();
-                auto& v = *entry.first;
-                auto next_height = entry.second + 1;
-                for (auto e = v.cedges_begin(); e != v.cedges_end(); ++e) {
-                    auto link = e->edge().link();
-                    auto& w = link->source();
-                    if (heights_[w] == default_height && link->is_to(v)) {
-                        queue.emplace(&w, next_height);
-                        heights_[w] = next_height;
-                    }
-                }
-            }
         }
     public:
         Pre_flow_push_max_flow(G& g, vertex_t& s, vertex_t& t, w_t sentinel) 
             :g_(g), s_(s), t_(t), v_count_(g.vertices_count()), heights_(v_count_, v_count_ + 1), weights_(v_count_, 0) 
         {
-            init_heights();
             Array_queue<vertex_t*> queue(v_count_);
+            queue.push(&t_);
+            heights_[t_] = 0;
+            auto default_height = v_count_ + 1;
+            while (!queue.empty()) {
+                auto& v = *queue.pop();
+                auto height = heights_[v] + 1;
+                for (auto e = v.edges_begin(); e != v.edges_end(); ++e) {
+                    auto link = e->edge().link();
+                    auto& w = link->other(v);
+                    if (heights_[w] == default_height && link->is_from(w)) {
+                        heights_[w] = height;
+                        queue.push(&w);
+                    }
+                }
+            }
+
             queue.push(&s);
             weights_[t] = -(weights_[s] = sentinel * v_count_);
+
             while (!queue.empty()) {
                 auto& v = *queue.pop();
                 for (auto e = v.edges_begin(); e != v.edges_end(); ++e) {
@@ -314,40 +313,287 @@ class Pre_flow_push_max_flow {
                     queue.push(&v);
                 }
             }
+            std::cout << heights_ << std::endl;
         }
 };
 
-int main(int argc, char** argv) {
-    test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>("adjacency matrix");
-    test_graph<Adjacency_lists<Graph_type::GRAPH, int>>("adjacency lists");
+/**
+ * Transforms digraph with cycles to dag, to calculate flow, does not work for some reason.
+ * TODO
+ */
+template<typename G>
+class Acyclic_flow_composer : public Dfs<G, bool, Acyclic_flow_composer<G>> { // todo does not work
+    private:
+        using Base = Dfs<G, bool, Acyclic_flow_composer<G>>;
+        size_t v_count_;
+    public:
+        Network_flow<typename G::vertex_type::value_type, typename G::edge_type::value_type> n_; // todo template types
 
-    {
-        std::cout << "Warshall transitive closure" << std::endl;
-        auto g = Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
-        auto transitive_closure = warshall_transitive_closure(g);
-        print_representation(transitive_closure, std::cout);
-    }
+        Acyclic_flow_composer(const G& g) :Base(g), v_count_(g.vertices_count()) {}
+        void compose() {
+            for (auto v = Base::g_.cbegin(); v != Base::g_.cend(); ++v)
+                n_.create_vertex(*v);
+            for (size_t i = 0; i < v_count_; ++i) {
+                auto& v = n_.vertex_at(i);
+                auto& w = n_.create_vertex(v + v_count_);
+                n_.add_edge(v, w, 25, 0); // todo 25 hardcoded
+            }
+            Base::search();
+            size_t j = v_count_ * 2;
+            auto& s = n_.create_vertex(j);
+            auto& t = n_.create_vertex(++j);
+            for (size_t i = 0; i < v_count_; ++i) {
+                auto& ov = Base::g_.vertex_at(i);
+                decltype(ov.cedges_begin()->edge().weight()) cap = 0;
+                for (auto e = ov.cedges_begin(); e != ov.cedges_end(); ++e)
+                    cap += e->edge().weight();
+                n_.add_edge(s, n_.vertex_at(i), cap, 0);
+                n_.add_edge(n_.vertex_at(i + v_count_), t, cap, 0);
+            }
+            Max_flow m(n_, s, t, n_.vertices_count() * 10); // todo sentinel_ hardcoded
+        }
+        void visit_edge(const typename Base::edge_type& e) {
+            n_.add_edge(n_.vertex_at(e.source()), n_.vertex_at(e.target() + v_count_), e.edge().weight(), 0);
+        }
+};
 
-    test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
-    test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
+template<typename F, typename M>
+void find_feasible_flow(F& f, const M& supply, const M& demand) {
+    auto& s = f.create_vertex(-1);
+    auto& t = f.create_vertex(-1);
 
-    test_weighted_graph<Adjacency_matrix<Graph_type::GRAPH, int, double>>();
-    test_weighted_graph<Adjacency_lists<Graph_type::GRAPH, int, double>>();
+    for (auto e = supply.cbegin(); e != supply.cend(); ++e)
+        f.add_edge(s, f.vertex_at(e->first), e->second, 0);
+    for (auto e = demand.cbegin(); e != demand.cend(); ++e)
+        f.add_edge(f.vertex_at(e->first), t, e->second, 0);
 
-    test_weighted_dag<Adjacency_matrix<Graph_type::DIGRAPH, int, double>>();
-    test_weighted_dag<Adjacency_lists<Graph_type::DIGRAPH, int, double>>();
-
-    {
-        auto f = Samples::flow_sample();
-        Max_flow m(f, f.vertex_at(0), f.vertex_at(5), f.vertices_count() * 10);
-        std::cout << "max flow:" << std::endl;
-        print_representation(f, std::cout);
+    Pre_flow_push_max_flow m(f, s, t, f.vertices_count() * 10);
+    std::cout << "feasible flow, demands met: " << std::endl;
+    for (auto e = t.cedges_begin(); e != t.cedges_end(); ++e) {
+        auto& link = *e->edge().link();
+        std::cout << link.other(t) << ": " << link.flow() << "/" << link.cap() << "; ";
     }
     std::cout << std::endl;
+}
+
+template<typename M>
+auto bipartite_matching(const M& mapping) {
+    using value_type = typename M::key_type;
+
+    Builder<Network_flow<value_type, int>> b;
+    for (auto e = mapping.cbegin(); e != mapping.cend(); ++e)
+        b.for_vertex(e->first);
+    for (auto e = mapping.cbegin(); e != mapping.cend(); ++e) {
+        auto v = b.for_vertex(e->first);
+        auto& list = e->second;
+        for (auto t = list.cbegin(); t != list.cend(); ++t)
+            v.add_edge(*t, 1, 0);
+    }
+    auto f = b.build();
+
+    static const value_type default_value = value_type();
+    auto& s = f.create_vertex(default_value);
+    size_t i = 0;
+    for (; i < mapping.size(); ++i)
+        f.add_edge(s, f.vertex_at(i), 1, 0);
+
+    auto& t = f.create_vertex(default_value);
+    for (; i < f.vertices_count(); ++i)
+        f.add_edge(f.vertex_at(i), t, 1, 0);
+
+    Max_flow m(f, s, t, f.vertices_count() * 10);
+
+    std::map<value_type, value_type> result;
+    for (i = 0; i < mapping.size(); ++i) {
+        auto& v = f.vertex_at(i);
+        for (auto e = v.cedges_begin(); e != v.cedges_end(); ++e) {
+            auto& link = *e->edge().link();
+            if (v == link.source() && link.flow() > 0) {
+                result[v.value()] = link.other(v).value();
+                break;
+            }
+        }
+    }
+    return result;
+}
+
+/**
+ * Bellman-Ford algorithm for negative cycles search.
+ */
+template<typename G>
+Array_cycle find_negative_cycle(const G& g, const typename G::vertex_type& s, 
+                                typename G::edge_type::value_type sentinel) {
+    using vertex_type = typename G::vertex_type;
+    using w_t = typename G::edge_type::value_type;
+    using edge_t = typename G::vertex_type::const_edges_iterator::entry_type;
+
+    Array<w_t> weights(g.vertices_count(), sentinel);
+    Array<edge_t> spt(g.vertices_count());
+    for (auto& s : spt)
+        s.target_ = nullptr;
+
+    weights[s] = 0;
+
+    Forward_list<const vertex_type*> queue;
+    queue.push_back(&s);
+    queue.push_back(nullptr);
+
+    size_t n = 0;
+
+    bool completed = false;
+    while (!completed && !queue.empty()) {
+        const vertex_type* v;
+        while (!completed && (v = queue.pop_front()) == nullptr) {
+            completed = n++ > g.vertices_count();
+            if (!completed)
+                queue.push_back(nullptr);
+        }
+        if (!completed)
+            for (auto e = v->cedges_begin(); e != v->cedges_end(); ++e) {
+                auto& w = e->target();
+                auto weight = weights[*v] + e->edge().weight();
+                if (weights[w] > weight) {
+                    weights[w] = weight;
+                    queue.push_back(&w);
+                    spt[w] = *e;
+                }
+            }
+    }
+
+    using cycle_g_type = Adjacency_lists<Graph_type::DIGRAPH, int>;
+    cycle_g_type gg;
+    for (auto v = g.cbegin(); v != g.cend(); ++v)
+        gg.create_vertex(*v);
+
+    for (auto& s : spt)
+        if (s.target_)
+            gg.add_edge(gg.vertex_at(s.source()), gg.vertex_at(s.target()));
+
+    struct Searcher : public Post_dfs_base<cycle_g_type, size_t, size_t, Searcher> {
+        using Base = Post_dfs_base<cycle_g_type, size_t, size_t, Searcher>;
+        bool found_;
+        Array<size_t> cycle_;
+        Searcher(const cycle_g_type& g, w_t sentinel) :Base(g), found_(false), cycle_(g.vertices_count(), sentinel) {}
+        void search_vertex(const typename Base::vertex_type& v) {
+            if (!found_)
+                Base::search_vertex(v);
+        }
+        void visit_edge(const typename Base::edge_type& e) {
+            auto& v = e.source();
+            auto& w = e.target();
+            if (!found_ && Base::pre_[w] < Base::pre_[v] && Base::post_.is_unset(w))
+                found_ = true;
+            if (found_)
+                cycle_[v] = w;
+        }
+    };
+    Searcher searcher(gg, sentinel);
+    searcher.search();
+    if (searcher.found_)
+        return {std::move(searcher.cycle_), static_cast<size_t>(sentinel)};
+    else
+        return {{}, static_cast<size_t>(sentinel)};
+}
+
+int main(int argc, char** argv) {
+     test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>("adjacency matrix");
+     test_graph<Adjacency_lists<Graph_type::GRAPH, int>>("adjacency lists");
+
+     {
+         std::cout << "Warshall transitive closure" << std::endl;
+         auto g = Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
+         auto transitive_closure = warshall_transitive_closure(g);
+         print_representation(transitive_closure, std::cout);
+     }
+
+     test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
+     test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
+
+     test_weighted_graph<Adjacency_matrix<Graph_type::GRAPH, int, double>>();
+     test_weighted_graph<Adjacency_lists<Graph_type::GRAPH, int, double>>();
+
+     test_weighted_dag<Adjacency_matrix<Graph_type::DIGRAPH, int, double>>();
+     test_weighted_dag<Adjacency_lists<Graph_type::DIGRAPH, int, double>>();
+
+     {
+         auto f = Samples::flow_sample();
+         Max_flow m(f, f.vertex_at(0), f.vertex_at(5), f.vertices_count() * 10);
+         std::cout << "max flow:" << std::endl;
+         print_representation(f, std::cout);
+     }
+     std::cout << std::endl;
+     {
+         auto f = Samples::flow_sample();
+         Pre_flow_push_max_flow m(f, f.vertex_at(0), f.vertex_at(5), f.vertices_count() * 10);
+         std::cout << "pre flow push max flow:" << std::endl;
+         print_representation(f, std::cout);
+     }
+    
+
+     std::cout << std::endl;
+
+    Builder<Adjacency_lists<Graph_type::DIGRAPH, int, int>> b;
+    for (int i = 0; i < 6; ++i) b.for_vertex(i);
+
+    auto g = b
+        .for_vertex(0).add_edge(1, 2).add_edge(2, 3)
+        .for_vertex(1).add_edge(2, 3).add_edge(4, 2)
+        .for_vertex(2).add_edge(3, 2).add_edge(4, 1)
+        .for_vertex(3).add_edge(1, 3).add_edge(5, 2)
+        .for_vertex(4).add_edge(3, 3).add_edge(5, 3)
+        .build();
+
+    print_representation(g, std::cout);
+
+    Acyclic_flow_composer composer(g);
+    composer.compose();
+
+    print_representation(composer.n_, std::cout);
+
     {
         auto f = Samples::flow_sample();
-        Pre_flow_push_max_flow m(f, f.vertex_at(0), f.vertex_at(5), f.vertices_count() * 10);
-        std::cout << "pre flow push max flow:" << std::endl;
-        print_representation(f, std::cout);
+        find_feasible_flow(f,
+                           std::map<int, int>{{0, 3}, {1, 3}, {3, 1}},
+                           std::map<int, int>{{2, 1}, {4, 1}, {5, 5}});
     }
+    {
+        std::map<int, Forward_list<int>> mapping = {
+            {0, {6, 7, 8}},
+            {1, {6, 7, 11}},
+            {2, {8, 9, 10}},
+            {3, {6, 7}},
+            {4, {9, 10, 11}},
+            {5, {8, 10, 11}}
+        };
+        std::cout << "bipartite matching: " << std::endl;
+        for (auto e : bipartite_matching(mapping))
+            std::cout << e.first << ": " << e.second << ", ";
+        std::cout << std::endl;
+    }
+    {
+        Builder<Adjacency_lists<Graph_type::DIGRAPH, int, double>> b;
+        for (int i = 0; i < 6; ++i)
+            b.for_vertex(i);
+        auto g = b
+            .for_vertex(0).add_edge(1, .41).add_edge(5, .29)
+            .for_vertex(1).add_edge(2, .51).add_edge(4, .28)
+            // .for_vertex(1).add_edge(2, .51).add_edge(4, .32)
+            .for_vertex(2).add_edge(3, .50)
+            .for_vertex(3).add_edge(0, .45).add_edge(5, -.38)
+            .for_vertex(4).add_edge(3, .36)
+            .for_vertex(5).add_edge(1, -.29).add_edge(4, .21)
+            .build();
+
+        auto cc = find_negative_cycle(g, g.vertex_at(0), 200);
+        if (!cc.empty()) {
+            auto v = cc.cbegin();
+            auto first = v;
+            do {
+                std::cout << *v << " - ";
+                ++v;
+            } while (v != first);
+            std::cout << std::endl;
+        }
+    }
+
 }

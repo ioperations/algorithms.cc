@@ -146,7 +146,7 @@ namespace Graph {
                     for (auto e = v.cedges_begin(); e != v.cedges_end(); ++e) {
                         auto& link = *e->edge().link();
                         bool is_from = link.is_from(v);
-                        stream << (is_from ? "->" : "<-") << link.other(v)
+                        stream << (is_from ? "->" : "<-") << link.other(v).value()
                             << "(" << link.flow() << "/" << link.cap() << ") ";
                     }
                 }

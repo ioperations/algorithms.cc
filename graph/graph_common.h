@@ -1,5 +1,7 @@
 #pragma once
 
+#include "array.h"
+
 namespace Graph {
 
     enum class Graph_type {
@@ -44,5 +46,39 @@ namespace Graph {
                 vertex_type& target() const { return *target_; }
                 edge_type& edge() const { return *edge_; }
         };
+
+    struct Array_cycle {
+        private:
+            Array<size_t> array_;
+            size_t begin_index_;
+
+            struct Iterator {
+                private:
+                    const Array<size_t>& cycle_;
+                    size_t index_;
+                public:
+                    Iterator(const Array<size_t>& cycle, size_t index) 
+                        :cycle_(cycle), index_(index) 
+                    {}
+                    bool operator!=(const Iterator& o) const {
+                        return index_ != o.index_; 
+                    }
+                    Iterator& operator++() { 
+                        index_ = cycle_[index_]; 
+                        return *this;
+                    }
+                    size_t operator*() { return index_; }
+            };
+        public:
+            Array_cycle(Array<size_t>&& array, size_t sentinel) :array_(std::move(array)) {
+                for (size_t i = 0; i < array_.size(); ++i)
+                    if (array_[i] != sentinel) {
+                        begin_index_ = i;
+                        break;
+                    }
+            }
+            Iterator cbegin() const { return Iterator(array_, begin_index_); }
+            bool empty() const { return array_.size() == 0; }
+    };
 
 }
