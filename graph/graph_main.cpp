@@ -496,41 +496,41 @@ Array_cycle find_negative_cycle(const G& g, const typename G::vertex_type& s,
 }
 
 int main(int argc, char** argv) {
-     test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>("adjacency matrix");
-     test_graph<Adjacency_lists<Graph_type::GRAPH, int>>("adjacency lists");
+    test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>("adjacency matrix");
+    test_graph<Adjacency_lists<Graph_type::GRAPH, int>>("adjacency lists");
 
-     {
-         std::cout << "Warshall transitive closure" << std::endl;
-         auto g = Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
-         auto transitive_closure = warshall_transitive_closure(g);
-         print_representation(transitive_closure, std::cout);
-     }
+    {
+        std::cout << "Warshall transitive closure" << std::endl;
+        auto g = Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
+        auto transitive_closure = warshall_transitive_closure(g);
+        print_representation(transitive_closure, std::cout);
+    }
 
-     test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
-     test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
+    test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
+    test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
 
-     test_weighted_graph<Adjacency_matrix<Graph_type::GRAPH, int, double>>();
-     test_weighted_graph<Adjacency_lists<Graph_type::GRAPH, int, double>>();
+    test_weighted_graph<Adjacency_matrix<Graph_type::GRAPH, int, double>>();
+    test_weighted_graph<Adjacency_lists<Graph_type::GRAPH, int, double>>();
 
-     test_weighted_dag<Adjacency_matrix<Graph_type::DIGRAPH, int, double>>();
-     test_weighted_dag<Adjacency_lists<Graph_type::DIGRAPH, int, double>>();
+    test_weighted_dag<Adjacency_matrix<Graph_type::DIGRAPH, int, double>>();
+    test_weighted_dag<Adjacency_lists<Graph_type::DIGRAPH, int, double>>();
 
-     {
-         auto f = Samples::flow_sample();
-         Max_flow m(f, f.vertex_at(0), f.vertex_at(5), f.vertices_count() * 10);
-         std::cout << "max flow:" << std::endl;
-         print_representation(f, std::cout);
-     }
-     std::cout << std::endl;
-     {
-         auto f = Samples::flow_sample();
-         Pre_flow_push_max_flow m(f, f.vertex_at(0), f.vertex_at(5), f.vertices_count() * 10);
-         std::cout << "pre flow push max flow:" << std::endl;
-         print_representation(f, std::cout);
-     }
-    
+    {
+        auto f = Samples::flow_sample();
+        Max_flow m(f, f.vertex_at(0), f.vertex_at(5), f.vertices_count() * 10);
+        std::cout << "max flow:" << std::endl;
+        print_representation(f, std::cout);
+    }
+    std::cout << std::endl;
+    {
+        auto f = Samples::flow_sample();
+        Pre_flow_push_max_flow m(f, f.vertex_at(0), f.vertex_at(5), f.vertices_count() * 10);
+        std::cout << "pre flow push max flow:" << std::endl;
+        print_representation(f, std::cout);
+    }
 
-     std::cout << std::endl;
+
+    std::cout << std::endl;
 
     Builder<Adjacency_lists<Graph_type::DIGRAPH, int, int>> b;
     for (int i = 0; i < 6; ++i) b.for_vertex(i);
@@ -584,9 +584,9 @@ int main(int argc, char** argv) {
             .for_vertex(5).add_edge(1, -.29).add_edge(4, .21)
             .build();
 
-        auto cc = find_negative_cycle(g, g.vertex_at(0), 200);
-        if (!cc.empty()) {
-            auto v = cc.cbegin();
+        auto n_cycle = find_negative_cycle(g, g.vertex_at(0), 200);
+        if (!n_cycle.empty()) {
+            auto v = n_cycle.cbegin();
             auto first = v;
             do {
                 std::cout << *v << " - ";
@@ -595,5 +595,11 @@ int main(int argc, char** argv) {
             std::cout << std::endl;
         }
     }
-
+    {
+        Network_flow_with_cost<int, int> f;
+        auto& v0 = f.create_vertex(0);
+        auto& v1 = f.create_vertex(1);
+        f.add_edge(v0, v1, 3, 0, 3); 
+        print_representation(f, std::cout);
+    }
 }
