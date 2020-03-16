@@ -7,6 +7,11 @@ namespace Graph {
 
     namespace Network_flow_ns {
 
+        template<typename L, typename V, typename C = typename V::edge_value_type>
+            C cost_r_to(const L& link, const V& vertex) {
+                return link.is_from(vertex) ? -link.cost() : link.cost();
+            }
+
         class Link_empty_base {};
 
         template<typename C>
@@ -174,6 +179,7 @@ namespace Graph {
                         print(v, *e->edge().link(), stream);
                 }
             };
+
     }
 
     template<typename V, typename C>
@@ -187,6 +193,18 @@ namespace Graph {
         void print_representation(
             const Network_flow_ns::Flow<Network_flow_ns::Flow_vertex<V, C, LB>>& g, std::ostream& stream) {
             Network_flow_ns::Internal_printer<V, C, LB>::print(g, stream);
+        }
+
+    template<typename G>
+        auto calculate_network_flow_cost(const G& g) {
+            typename G::edge_type::value_type sum = 0;
+            for (auto v = g.cbegin(); v != g.cend(); ++v)
+                for (auto e = v->cedges_begin(); e != v->cedges_end(); ++e) {
+                    auto& link = *e->edge().link();
+                    if (!link.is_from(*v))
+                        sum += Network_flow_ns::cost_r_to(link, *v) * link.flow();
+                }
+            return sum;
         }
 
 }
