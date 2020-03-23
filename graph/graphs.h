@@ -214,5 +214,17 @@ namespace Graph {
                 .for_vertex(4).add_edge(5, 3, 0)
                 .build();
         }
+
+        auto simplex_sample() {
+            Builder<Network_flow_with_cost<int, int>> b;
+            for (int i = 0; i < 6; ++i) b.for_vertex(i);
+            return b
+                .for_vertex(0).add_edge(1, 3, 0, 3).add_edge(2, 3, 0, 1)
+                .for_vertex(1).add_edge(3, 2, 0, 1).add_edge(4, 2, 0, 1)
+                .for_vertex(2).add_edge(3, 1, 0, 4).add_edge(4, 2, 0, 2)
+                .for_vertex(3).add_edge(5, 2, 0, 2)
+                .for_vertex(4).add_edge(5, 2, 0, 1)
+                .build();
+        }
     }
 }

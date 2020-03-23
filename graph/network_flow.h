@@ -32,6 +32,7 @@ namespace Graph {
                     cap_type cap_;
                     cap_type flow_;
                 public:
+                    using vertex_type = V;
                     template<typename... Args>
                         Flow_link(V* source, V* target, const cap_type& cap, const cap_type& flow, Args&&... args)
                         :B(std::forward<Args>(args)...), source_(source), target_(target), cap_(cap), flow_(flow)
@@ -48,12 +49,20 @@ namespace Graph {
                     bool is_from(const V& v) const { return source() == v; }
                     bool is_to(const V& v) const { return target() == v; }
 
-                    const V& other(const V& v) const { return v == source() ? target() : source(); }
-                    V& other(V& v) { return v == source() ? target() : source(); }
+                    const V& other(size_t index) const { return index == source() ? target() : source(); }
+                    V& other(size_t index) { return index == source() ? target() : source(); }
 
                     int cap_r_to(const V& v) const { return is_from(v) ? flow_ : cap_ - flow_; }
                     void add_flow_r_to(const V& v, cap_type f) { flow_ += (is_from(v) ? -f : f); }
+
+                    template<typename VV, typename BB>
+                        friend std::ostream& operator<<(std::ostream& stream, const Flow_link<VV, BB>& l);
             };
+
+        template<typename VV, typename BB>
+            std::ostream& operator<<(std::ostream& stream, const Flow_link<VV, BB>& l) {
+                return stream << l.source() << "-" << l.target();
+            }
 
         template<typename V>
             class Flow_edge {
@@ -112,6 +121,7 @@ namespace Graph {
                 public:
                     using vertex_type = typename Base::vertex_type;
                     using edge_value_type = typename vertex_type::edge_value_type;
+                    using link_base_type = typename vertex_type::link_base_type;
                     using link_type = typename vertex_type::edge_type::link_type;
 
                     Flow() = default;
@@ -143,16 +153,20 @@ namespace Graph {
                     Flow(Flow&&) = default;
                     Flow& operator=(Flow&&) = default;
                     template<typename... Args>
-                        Flow& add_edge(vertex_type& v, vertex_type& w,
-                                       const edge_value_type& cap, const edge_value_type& flow,
-                                       Args&&... args) {
+                        link_type* add_edge(vertex_type& v, vertex_type& w,
+                                            const edge_value_type& cap, const edge_value_type& flow,
+                                            Args&&... args) {
                             if (!v.link_exists(w)) {
                                 auto link = new link_type(&v, &w, cap, flow, std::forward<Args>(args)...);
                                 v.add_link(w, link);
                                 w.add_link(v, link);
+                                return link;
                             }
-                            return *this;
+                            return nullptr;
                         }
+                    link_type* get_link(size_t v, size_t w) {
+                        return Base::get_edge(v, w)->link();
+                    }
                 private:
                     // todo implement, have to delete link
                     void remove_edge(vertex_type& v1, vertex_type& v2) {}

@@ -22,6 +22,7 @@ namespace Graph {
                     }
                     inline void set_up_to_date(size_t index) { versions_[index] = current_version_; }
                     inline bool is_up_to_date(size_t index) { return versions_[index] == current_version_; }
+                    inline T current_version() const { return current_version_; }
 
                     template<typename TT>
                         friend std::ostream& operator<<(std::ostream& stream, const Versions_array<TT>& a) {
@@ -34,19 +35,33 @@ namespace Graph {
                 private:
                     using vertex_type = typename L::vertex_type;
                     Array<L*> links_;
+                    Array<typename vertex_type::edge_value_type> potentials_; // TODO move potentials here
                 public:
-                    Parent_link_array_tree(size_t size) :links_(size, nullptr) {}
+                    Parent_link_array_tree(size_t size) :links_(size, nullptr), potentials_(size) {}
                     L*& operator[](size_t index) { return links_[index]; }
                     vertex_type* get_parent(vertex_type* v) { return &links_[*v]->other(*v); }
                     template<typename VA>
-                        vertex_type* find_lca(vertex_type* v, vertex_type* w, vertex_type* root, VA& versions) {
+                    auto get_vertex_potential(vertex_type& v, VA& versions) {
+                        auto link = links_[v];
+                        if (!link)
+                            return 0; // root potential (doesn't have a parent)
+                        if (versions.is_up_to_date(v))
+                            return potentials_[v];
+                        potentials_[v] = get_vertex_potential(link->other(v), versions) - cost_r_to(*link, v);
+                        versions.set_up_to_date(v);
+                        return potentials_[v];
+                    }
+                    template<typename VA>
+                        vertex_type* find_lca(vertex_type* v, vertex_type* w, VA& versions) {
                             ++versions;
                             versions.set_up_to_date(*v);
                             versions.set_up_to_date(*w);
-                            auto step = [this, root, &versions](auto& v) {
-                                if (v != root)
-                                    v = get_parent(v);
-                                if (v != root && versions.is_up_to_date(*v))
+                            auto step = [this, &versions](auto& v) {
+                                auto link = links_[*v];
+                                if (!link)
+                                    return false; // tree root reached
+                                v = &link->other(*v);;
+                                if (links_[*v] && versions.is_up_to_date(*v))
                                     return true;
                                 else {
                                     versions.set_up_to_date(*v);
@@ -59,6 +74,7 @@ namespace Graph {
                                 else if (step(w))
                                     v = w;
                             }
+                            std::cout << "lca: " << *v << std::endl;
                             return v;
                         }
                     bool is_between(vertex_type* descendant, vertex_type* const ancestor, vertex_type* const v) {
@@ -67,22 +83,101 @@ namespace Graph {
                                 return true;
                         return false;
                     }
+
+                    template<typename F>
+                    void calculate_augmentation_cap(vertex_type* v, vertex_type* lca,
+                                                    typename vertex_type::edge_value_type& min_cap, F f) {
+                        for (; v != lca; v = get_parent(v)) {
+                            auto l = links_[*v];
+                            auto w = f(l, v);
+                            auto cap = l->cap_r_to(*w);
+                            if (min_cap > cap)
+                                min_cap = cap;
+                        }
+                    }
+
                     template<typename VA>
-                        void replace(L* old_link, L* new_link, vertex_type* const root, VA& versions_array) {
-                            auto lca = find_lca(&new_link->source(), &new_link->target(), root, versions_array);
+                    L* augment(L* link, VA& versions_) {
+                        auto v = &link->source();
+                        auto w = &link->target(); // todo add link method returning vertex pointer
+                        auto lca = find_lca(v, w, versions_);
+
+                        auto min_cap = link->cap_r_to(*w);
+                        for (auto vv = w; vv != lca; ) {
+                            auto l = links_[*vv];
+                            auto p = &l->other(*vv);
+                            auto cap = l->cap_r_to(*p);
+                            if (min_cap > cap) min_cap = cap;
+                            vv = p;
+                        }
+                        for (auto vv = v; vv != lca; vv = get_parent(vv)) {
+                            auto cap = links_[*vv]->cap_r_to(*vv);
+                            if (min_cap > cap) min_cap = cap;
+                        }
+
+                        link->add_flow_r_to(*w, min_cap);
+                        auto old_link = link;
+                        for (auto vv = w; vv != lca; ) {
+                            auto l = links_[*vv];
+                            auto p = &l->other(*vv);
+                            l->add_flow_r_to(*p, min_cap);
+                            if (l->cap_r_to(*p) == 0)
+                                old_link = l;
+                            vv = p;
+                        }
+                        for (auto vv = v; vv != lca; ) {
+                            auto l = links_[*vv];
+                            l->add_flow_r_to(*vv, min_cap);
+                            if (l->cap_r_to(*vv) == 0)
+                                old_link = l;
+                            vv = &l->other(*vv);
+                        }
+                        // if (min_cap != 0) {
+                            // std::cout << *old_link << " " << *link;
+                            std::cout << "old link: " << *old_link;
+                            std::cout << ", flow added: " << min_cap << std::endl;
+                            // print_representation(g_, std::cout);
+                        // }
+                        return old_link;
+                    }
+                    template<typename VA>
+                        void replace(L* old_link, L* new_link, VA& versions_array) {
+                            std::cout << *this << std::endl;
+                            std::cout << *old_link << "(old), " << *new_link << std::endl;
+                            auto lca = find_lca(&new_link->source(), &new_link->target(), versions_array);
+
+                            auto old_target = &old_link->target();
+                            {
+                                auto target_link = links_[*old_target];
+                                if (!target_link || &target_link->target() != old_target)
+                                    old_target = &old_link->source();
+                            }
+
+                            // auto old_target = &old_link->target();
+                            // {
+                            //     auto target_link = links_[*old_target];
+                            //     if (&l->target() != old_target)
+                            //         old_target = &old_link->source();
+                            // }
+
+                            std::cout << "old target: " << *old_target << std::endl;
+
                             auto new_target = &new_link->source();
-                            if (is_between(&new_link->target(), lca, &old_link->target()))
+                            if (is_between(&new_link->target(), lca, old_target))
                                 new_target = &new_link->target();
 
-                            auto current = get_parent(new_target);
-                            auto prev = new_target;
+                            std::cout << "new target: " << *new_target << std::endl;
+
                             auto prev_link = links_[*new_target];
-                            while (prev != &old_link->target()) {
-                                auto parent = get_parent(current);
-                                std::swap(links_[*current], prev_link);
-                                prev = current;
-                                current = parent;
+                            for (auto v = get_parent(new_target); ;) {
+                                auto p = get_parent(v);
+                                std::swap(links_[*v], prev_link);
+                                if (v == old_target) break;
+                                v = p;
                             }
+
+                            // std::cout << *this << std::endl;
+
                             links_[*new_target] = new_link;
                         }
                     template<typename LL>
@@ -121,10 +216,9 @@ namespace Graph {
                     vertex_type& t_;
                     const w_t sentinel_;
 
-                    Array<link_type*> st_;
                     // todo deduct types?
-                    int valid_;
-                    Array<int> mark_, phi_; // todo rename to potentials?
+                    Parent_link_array_tree<link_type> tree_;
+                    Versions_array<unsigned int> versions_;
 
                     link_type* aux_link_;
 
@@ -133,199 +227,101 @@ namespace Graph {
                         :Simplex(g, s, t, sentinel, g.vertices_count()) {}
                 private:
                     Simplex(G& g, vertex_type& s, vertex_type& t, const w_t& sentinel, size_t v_count)
-                        :g_(g), s_(s), t_(t), sentinel_(sentinel), st_(v_count, nullptr), mark_(v_count, -1), phi_(v_count)
+                        :g_(g), s_(s), t_(t), sentinel_(sentinel), 
+                        tree_(v_count),
+                        // st_(v_count, nullptr),
+                        versions_(v_count, false)
                     {
                         aux_link_ = g.add_edge(t, s, sentinel, 180, 40); // todo hardcoded
-                        // print_representation(g, std::cout);
                         dfs_r(aux_link_);
-                        print_st();
-                        std::cout << std::endl;
+                        std::cout << "initial tree" << std::endl;
+                        std::cout << tree_ << std::endl;
 
-                        int counter = 0;
-                        for (valid_ = 1; counter < 10; ++valid_, ++counter) { // todo mark_ unsigned? rename?
-                            // print_st();
+                        print_representation(g, std::cout);
 
-                            calculate_potentials();
-                            // std::cout << phi_ << std::endl;
+                        foo();
 
-                            auto link = find_best_eligible();
-                            auto link_cost = cost_r(link, link->source());
-                            // std::cout << "best eligible link: " << link->source() << " - " << link->target() <<
-                            //     ", cost: " << link_cost << std::endl;
-
-                            if (link_cost == 0)
-                                break;
-
-                            auto old_link = augment(link);
-                            update(old_link, link);
-
-                            print_st();
-                            print_representation(g, std::cout);
-                            std::cout << std::endl;
-                        }
-
+                        print_representation(g, std::cout);
                     }
-                    void print_st() {
-                        for (auto l : st_)
-                            if (l)
-                                std::cout << l->source() << " - " << l->target() << ", ";
-                            else
-                                std::cout << "none, ";
-                        std::cout << std::endl;
+                    void foo() {
+                        unsigned int old_v = 0;
+                        while (versions_.current_version() != old_v) {
+                            old_v = versions_.current_version();
+                            for (auto& v : g_) {
+                                for (auto e = v.edges_begin(); e != v.edges_end(); ++e) {
+                                    auto link = e->edge().link();
+                                    if (link->cap_r_to(link->other(v)) > 0 && link->cap_r_to(v) == 0) {
+                                        if (!is_in_sp(link)) {
+                                            std::cout << std::endl << tree_ << std::endl;
+                                            std::cout << "adding: " << *link << std::endl;
+                                            auto old_link = tree_.augment(link, versions_);
+                                            tree_.replace(old_link, link, versions_);
+                                            ++versions_;
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                     void dfs_r(link_type* link) {
                         auto& t = link->target();
-                        st_[t] = link;
+                        tree_[t] = link;
                         for (auto e = t.edges_begin(); e != t.edges_end(); ++e) {
                             auto child_link = e->edge().link();
-                            if (child_link->is_from(t) && !st_[child_link->target()] && child_link->target() != t_)
+                            if (child_link->is_from(t) && !tree_[child_link->target()] && child_link->target() != t_)
                                 dfs_r(child_link);
                         }
                     }
-                    vertex_type& st(vertex_type& v) { return st_[v]->other(v); } // todo rename
-                    void calculate_potentials() {
-                        phi_[t_] = cost_r_to(*aux_link_, s_);
-                        mark_[t_] = valid_;
-                        for (auto& v : g_)
-                            if (v != t_)
-                                phi_[v] = phi_r(v);
-                    }
-                    int phi_r(vertex_type& v) {
-                        if (mark_[v] == valid_)
-                            return phi_[v];
-                        phi_[v] = phi_r(st(v)) - cost_r_to(*st_[v], v);
-                        mark_[v] = valid_;
-                        return phi_[v];
-                    }
+                    // void calculate_potentials() {
+                    //     phi_[t_] = cost_r_to(*aux_link_, s_);
+                    //     versions_.set_up_to_date(t_);
+                    //     for (auto& v : g_)
+                    //         if (v != t_)
+                    //             phi_[v] = phi_r(v);
+                    // }
+                    // int phi_r(vertex_type& v) {
+                    //     if (versions_.is_up_to_date(v))
+                    //         return phi_[v];
+                    //     auto link = tree_[v];
+                    //     if (link)
+                    //         phi_[v] = phi_r(*tree_.get_parent(&v)) - cost_r_to(*link, v);
+                    //     versions_.set_up_to_date(v);
+                    //     return phi_[v];
+                    // }
                     auto cost_r(link_type* link, vertex_type& v) {
-                        auto cost = link->cost() + phi_[link->target()] - phi_[link->source()];
+                        auto cost = link->cost() + tree_.get_vertex_potential(link->target()) 
+                            - tree_.get_vertex_potential(link->source());
                         if (link->is_to(v)) cost *= -1;
                         return cost;
                     }
                     bool is_in_sp(link_type* l) { // todo is this check required?
-                        return l == st_[l->source()] || l == st_[l->target()];
+                        return l == tree_[l->source()] || l == tree_[l->target()];
                     }
                     link_type* find_best_eligible() {
                         int min_cost = 40; // hardcoded
+                        bool all_zeros = true;
                         link_type* link = nullptr;
-                        for (auto& v : g_)
+                        for (auto& v : g_) {
                             for (auto e = v.edges_begin(); e != v.edges_end(); ++e) {
                                 auto l = e->edge().link();
-                                if (l->cap_r_to(l->other(v)) > 0 && l->cap_r_to(v) == 0 && !is_in_sp(l)) {
+                                // if (l->cap_r_to(l->other(v)) > 0 && l->cap_r_to(v) == 0 && !is_in_sp(l)) {
+                                if (l->cap_r_to(l->other(v)) > 0 && l->cap_r_to(v) == 0) {
                                     auto cost = cost_r(l, v); // todo how cost can be negative here?
-                                    if (min_cost > cost) {
+                                    // std::cout << *l << ", cost: " << cost << std::endl;
+                                    if (cost != 0)
+                                        all_zeros = false;
+                                    if (cost != 0 && min_cost > cost) {
                                         min_cost = cost;
                                         link = l;
                                     }
                                 }
                             }
+                        }
+                            if (all_zeros)
+                                min_cost = 0;
+                            if (link)
+                                std::cout << *link << ", r cost: " << min_cost << std::endl;
                         return link;
-                    }
-                    link_type* augment(link_type* link) {
-                        auto v = &link->source();
-                        auto w = &link->target(); // todo add link method returning vertex pointer
-                        auto lca = find_lca(v, w);
-                        auto flow = link->cap_r_to(*w);
-                        auto calculate_cap = [this, &flow, lca](auto v) {
-                            while (v != lca) {
-                                auto l = st_[*v];
-                                auto& w = l->other(*v);
-                                auto cap = l->cap_r_to(*v);
-                                if (flow > cap)
-                                    flow = cap;
-                                v = &w;
-                            }
-                        };
-                        calculate_cap(w);
-                        calculate_cap(v);
-
-                        link->add_flow_r_to(*w, flow);
-                        auto old_link = link;
-                        auto add_flow = [this, &flow, lca, &old_link](auto v) {
-                            while (v != lca) {
-                                auto l = st_[*v];
-                                auto& w = l->other(*v);
-                                l->add_flow_r_to(*v, flow);
-                                if (l->cap_r_to(*v) == 0)
-                                    old_link = st_[*v];
-                                v = &w;
-                            }
-                        };
-                        add_flow(w);
-                        add_flow(v);
-
-                        std::cout << link->source() << " - " << link->target() <<
-                            " : " << old_link->source() << " - " << old_link->target() <<
-                            ", flow added: " << flow << std::endl;
-
-                        return old_link; // todo rename?
-                    }
-                    vertex_type* find_lca(vertex_type* v, vertex_type* w) {
-                        mark_[*v] = ++valid_;
-                        mark_[*w] = valid_;
-                        auto try_next = [this](auto& v) -> bool {
-                            if (*v != t_) v = &st(*v);
-                            if (*v != t_ && mark_[*v] == valid_)
-                                return true;
-                            else {
-                                mark_[*v] = valid_;
-                                return false;
-                            }
-                        };
-                        while (v != w) {
-                            if (try_next(v)) return v;
-                            if (try_next(w)) return w;
-                        }
-                        return v;
-                    }
-                    void update(link_type* old_link, link_type* link) {
-                        auto s = &link->source();
-                        auto t = &link->target();
-                        auto old_t = &old_link->target();
-                        auto lca = find_lca(t, s); // todo s, t?
-
-                        // todo why double check on_path?
-                        auto do_update = [this, lca, old_t, link](auto v) {
-                            if (on_path(v, lca, old_t)) {
-                                reverse(v, old_t);
-                                st_[*v] = link;
-                                return true;
-                            }
-                            return false;
-                        };
-
-                        if (!do_update(t))
-                            do_update(s);
-
-                        // if (on_path(t, lca, old_t)) {
-                        //     reverse(t, old_t);
-                        //     st_[*t] = link;
-                        //     return;
-                        // }
-                        // if (on_path(s, lca, old_t)) {
-                        //     reverse(s, old_t);
-                        //     st_[*s] = link;
-                        //     return;
-                        // }
-                    }
-                    bool on_path(vertex_type* s, vertex_type* t, vertex_type* v) {
-                        // std::cout << "on path" << std::endl;
-                        for (; s != t; s = &st(*s))
-                            if (s == v)
-                                return true;
-                        return false;
-                    }
-                    void reverse(vertex_type* s, vertex_type* t) {
-                        // std::cout << "reverse: " << *s << " - " << *t << std::endl;
-                        // if (s != t) { // todo refactor
-                        auto link = st_[*s];
-                        for (auto i = &st(*s); i != t; i = &st(*i)) {
-                            // std::cout << *i << std::endl;
-                            auto old_link = st_[*i];
-                            st_[*i] = link;
-                            link = old_link;
-                        }
-                        // }
                     }
             };
 

@@ -105,10 +105,10 @@ namespace Graph {
                     using edges_iterator = Edges_iterator<false>;
                     using const_edges_iterator = Edges_iterator<true>;
 
-                    size_t index() const { 
+                    inline size_t index() const { 
                         return derived() - adjacency_lists_->vertices_.cbegin(); 
                     }
-                    operator size_t() const { return index(); }
+                    inline operator size_t() const { return index(); }
 
                     iterator begin() { return {derived(), links_.begin()}; }
                     iterator end() { return {derived(), links_.end()}; }
@@ -129,15 +129,15 @@ namespace Graph {
                                 return true;
                         return false;
                     }
-                    const E* get_edge(const Adj_lists_vertex_base& v) const {
+                    const E* get_edge(size_t v) const {
                         for (auto e = cedges_begin(); e != cedges_end(); ++e)
-                            if (e->target() == v)
+                            if (e->target().index() == v)
                                 return e->edge_;
                         return nullptr;
                     }
-                    E* get_edge(const Adj_lists_vertex_base& v) {
+                    E* get_edge(size_t v) {
                         for (auto e = edges_begin(); e != edges_end(); ++e)
-                            if (e->target() == v)
+                            if (e->target().index() == v)
                                 return e->edge_;
                         return nullptr;
                     }
@@ -236,10 +236,17 @@ namespace Graph {
                     }
 
                     size_t vertices_count() const { return vertices_.size(); }
+
+                    // todo remove vertex_at methods
                     const vertex_type& vertex_at(size_t index) const { return vertices_[index]; }
                     vertex_type& vertex_at(size_t index) { return vertices_[index]; }
 
+                    const vertex_type& operator[](size_t index) const { return vertices_[index]; }
+                    vertex_type& operator[](size_t index) { return vertices_[index]; }
+
                     bool has_edge(const vertex_type& v, const vertex_type& w) const { return v.has_edge(w); }
+
+                    edge_type* get_edge(size_t v, size_t w) { return vertex_at(v).get_edge(w); }
 
                     const edge_type* get_edge(const vertex_type& v, const vertex_type& w) const { return v.get_edge(w); }
                     edge_type* get_edge(vertex_type& v, const vertex_type& w) { return v.get_edge(w); }
