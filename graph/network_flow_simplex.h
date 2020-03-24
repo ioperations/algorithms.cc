@@ -34,16 +34,19 @@ namespace Graph {
             class Parent_link_array_tree {
                 private:
                     using vertex_type = typename L::vertex_type;
+                    using potential_type = typename vertex_type::edge_value_type;
+
                     Array<L*> links_;
                     Versions_array<unsigned int> versions_;
+                    Array<potential_type> potentials_;
                 public:
-                    Array<typename vertex_type::edge_value_type> potentials_; // TODO move potentials here
                     Parent_link_array_tree(size_t size) 
                         :links_(size, nullptr), versions_(size, false), potentials_(size) 
                     {}
                     L*& operator[](size_t index) { return links_[index]; }
                     vertex_type* get_parent(vertex_type* v) { return &links_[*v]->other(*v); }
                     auto current_version() { return versions_.current_version(); }
+                    const Array<potential_type>& potentials() { return potentials_; }
                     auto get_vertex_potential(vertex_type& v) {
                         auto link = links_[v];
                         if (!link)
@@ -187,21 +190,34 @@ namespace Graph {
                         tree_[t] = g.add_edge(s, t, sentinel, sentinel, sentinel);
                         add_to_tree(s);
 
+                        // std::cout << std::endl << std::endl;
+                        // print_representation(g, std::cout);
+                        // std::cout << tree_ << std::endl;
+
                         for (decltype(tree_.current_version()) old_version = 0;
                              old_version != tree_.current_version(); ) {
                             old_version = tree_.current_version();
                             for (auto& v : g) {
                                 for (auto e = v.edges_begin(); e != v.edges_end(); ++e) {
                                     auto link = e->edge().link();
-                                    if (link->cap_r_to(link->other(v)) > 0 && link->cap_r_to(v) == 0 
-                                        && cost_r(link, v) < 0) {
-                                        auto lca = tree_.find_lca(link);
-                                        auto old_link = tree_.augment(link, lca);
-                                        tree_.replace(old_link, link, lca);
+                                    if (link->cap_r_to(link->other(v)) > 0 && link->cap_r_to(v) == 0) {
+                                        auto cost = residual_cost(link, v);
+                                        if (cost < 0) {
+                                            auto lca = tree_.find_lca(link);
+                                            auto old_link = tree_.augment(link, lca);
+                                            // std::cout << std::endl
+                                            //     << tree_ << std::endl
+                                            //     << tree_.potentials() << std::endl
+                                            //     << "eligible: " << *link << ", r. cost: " << cost
+                                            //     << ", lca: " << *lca << ", old edge: " << *old_link << std::endl;
+                                            tree_.replace(old_link, link, lca);
+                                            // print_representation(g, std::cout);
+                                        }
                                     }
                                 }
                             }
                         }
+
                         g.remove_edge(s, t);
                     }
                     void add_to_tree(vertex_type& v) {
@@ -217,7 +233,7 @@ namespace Graph {
                             }
                         }
                     }
-                    auto cost_r(link_type* link, vertex_type& v) {
+                    auto residual_cost(link_type* link, vertex_type& v) {
                         auto cost = link->cost() + tree_.get_vertex_potential(link->target()) 
                             - tree_.get_vertex_potential(link->source());
                         if (link->is_to(v)) cost *= -1;
