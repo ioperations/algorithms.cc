@@ -616,14 +616,4 @@ int main(int argc, char** argv) {
              .build();
          minimize_network_flow_cost(f, f.vertex_at(0), f.vertex_at(5), 200);
      }
-    
-
-    {
-        std::cout << std::endl;
-        Builder<Network_flow_with_cost<int, int>> b;
-        for (int i = 0; i < 6; ++i) b.for_vertex(i);
-        auto f = Samples::simplex_sample();
-        Network_flow_ns::Simplex simplex(f, f.vertex_at(0), f.vertex_at(5), 200);
-    }
-
 }

@@ -112,10 +112,20 @@ namespace Graph {
                 void add_link(const Flow_vertex& v, const edge_type& edge) {
                     Base::links_.emplace_back(v.index(), edge);
                 } // todo move to parent, remove FLOW specialization
+                void remove_edge(const Flow_vertex& v) {
+                    Base::links_.remove_first_if([&v](auto& edge) {
+                        bool found = v.index() == edge.target();
+                        if (found && v == edge.link()->source())
+                            delete edge.link();
+                        return found;
+                    });
+                }
         };
 
         template<typename V>
-            class Flow : public Adjacency_lists_ns::Adjacency_lists_base<Graph_type::GRAPH, V> {
+            class Flow 
+            : public Adjacency_lists_ns::Adjacency_lists_base<Graph_type::GRAPH, V>,
+            public Adjacency_lists_ns::Edges_remover<Graph_type::GRAPH, V> {
                 private:
                     using Base = Adjacency_lists_ns::Adjacency_lists_base<Graph_type::GRAPH, V>;
                 public:
@@ -167,9 +177,6 @@ namespace Graph {
                     link_type* get_link(size_t v, size_t w) {
                         return Base::get_edge(v, w)->link();
                     }
-                private:
-                    // todo implement, have to delete link
-                    void remove_edge(vertex_type& v1, vertex_type& v2) {}
             };
 
         template<typename V, typename C>

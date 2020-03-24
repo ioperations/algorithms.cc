@@ -24,22 +24,27 @@ void add_link(graph_type& g, tree_type& tree, vertex_type& v, vertex_type& w) {
     tree[w] = g.add_edge(v, w, 5, 0, 0);
 }
 
-void add_to_tree(tree_type& tree, graph_type& graph, Forward_list<std::pair<size_t, size_t>>&& links_map) {
-    // TODO remove 
-    for (auto e : links_map)
-        tree[e.second] = graph.get_edge(e.first, e.second)->link();
-}
-
 struct Replace_test_case {
     graph_type g_;
     tree_type tree_;
     Versions_array<unsigned int> versions_;
     Replace_test_case(graph_type&& g, Forward_list<std::pair<size_t, size_t>>&& links_map)
-        :g_(std::move(g)), tree_(g_.vertices_count()), versions_(g_.vertices_count()) {
-            add_to_tree(tree_, g_, std::move(links_map));
+        :g_(std::move(g)), tree_(g_.vertices_count()), versions_(g_.vertices_count(), false) {
+            for (auto e : links_map)
+                tree_[e.second] = g_.get_edge(e.first, e.second)->link();
         }
 };
 
+TEST(Parent_link_array_tree, get_vertex_potential) {
+    auto g = Graph::Samples::simplex_sample();
+    g.add_edge(g[0], g[5], 200, 150, 100);
+    Replace_test_case t(std::move(g), {{3, 1}, {0, 2}, {5, 3}, {1, 4}, {0, 5}});
+
+    std::stringstream ss;
+    for (int i = 0; i < 6; ++i)
+        ss << t.tree_.get_vertex_potential(t.g_[i], t.versions_) << " ";
+    ASSERT_EQ("0 -97 -1 -98 -98 -100 ", ss.str());
+}
 
 TEST(Parent_link_array_tree, find_lca) {
     graph_type g;
@@ -114,13 +119,7 @@ TEST(Parent_link_array_tree, replace) {
     Versions_array<unsigned int> versions_array(g.vertices_count());
     tree.replace(old_link, new_link, versions_array);
 
-    std::cout << tree << std::endl;
     ASSERT_EQ("7-0, 0-1, 5-2, 1-3, 1-4, 4-5, 2-6, --7", stringify(tree));
-}
-
-template<typename T>
-void do_print(const T& t) {
-    std::cout << t << std::endl;
 }
 
 TEST(Parent_link_array_tree, replace_2) {
@@ -138,21 +137,8 @@ TEST(Parent_link_array_tree, replace_2) {
     add_to_tree(2, 4);
 
     Versions_array<unsigned int> versions_array(g.vertices_count());
-    // tree.replace(g.get_edge(3, 5)->link(), g.get_edge(4, 5)->link(), versions_array);
-    // ASSERT_EQ("5-0, 0-1, 4-2, 2-3, 5-4, --5", stringify(tree));
-
-    // ++versions_array;
-    // std::stringstream ss;
-    // for (size_t i = 0; i < 6; ++i)
-    //     ss << tree.get_vertex_potential(g[i], versions_array) << " ";
-    // ASSERT_EQ("-100 -103 3 -1 1 0 ", ss.str());
-
-    // do_print(*g.get_edge(0, 1)->link());
-
-    ++versions_array;
-    tree.augment(g.get_edge(4, 5)->link(), versions_array);
-
-    // std::cout << tree << std::endl;
+    tree.replace(g.get_edge(3, 5)->link(), g.get_edge(4, 5)->link(), versions_array);
+    ASSERT_EQ("5-0, 0-1, 4-2, 2-3, 5-4, --5", stringify(tree));
 }
 
 TEST(Parent_link_array_tree, replace_3) {
@@ -171,20 +157,30 @@ TEST(Parent_link_array_tree, replace_4) {
     ASSERT_EQ("5-0, 4-1, 0-2, 1-3, 5-4, --5", stringify(t.tree_));
 }
 
-TEST(Parent_link_array_tree, augment) {
+TEST(Parent_link_array_tree, replace_5) {
     auto g = Graph::Samples::simplex_sample();
-    tree_type tree(g.vertices_count());
-    tree[0] = g.add_edge(g[5], g[0], 200, 150, 100);
-    auto add_to_tree = [&g, &tree](size_t v, size_t w) {
-        tree[w] = g.get_edge(v, w)->link();
-    };
-    add_to_tree(5, 0);
-    add_to_tree(0, 1);
-    add_to_tree(0, 2);
-    add_to_tree(1, 3);
-    add_to_tree(1, 4);
-    std::cout << tree << std::endl;
-
-    Versions_array<unsigned int> versions_array(g.vertices_count());
-    tree.augment(g.get_edge(2, 3)->link(), versions_array);
+    g.add_edge(g[0], g[5], 200, 150, 100);
+    Replace_test_case t(std::move(g), {{3, 1}, {0, 2}, {5, 3}, {1, 4}, {0, 5}});
+    t.tree_.replace(t.g_.get_link(3, 5), t.g_.get_link(4, 5), t.versions_);
+    ASSERT_EQ("--0, 4-1, 0-2, 1-3, 5-4, 0-5", stringify(t.tree_));
 }
+
+TEST(Parent_link_array_tree, simplex) {
+    auto f = Graph::Samples::simplex_sample();
+    Graph::Network_flow_ns::Simplex simplex(f, f[0], f[5], 200);
+
+    std::stringstream ss;
+    ss << std::endl;
+    print_representation(f, ss);
+    ASSERT_EQ(R"(
+0: ->1(2/3[3]) ->2(2/3[1]) 
+1: <-0(2/3[3]) ->3(2/2[1]) ->4(0/2[1]) 
+2: <-0(2/3[1]) ->3(0/1[4]) ->4(2/2[2]) 
+3: <-1(2/2[1]) <-2(0/1[4]) ->5(2/2[2]) 
+4: <-1(0/2[1]) <-2(2/2[2]) ->5(2/2[1]) 
+5: <-3(2/2[2]) <-4(2/2[1]) 
+)", ss.str());
+    ASSERT_EQ(20, calculate_network_flow_cost(f));
+}
+
+
