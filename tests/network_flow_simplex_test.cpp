@@ -27,9 +27,8 @@ void add_link(graph_type& g, tree_type& tree, vertex_type& v, vertex_type& w) {
 struct Replace_test_case {
     graph_type g_;
     tree_type tree_;
-    Versions_array<unsigned int> versions_;
     Replace_test_case(graph_type&& g, Forward_list<std::pair<size_t, size_t>>&& links_map)
-        :g_(std::move(g)), tree_(g_.vertices_count()), versions_(g_.vertices_count(), false) {
+        :g_(std::move(g)), tree_(g_.vertices_count()) {
             for (auto e : links_map)
                 tree_[e.second] = g_.get_edge(e.first, e.second)->link();
         }
@@ -42,7 +41,7 @@ TEST(Parent_link_array_tree, get_vertex_potential) {
 
     std::stringstream ss;
     for (int i = 0; i < 6; ++i)
-        ss << t.tree_.get_vertex_potential(t.g_[i], t.versions_) << " ";
+        ss << t.tree_.get_vertex_potential(t.g_[i]) << " ";
     ASSERT_EQ("0 -97 -1 -98 -98 -100 ", ss.str());
 }
 
@@ -66,12 +65,11 @@ TEST(Parent_link_array_tree, find_lca) {
 
     ASSERT_EQ("6-0, 0-1, 0-2, 1-3, 2-4, 4-5, --6", stringify(tree));
 
+    g.add_edge(v3, v5, 5, 0, 0);
     g.add_edge(v3, v6, 5, 0, 0);
     g.add_edge(v5, v6, 5, 0, 0);
 
-    Versions_array<unsigned int> versions_array(g.vertices_count());
-
-    ASSERT_EQ(0, tree.find_lca(&v3, &v5, versions_array)->index());
+    ASSERT_EQ(0, tree.find_lca(g.get_link(3, 5))->index());
     ASSERT_TRUE(tree.is_between(&v5, &v0, &v2));
 }
 
@@ -79,7 +77,12 @@ TEST(Parent_link_array_tree, find_lca_2) {
     auto g = Graph::Samples::simplex_sample();
     g.add_edge(g[5], g[0], 200, 150, 100);
     Replace_test_case t(std::move(g), {{5, 0}, {3, 1}, {0, 2}, {2, 3}, {1, 4}});
-    ASSERT_EQ(2, t.tree_.find_lca(&t.g_[2], &t.g_[4], t.versions_)->index());
+    ASSERT_EQ(2, t.tree_.find_lca(t.g_.get_link(2, 4))->index());
+}
+
+void replace_tree_link(tree_type& tree, link_type* old_link, link_type* new_link) {
+    auto lca = tree.find_lca(new_link);
+    tree.replace(old_link, new_link, lca);
 }
 
 TEST(Parent_link_array_tree, replace) {
@@ -116,8 +119,7 @@ TEST(Parent_link_array_tree, replace) {
     ASSERT_EQ(1, new_link->source());
     ASSERT_EQ(4, new_link->target());
 
-    Versions_array<unsigned int> versions_array(g.vertices_count());
-    tree.replace(old_link, new_link, versions_array);
+    replace_tree_link(tree, old_link, new_link);
 
     ASSERT_EQ("7-0, 0-1, 5-2, 1-3, 1-4, 4-5, 2-6, --7", stringify(tree));
 }
@@ -136,8 +138,7 @@ TEST(Parent_link_array_tree, replace_2) {
     add_to_tree(5, 3);
     add_to_tree(2, 4);
 
-    Versions_array<unsigned int> versions_array(g.vertices_count());
-    tree.replace(g.get_edge(3, 5)->link(), g.get_edge(4, 5)->link(), versions_array);
+    replace_tree_link(tree, g.get_edge(3, 5)->link(), g.get_edge(4, 5)->link());
     ASSERT_EQ("5-0, 0-1, 4-2, 2-3, 5-4, --5", stringify(tree));
 }
 
@@ -145,7 +146,7 @@ TEST(Parent_link_array_tree, replace_3) {
     auto g = Graph::Samples::simplex_sample();
     g.add_edge(g[5], g[0], 200, 150, 100); // TODO doesn't participate in the test, delete?
     Replace_test_case t(std::move(g), {{1, 0}, {4, 1}, {0, 2}, {2, 3}, {5, 4}});
-    t.tree_.replace(t.g_.get_link(1, 4), t.g_.get_link(2, 4), t.versions_);
+    replace_tree_link(t.tree_, t.g_.get_link(1, 4), t.g_.get_link(2, 4));
     ASSERT_EQ("2-0, 0-1, 4-2, 2-3, 5-4, --5", stringify(t.tree_));
 }
 
@@ -153,7 +154,7 @@ TEST(Parent_link_array_tree, replace_4) {
     auto g = Graph::Samples::simplex_sample();
     g.add_edge(g[5], g[0], 200, 150, 100);
     Replace_test_case t(std::move(g), {{5, 0}, {3, 1}, {0, 2}, {5, 3}, {1, 4}});
-    t.tree_.replace(t.g_.get_link(3, 5), t.g_.get_link(4, 5), t.versions_);
+    replace_tree_link(t.tree_, t.g_.get_link(3, 5), t.g_.get_link(4, 5));
     ASSERT_EQ("5-0, 4-1, 0-2, 1-3, 5-4, --5", stringify(t.tree_));
 }
 
@@ -161,7 +162,7 @@ TEST(Parent_link_array_tree, replace_5) {
     auto g = Graph::Samples::simplex_sample();
     g.add_edge(g[0], g[5], 200, 150, 100);
     Replace_test_case t(std::move(g), {{3, 1}, {0, 2}, {5, 3}, {1, 4}, {0, 5}});
-    t.tree_.replace(t.g_.get_link(3, 5), t.g_.get_link(4, 5), t.versions_);
+    replace_tree_link(t.tree_, t.g_.get_link(3, 5), t.g_.get_link(4, 5));
     ASSERT_EQ("--0, 4-1, 0-2, 1-3, 5-4, 0-5", stringify(t.tree_));
 }
 

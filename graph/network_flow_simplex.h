@@ -35,47 +35,52 @@ namespace Graph {
                 private:
                     using vertex_type = typename L::vertex_type;
                     Array<L*> links_;
+                    Versions_array<unsigned int> versions_;
                 public:
                     Array<typename vertex_type::edge_value_type> potentials_; // TODO move potentials here
-                    Parent_link_array_tree(size_t size) :links_(size, nullptr), potentials_(size) {}
+                    Parent_link_array_tree(size_t size) 
+                        :links_(size, nullptr), versions_(size, false), potentials_(size) 
+                    {}
                     L*& operator[](size_t index) { return links_[index]; }
                     vertex_type* get_parent(vertex_type* v) { return &links_[*v]->other(*v); }
-                    template<typename VA>
-                    auto get_vertex_potential(vertex_type& v, VA& versions) {
+                    auto current_version() { return versions_.current_version(); }
+                    auto get_vertex_potential(vertex_type& v) {
                         auto link = links_[v];
                         if (!link)
                             return 0; // root potential (doesn't have a parent)
-                        if (versions.is_up_to_date(v))
+                        if (versions_.is_up_to_date(v))
                             return potentials_[v];
-                        potentials_[v] = get_vertex_potential(link->other(v), versions) - cost_r_to(*link, v);
-                        versions.set_up_to_date(v);
+                        potentials_[v] = get_vertex_potential(link->other(v)) - cost_r_to(*link, v);
+                        versions_.set_up_to_date(v);
                         return potentials_[v];
                     }
-                    template<typename VA>
-                        vertex_type* find_lca(vertex_type* v, vertex_type* w, VA& versions) {
-                            ++versions;
-                            versions.set_up_to_date(*v);
-                            versions.set_up_to_date(*w);
-                            auto step = [this, &versions](auto& v) {
-                                auto link = links_[*v];
-                                if (!link)
-                                    return false; // tree root reached
-                                v = &link->other(*v);;
-                                if (links_[*v] && versions.is_up_to_date(*v))
-                                    return true;
-                                else {
-                                    versions.set_up_to_date(*v);
-                                    return false;
-                                }
-                            };
-                            while (v != w) {
-                                if (step(v))
-                                    w = v;
-                                else if (step(w))
-                                    v = w;
+                    vertex_type* find_lca(L* link) {
+                        auto v = &link->source();
+                        auto w = &link->target();
+                        ++versions_;
+                        versions_.set_up_to_date(*v);
+                        versions_.set_up_to_date(*w);
+                        auto step = [this](auto& v) {
+                            auto link = links_[*v];
+                            if (!link)
+                                return false; // tree root reached
+                            v = &link->other(*v);;
+                            if (links_[*v] && versions_.is_up_to_date(*v))
+                                return true;
+                            else {
+                                versions_.set_up_to_date(*v);
+                                return false;
                             }
-                            return v;
+                        };
+                        while (v != w) {
+                            if (step(v))
+                                w = v;
+                            else if (step(w))
+                                v = w;
                         }
+                        return v;
+                    }
+
                     bool is_between(vertex_type* descendant, vertex_type* const ancestor, vertex_type* const v) {
                         for (; descendant != ancestor; descendant = get_parent(descendant))
                             if (descendant == v)
@@ -83,23 +88,9 @@ namespace Graph {
                         return false;
                     }
 
-                    template<typename F>
-                    void calculate_augmentation_cap(vertex_type* v, vertex_type* lca,
-                                                    typename vertex_type::edge_value_type& min_cap, F f) {
-                        for (; v != lca; v = get_parent(v)) {
-                            auto l = links_[*v];
-                            auto w = f(l, v);
-                            auto cap = l->cap_r_to(*w);
-                            if (min_cap > cap)
-                                min_cap = cap;
-                        }
-                    }
-
-                    template<typename VA>
-                    L* augment(L* link, VA& versions_) {
+                    L* augment(L* link, vertex_type* lca) {
                         auto v = &link->source();
                         auto w = &link->target(); // todo add link method returning vertex pointer
-                        auto lca = find_lca(v, w, versions_);
 
                         auto min_cap = link->cap_r_to(*w);
                         for (auto vv = w; vv != lca; ) {
@@ -133,29 +124,27 @@ namespace Graph {
                         }
                         return old_link;
                     }
-                    template<typename VA>
-                        void replace(L* old_link, L* new_link, VA& versions_array) {
-                            auto old_target = &old_link->target();
-                            if (old_link != links_[*old_target])
-                                old_target = &old_link->source();
+                    void replace(L* old_link, L* new_link, vertex_type* lca) {
+                        auto old_target = &old_link->target();
+                        if (old_link != links_[*old_target])
+                            old_target = &old_link->source();
 
-                            auto lca = find_lca(&new_link->source(), &new_link->target(), versions_array);
-                            auto new_target = &new_link->source();
-                            if (is_between(&new_link->target(), lca, old_target))
-                                new_target = &new_link->target();
+                        auto new_target = &new_link->source();
+                        if (is_between(&new_link->target(), lca, old_target))
+                            new_target = &new_link->target();
 
-                            if (new_target != old_target) {
-                                auto prev_link = links_[*new_target];
-                                for (auto v = get_parent(new_target); ;) {
-                                    auto p = get_parent(v);
-                                    std::swap(links_[*v], prev_link);
-                                    if (v == old_target) break;
-                                    v = p;
-                                }
+                        if (new_target != old_target) {
+                            auto prev_link = links_[*new_target];
+                            for (auto v = get_parent(new_target); ;) {
+                                auto p = get_parent(v);
+                                std::swap(links_[*v], prev_link);
+                                if (v == old_target) break;
+                                v = p;
                             }
-                            links_[*new_target] = new_link;
-                            ++versions_array;
                         }
+                        links_[*new_target] = new_link;
+                        ++versions_;
+                    }
                     template<typename LL>
                         friend std::ostream& operator<<(std::ostream& stream, const Parent_link_array_tree<LL>& tree) {
                             if (tree.links_.size() != 0) {
@@ -188,27 +177,27 @@ namespace Graph {
                     using link_type = typename G::link_type;
 
                     Parent_link_array_tree<link_type> tree_;
-                    Versions_array<unsigned int> versions_;
                 public:
                     Simplex(G& g, vertex_type& s, vertex_type& t, const w_t& sentinel)
                         :Simplex(g, s, t, sentinel, g.vertices_count()) {}
                 private:
                     Simplex(G& g, vertex_type& s, vertex_type& t, const w_t& sentinel, size_t v_count)
-                        :tree_(v_count), versions_(v_count, false)
+                        :tree_(v_count)
                     {
                         tree_[t] = g.add_edge(s, t, sentinel, sentinel, sentinel);
                         add_to_tree(s);
 
-                        decltype(versions_.current_version()) old_version = 0;
-                        while (versions_.current_version() != old_version) {
-                            old_version = versions_.current_version();
+                        for (decltype(tree_.current_version()) old_version = 0;
+                             old_version != tree_.current_version(); ) {
+                            old_version = tree_.current_version();
                             for (auto& v : g) {
                                 for (auto e = v.edges_begin(); e != v.edges_end(); ++e) {
                                     auto link = e->edge().link();
                                     if (link->cap_r_to(link->other(v)) > 0 && link->cap_r_to(v) == 0 
                                         && cost_r(link, v) < 0) {
-                                        auto old_link = tree_.augment(link, versions_);
-                                        tree_.replace(old_link, link, versions_);
+                                        auto lca = tree_.find_lca(link);
+                                        auto old_link = tree_.augment(link, lca);
+                                        tree_.replace(old_link, link, lca);
                                     }
                                 }
                             }
@@ -229,8 +218,8 @@ namespace Graph {
                         }
                     }
                     auto cost_r(link_type* link, vertex_type& v) {
-                        auto cost = link->cost() + tree_.get_vertex_potential(link->target(), versions_) 
-                            - tree_.get_vertex_potential(link->source(), versions_);
+                        auto cost = link->cost() + tree_.get_vertex_potential(link->target()) 
+                            - tree_.get_vertex_potential(link->source());
                         if (link->is_to(v)) cost *= -1;
                         return cost;
                     }
