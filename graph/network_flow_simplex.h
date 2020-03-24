@@ -35,8 +35,8 @@ namespace Graph {
                 private:
                     using vertex_type = typename L::vertex_type;
                     Array<L*> links_;
-                    Array<typename vertex_type::edge_value_type> potentials_; // TODO move potentials here
                 public:
+                    Array<typename vertex_type::edge_value_type> potentials_; // TODO move potentials here
                     Parent_link_array_tree(size_t size) :links_(size, nullptr), potentials_(size) {}
                     L*& operator[](size_t index) { return links_[index]; }
                     vertex_type* get_parent(vertex_type* v) { return &links_[*v]->other(*v); }
@@ -74,7 +74,7 @@ namespace Graph {
                                 else if (step(w))
                                     v = w;
                             }
-                            std::cout << "lca: " << *v << std::endl;
+                            // std::cout << "lca: " << *v << std::endl;
                             return v;
                         }
                     bool is_between(vertex_type* descendant, vertex_type* const ancestor, vertex_type* const v) {
@@ -132,52 +132,35 @@ namespace Graph {
                                 old_link = l;
                             vv = &l->other(*vv);
                         }
-                        // if (min_cap != 0) {
-                            // std::cout << *old_link << " " << *link;
-                            std::cout << "old link: " << *old_link;
-                            std::cout << ", flow added: " << min_cap << std::endl;
-                            // print_representation(g_, std::cout);
-                        // }
                         return old_link;
                     }
                     template<typename VA>
                         void replace(L* old_link, L* new_link, VA& versions_array) {
-                            std::cout << *this << std::endl;
-                            std::cout << *old_link << "(old), " << *new_link << std::endl;
+                            // std::cout << *this << std::endl;
+                            // std::cout << *old_link << "(old), " << *new_link << std::endl;
                             auto lca = find_lca(&new_link->source(), &new_link->target(), versions_array);
 
                             auto old_target = &old_link->target();
-                            {
-                                auto target_link = links_[*old_target];
-                                if (!target_link || &target_link->target() != old_target)
-                                    old_target = &old_link->source();
-                            }
+                            if (old_link != links_[*old_target])
+                                old_target = &old_link->source();
 
-                            // auto old_target = &old_link->target();
-                            // {
-                            //     auto target_link = links_[*old_target];
-                            //     if (&l->target() != old_target)
-                            //         old_target = &old_link->source();
-                            // }
-
-                            std::cout << "old target: " << *old_target << std::endl;
+                            // std::cout << "old target: " << *old_target << std::endl;
 
                             auto new_target = &new_link->source();
                             if (is_between(&new_link->target(), lca, old_target))
                                 new_target = &new_link->target();
 
-                            std::cout << "new target: " << *new_target << std::endl;
+                            // std::cout << "new target: " << *new_target << std::endl;
 
-                            auto prev_link = links_[*new_target];
-                            for (auto v = get_parent(new_target); ;) {
-                                auto p = get_parent(v);
-                                std::swap(links_[*v], prev_link);
-                                if (v == old_target) break;
-                                v = p;
+                            if (new_target != old_target) {
+                                auto prev_link = links_[*new_target];
+                                for (auto v = get_parent(new_target); ;) {
+                                    auto p = get_parent(v);
+                                    std::swap(links_[*v], prev_link);
+                                    if (v == old_target) break;
+                                    v = p;
+                                }
                             }
-
-                            // std::cout << *this << std::endl;
-
                             links_[*new_target] = new_link;
                         }
                     template<typename LL>
@@ -210,18 +193,16 @@ namespace Graph {
                     using vertex_type = typename G::vertex_type;
                     using w_t = typename G::edge_type::value_type;
                     using link_type = typename G::link_type;
+                    using tree_type = Parent_link_array_tree<link_type>;
 
                     G& g_;
                     vertex_type& s_;
                     vertex_type& t_;
                     const w_t sentinel_;
 
-                    // todo deduct types?
-                    Parent_link_array_tree<link_type> tree_;
+                    // TODO deduct types?
+                    tree_type tree_;
                     Versions_array<unsigned int> versions_;
-
-                    link_type* aux_link_;
-
                 public:
                     Simplex(G& g, vertex_type& s, vertex_type& t, const w_t& sentinel)
                         :Simplex(g, s, t, sentinel, g.vertices_count()) {}
@@ -229,99 +210,60 @@ namespace Graph {
                     Simplex(G& g, vertex_type& s, vertex_type& t, const w_t& sentinel, size_t v_count)
                         :g_(g), s_(s), t_(t), sentinel_(sentinel), 
                         tree_(v_count),
-                        // st_(v_count, nullptr),
                         versions_(v_count, false)
                     {
-                        aux_link_ = g.add_edge(t, s, sentinel, 180, 40); // todo hardcoded
-                        dfs_r(aux_link_);
-                        std::cout << "initial tree" << std::endl;
-                        std::cout << tree_ << std::endl;
-
-                        print_representation(g, std::cout);
-
-                        foo();
-
-                        print_representation(g, std::cout);
-                    }
-                    void foo() {
-                        unsigned int old_v = 0;
-                        while (versions_.current_version() != old_v) {
-                            old_v = versions_.current_version();
-                            for (auto& v : g_) {
+                        link_type* aux_link = g.add_edge(s, t, sentinel, sentinel, 40); // todo hardcoded
+                        struct Tree_composer {
+                            tree_type& tree_;
+                            Tree_composer(tree_type& tree) :tree_(tree) {}
+                            void add(vertex_type& v) {
                                 for (auto e = v.edges_begin(); e != v.edges_end(); ++e) {
-                                    auto link = e->edge().link();
-                                    if (link->cap_r_to(link->other(v)) > 0 && link->cap_r_to(v) == 0) {
-                                        if (!is_in_sp(link)) {
-                                            std::cout << std::endl << tree_ << std::endl;
-                                            std::cout << "adding: " << *link << std::endl;
-                                            auto old_link = tree_.augment(link, versions_);
-                                            tree_.replace(old_link, link, versions_);
-                                            ++versions_;
+                                    auto l = e->edge().link();
+                                    if (l->is_from(v)) {
+                                        auto& w = l->other(v);
+                                        auto& existing_l = tree_[w];
+                                        if (!existing_l) {
+                                            existing_l = l;
+                                            add(w);
                                         }
                                     }
                                 }
                             }
-                        }
-                    }
-                    void dfs_r(link_type* link) {
-                        auto& t = link->target();
-                        tree_[t] = link;
-                        for (auto e = t.edges_begin(); e != t.edges_end(); ++e) {
-                            auto child_link = e->edge().link();
-                            if (child_link->is_from(t) && !tree_[child_link->target()] && child_link->target() != t_)
-                                dfs_r(child_link);
-                        }
-                    }
-                    // void calculate_potentials() {
-                    //     phi_[t_] = cost_r_to(*aux_link_, s_);
-                    //     versions_.set_up_to_date(t_);
-                    //     for (auto& v : g_)
-                    //         if (v != t_)
-                    //             phi_[v] = phi_r(v);
-                    // }
-                    // int phi_r(vertex_type& v) {
-                    //     if (versions_.is_up_to_date(v))
-                    //         return phi_[v];
-                    //     auto link = tree_[v];
-                    //     if (link)
-                    //         phi_[v] = phi_r(*tree_.get_parent(&v)) - cost_r_to(*link, v);
-                    //     versions_.set_up_to_date(v);
-                    //     return phi_[v];
-                    // }
-                    auto cost_r(link_type* link, vertex_type& v) {
-                        auto cost = link->cost() + tree_.get_vertex_potential(link->target()) 
-                            - tree_.get_vertex_potential(link->source());
-                        if (link->is_to(v)) cost *= -1;
-                        return cost;
-                    }
-                    bool is_in_sp(link_type* l) { // todo is this check required?
-                        return l == tree_[l->source()] || l == tree_[l->target()];
-                    }
-                    link_type* find_best_eligible() {
-                        int min_cost = 40; // hardcoded
-                        bool all_zeros = true;
-                        link_type* link = nullptr;
-                        for (auto& v : g_) {
-                            for (auto e = v.edges_begin(); e != v.edges_end(); ++e) {
-                                auto l = e->edge().link();
-                                // if (l->cap_r_to(l->other(v)) > 0 && l->cap_r_to(v) == 0 && !is_in_sp(l)) {
-                                if (l->cap_r_to(l->other(v)) > 0 && l->cap_r_to(v) == 0) {
-                                    auto cost = cost_r(l, v); // todo how cost can be negative here?
-                                    // std::cout << *l << ", cost: " << cost << std::endl;
-                                    if (cost != 0)
-                                        all_zeros = false;
-                                    if (cost != 0 && min_cost > cost) {
-                                        min_cost = cost;
-                                        link = l;
+                        };
+                        tree_[t] = aux_link;
+                        Tree_composer(tree_).add(s);
+                        std::cout << "initial tree" << std::endl;
+                        std::cout << tree_ << std::endl;
+                        print_representation(g, std::cout);
+
+                        decltype(versions_.current_version()) old_version = 0;
+                        while (versions_.current_version() != old_version) {
+                            old_version = versions_.current_version();
+                            for (auto& v : g_) {
+                                for (auto e = v.edges_begin(); e != v.edges_end(); ++e) {
+                                    auto link = e->edge().link();
+                                    if (link->cap_r_to(link->other(v)) > 0 && link->cap_r_to(v) == 0 
+                                        && cost_r(link, v) < 0) {
+                                        std::cout << std::endl;
+                                        auto old_link = tree_.augment(link, versions_);
+                                        std::cout << tree_ << std::endl;
+                                        tree_.replace(old_link, link, versions_);
+                                        ++versions_;
                                     }
                                 }
                             }
                         }
-                            if (all_zeros)
-                                min_cost = 0;
-                            if (link)
-                                std::cout << *link << ", r cost: " << min_cost << std::endl;
-                        return link;
+
+                        // TODO delete aux link
+
+                        print_representation(g, std::cout);
+                        std::cout << calculate_network_flow_cost(g) << std::endl;
+                    }
+                    auto cost_r(link_type* link, vertex_type& v) {
+                        auto cost = link->cost() + tree_.get_vertex_potential(link->target(), versions_) 
+                            - tree_.get_vertex_potential(link->source(), versions_);
+                        if (link->is_to(v)) cost *= -1;
+                        return cost;
                     }
             };
 
