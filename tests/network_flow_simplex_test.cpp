@@ -4,7 +4,6 @@
 #include "network_flow_simplex.h"
 #include "graph.h"
 #include "graphs.h"
-#include "forward_list.h"
 
 using namespace Graph::Network_flow_ns;
 
@@ -169,7 +168,6 @@ TEST(Parent_link_array_tree, replace_5) {
 TEST(Parent_link_array_tree, simplex) {
     auto f = Graph::Samples::simplex_sample();
     Graph::Network_flow_ns::Simplex simplex(f, f[0], f[5], 200);
-
     std::stringstream ss;
     ss << std::endl;
     print_representation(f, ss);
@@ -183,5 +181,3 @@ TEST(Parent_link_array_tree, simplex) {
 )", ss.str());
     ASSERT_EQ(20, calculate_network_flow_cost(f));
 }
-
-

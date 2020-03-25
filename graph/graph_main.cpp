@@ -1,7 +1,6 @@
 #include "adjacency_matrix.h"
 #include "adjacency_lists.h"
 #include "network_flow.h"
-#include "network_flow_min_cost.h"
 #include "network_flow_simplex.h"
 #include "graphs.h"
 #include "array_queue.h"
@@ -507,113 +506,101 @@ Array_cycle find_negative_cycle(const G& g, const typename G::vertex_type& s,
 }
 
 int main(int argc, char** argv) {
-     test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>("adjacency matrix");
-     test_graph<Adjacency_lists<Graph_type::GRAPH, int>>("adjacency lists");
+    test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>("adjacency matrix");
+    test_graph<Adjacency_lists<Graph_type::GRAPH, int>>("adjacency lists");
 
-     {
-         std::cout << "Warshall transitive closure" << std::endl;
-         auto g = Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
-         auto transitive_closure = warshall_transitive_closure(g);
-         print_representation(transitive_closure, std::cout);
-     }
+    {
+        std::cout << "Warshall transitive closure" << std::endl;
+        auto g = Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
+        auto transitive_closure = warshall_transitive_closure(g);
+        print_representation(transitive_closure, std::cout);
+    }
 
-     test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
-     test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
+    test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
+    test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
 
-     test_weighted_graph<Adjacency_matrix<Graph_type::GRAPH, int, double>>();
-     test_weighted_graph<Adjacency_lists<Graph_type::GRAPH, int, double>>();
+    test_weighted_graph<Adjacency_matrix<Graph_type::GRAPH, int, double>>();
+    test_weighted_graph<Adjacency_lists<Graph_type::GRAPH, int, double>>();
 
-     test_weighted_dag<Adjacency_matrix<Graph_type::DIGRAPH, int, double>>();
-     test_weighted_dag<Adjacency_lists<Graph_type::DIGRAPH, int, double>>();
+    test_weighted_dag<Adjacency_matrix<Graph_type::DIGRAPH, int, double>>();
+    test_weighted_dag<Adjacency_lists<Graph_type::DIGRAPH, int, double>>();
 
-     {
-         auto f = Samples::flow_sample();
-         Max_flow m(f, f.vertex_at(0), f.vertex_at(5), f.vertices_count() * 10);
-         std::cout << "max flow:" << std::endl;
-         print_representation(f, std::cout);
-     }
-     std::cout << std::endl;
-     {
-         auto f = Samples::flow_sample();
-         Pre_flow_push_max_flow m(f, f.vertex_at(0), f.vertex_at(5), f.vertices_count() * 10);
-         std::cout << "pre flow push max flow:" << std::endl;
-         print_representation(f, std::cout);
-     }
+    {
+        auto f = Samples::flow_sample();
+        Max_flow m(f, f.vertex_at(0), f.vertex_at(5), f.vertices_count() * 10);
+        std::cout << "max flow:" << std::endl;
+        print_representation(f, std::cout);
+    }
+    std::cout << std::endl;
+    {
+        auto f = Samples::flow_sample();
+        Pre_flow_push_max_flow m(f, f.vertex_at(0), f.vertex_at(5), f.vertices_count() * 10);
+        std::cout << "pre flow push max flow:" << std::endl;
+        print_representation(f, std::cout);
+    }
 
-     std::cout << std::endl;
+    std::cout << std::endl;
 
-     Builder<Adjacency_lists<Graph_type::DIGRAPH, int, int>> b;
-     for (int i = 0; i < 6; ++i) b.for_vertex(i);
+    Builder<Adjacency_lists<Graph_type::DIGRAPH, int, int>> b;
+    for (int i = 0; i < 6; ++i) b.for_vertex(i);
 
-     auto g = b
-         .for_vertex(0).add_edge(1, 2).add_edge(2, 3)
-         .for_vertex(1).add_edge(2, 3).add_edge(4, 2)
-         .for_vertex(2).add_edge(3, 2).add_edge(4, 1)
-         .for_vertex(3).add_edge(1, 3).add_edge(5, 2)
-         .for_vertex(4).add_edge(3, 3).add_edge(5, 3)
-         .build();
+    auto g = b
+        .for_vertex(0).add_edge(1, 2).add_edge(2, 3)
+        .for_vertex(1).add_edge(2, 3).add_edge(4, 2)
+        .for_vertex(2).add_edge(3, 2).add_edge(4, 1)
+        .for_vertex(3).add_edge(1, 3).add_edge(5, 2)
+        .for_vertex(4).add_edge(3, 3).add_edge(5, 3)
+        .build();
 
-     print_representation(g, std::cout);
+    print_representation(g, std::cout);
 
-     Acyclic_flow_composer composer(g);
-     composer.compose();
+    Acyclic_flow_composer composer(g);
+    composer.compose();
 
-     print_representation(composer.n_, std::cout);
+    print_representation(composer.n_, std::cout);
 
-     {
-         auto f = Samples::flow_sample();
-         find_feasible_flow(f,
-                            std::map<int, int>{{0, 3}, {1, 3}, {3, 1}},
-                            std::map<int, int>{{2, 1}, {4, 1}, {5, 5}});
-     }
-     {
-         std::map<int, Forward_list<int>> mapping = {
-             {0, {6, 7, 8}},
-             {1, {6, 7, 11}},
-             {2, {8, 9, 10}},
-             {3, {6, 7}},
-             {4, {9, 10, 11}},
-             {5, {8, 10, 11}}
-         };
-         std::cout << "bipartite matching: " << std::endl;
-         for (auto e : bipartite_matching(mapping))
-             std::cout << e.first << ": " << e.second << ", ";
-         std::cout << std::endl;
-     }
-     {
-         Builder<Adjacency_lists<Graph_type::DIGRAPH, int, double>> b;
-         for (int i = 0; i < 6; ++i) b.for_vertex(i);
-         auto g = b
-             .for_vertex(0).add_edge(1, .41).add_edge(5, .29)
-             .for_vertex(1).add_edge(2, .51).add_edge(4, .28)
-             // .for_vertex(1).add_edge(2, .51).add_edge(4, .32)
-             .for_vertex(2).add_edge(3, .50)
-             .for_vertex(3).add_edge(0, .45).add_edge(5, -.38)
-             .for_vertex(4).add_edge(3, .36)
-             .for_vertex(5).add_edge(1, -.29).add_edge(4, .21)
-             .build();
+    {
+        auto f = Samples::flow_sample();
+        find_feasible_flow(f,
+                           std::map<int, int>{{0, 3}, {1, 3}, {3, 1}},
+                           std::map<int, int>{{2, 1}, {4, 1}, {5, 5}});
+    }
+    {
+        std::map<int, Forward_list<int>> mapping = {
+            {0, {6, 7, 8}},
+            {1, {6, 7, 11}},
+            {2, {8, 9, 10}},
+            {3, {6, 7}},
+            {4, {9, 10, 11}},
+            {5, {8, 10, 11}}
+        };
+        std::cout << "bipartite matching: " << std::endl;
+        for (auto e : bipartite_matching(mapping))
+            std::cout << e.first << ": " << e.second << ", ";
+        std::cout << std::endl;
+    }
+    {
+        Builder<Adjacency_lists<Graph_type::DIGRAPH, int, double>> b;
+        for (int i = 0; i < 6; ++i) b.for_vertex(i);
+        auto g = b
+            .for_vertex(0).add_edge(1, .41).add_edge(5, .29)
+            .for_vertex(1).add_edge(2, .51).add_edge(4, .28)
+            // .for_vertex(1).add_edge(2, .51).add_edge(4, .32)
+            .for_vertex(2).add_edge(3, .50)
+            .for_vertex(3).add_edge(0, .45).add_edge(5, -.38)
+            .for_vertex(4).add_edge(3, .36)
+            .for_vertex(5).add_edge(1, -.29).add_edge(4, .21)
+            .build();
 
-         auto n_cycle = find_negative_cycle(g, g.vertex_at(0), 200);
-         if (!n_cycle.empty()) {
-             auto v = n_cycle.cbegin();
-             auto first = v;
-             do {
-                 std::cout << *v << " - ";
-                 ++v;
-             } while (v != first);
-             std::cout << std::endl;
-         }
-     }
-     {
-         Builder<Network_flow_with_cost<int, int>> b;
-         for (int i = 0; i < 6; ++i) b.for_vertex(i);
-         auto f = b
-             .for_vertex(0).add_edge(1, 3, 2, 3).add_edge(2, 3, 2, 1)
-             .for_vertex(1).add_edge(3, 2, 1, 1).add_edge(4, 2, 1, 1)
-             .for_vertex(2).add_edge(3, 1, 1, 4).add_edge(4, 2, 1, 2)
-             .for_vertex(3).add_edge(5, 2, 2, 2)
-             .for_vertex(4).add_edge(5, 2, 2, 1)
-             .build();
-         minimize_network_flow_cost(f, f.vertex_at(0), f.vertex_at(5), 200);
-     }
+        auto n_cycle = find_negative_cycle(g, g.vertex_at(0), 200);
+        if (!n_cycle.empty()) {
+            auto v = n_cycle.cbegin();
+            auto first = v;
+            do {
+                std::cout << *v << " - ";
+                ++v;
+            } while (v != first);
+            std::cout << std::endl;
+        }
+    }
 }
