@@ -8,7 +8,6 @@
 #include "stack.h"
 #include "string_utils.h"
 #include "two_dimensional_array.h"
-#include "heap.h"
 #include "adjacency_lists.h"
 
 namespace Graph {
@@ -702,18 +701,6 @@ namespace Graph {
             return mst;
         }
 
-
-    template<typename V, typename W>
-        class Vertex_heap : public Multiway_heap_base<V, Vertex_heap<V, W>> {
-            private:
-                using Base = Multiway_heap_base<V, Vertex_heap<V, W>>;
-                Array<W>& weights_;
-            public:
-                Vertex_heap(size_t size, Array<W>& weights) :Base(size), weights_(weights) {}
-                bool compare(const V& v1, const V& v2) { return weights_[*v1] > weights_[*v2]; }
-                size_t get_index(const V& v) { return *v; }
-        };
-
     template<typename G>
         auto pq_mst(const G& g) {
             using vertex_t = typename G::vertex_type;
@@ -904,6 +891,84 @@ namespace Graph {
                 }
             }
         };
+
+    /**
+     * Bellman-Ford algorithm for negative cycles search.
+     */
+    template<typename G>
+        Array_cycle find_negative_cycle(const G& g, const typename G::vertex_type& s, 
+                                        typename G::edge_type::value_type sentinel) {
+            using vertex_type = typename G::vertex_type;
+            using w_t = typename G::edge_type::value_type;
+            using edge_t = typename G::vertex_type::const_edges_iterator::entry_type;
+
+            Array<w_t> weights(g.vertices_count(), sentinel);
+            Array<edge_t> spt(g.vertices_count());
+            for (auto& s : spt)
+                s.target_ = nullptr;
+
+            weights[s] = 0;
+
+            Forward_list<const vertex_type*> queue;
+            queue.push_back(&s);
+            queue.push_back(nullptr);
+
+            size_t n = 0;
+
+            bool completed = false;
+            while (!completed && !queue.empty()) {
+                const vertex_type* v;
+                while (!completed && (v = queue.pop_front()) == nullptr) {
+                    completed = n++ > g.vertices_count();
+                    if (!completed)
+                        queue.push_back(nullptr);
+                }
+                if (!completed)
+                    for (auto e = v->cedges_begin(); e != v->cedges_end(); ++e) {
+                        auto& w = e->target();
+                        auto weight = weights[*v] + e->edge().weight();
+                        if (weights[w] > weight) {
+                            weights[w] = weight;
+                            queue.push_back(&w);
+                            spt[w] = *e;
+                        }
+                    }
+            }
+
+            using cycle_g_type = Adjacency_lists<Graph_type::DIGRAPH, int>;
+            cycle_g_type gg;
+            for (auto v = g.cbegin(); v != g.cend(); ++v)
+                gg.create_vertex(*v);
+
+            for (auto& s : spt)
+                if (s.target_)
+                    gg.add_edge(gg[s.source()], gg[s.target()]);
+
+            struct Searcher : public Post_dfs_base<cycle_g_type, size_t, size_t, Searcher> {
+                using Base = Post_dfs_base<cycle_g_type, size_t, size_t, Searcher>;
+                bool found_;
+                Array<size_t> cycle_;
+                Searcher(const cycle_g_type& g, w_t sentinel) :Base(g), found_(false), cycle_(g.vertices_count(), sentinel) {}
+                void search_vertex(const typename Base::vertex_type& v) {
+                    if (!found_)
+                        Base::search_vertex(v);
+                }
+                void visit_edge(const typename Base::edge_type& e) {
+                    auto& v = e.source();
+                    auto& w = e.target();
+                    if (!found_ && Base::pre_[w] < Base::pre_[v] && Base::post_.is_unset(w))
+                        found_ = true;
+                    if (found_)
+                        cycle_[v] = w;
+                }
+            };
+            Searcher searcher(gg, sentinel);
+            searcher.search();
+            if (searcher.found_)
+                return {std::move(searcher.cycle_), static_cast<size_t>(sentinel)};
+            else
+                return {{}, static_cast<size_t>(sentinel)};
+        }
 
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "array.h"
+#include "heap.h"
 
 namespace Graph {
 
@@ -80,5 +81,16 @@ namespace Graph {
             Iterator cbegin() const { return Iterator(array_, begin_index_); }
             bool empty() const { return array_.size() == 0; }
     };
+
+    template<typename V, typename W>
+        class Vertex_heap : public Multiway_heap_base<V, Vertex_heap<V, W>> {
+            private:
+                using Base = Multiway_heap_base<V, Vertex_heap<V, W>>;
+                Array<W>& weights_;
+            public:
+                Vertex_heap(size_t size, Array<W>& weights) :Base(size), weights_(weights) {}
+                bool compare(const V& v1, const V& v2) { return weights_[*v1] > weights_[*v2]; }
+                size_t get_index(const V& v) { return *v; }
+        };
 
 }

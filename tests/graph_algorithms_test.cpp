@@ -248,6 +248,31 @@ void test_weighted_graph() {
 TEST(Graphs_algorithms_test, weighted_graph) {
     test_weighted_graph<Adjacency_matrix<Graph_type::GRAPH, int, double>>();
     test_weighted_graph<Adjacency_lists<Graph_type::GRAPH, int, double>>();
+
+    Builder<Adjacency_lists<Graph_type::DIGRAPH, int, double>> b;
+    for (int i = 0; i < 6; ++i) b.for_vertex(i);
+    auto g = b
+        .for_vertex(0).add_edge(1, .41).add_edge(5, .29)
+        .for_vertex(1).add_edge(2, .51).add_edge(4, .28)
+        // .for_vertex(1).add_edge(2, .51).add_edge(4, .32)
+        .for_vertex(2).add_edge(3, .50)
+        .for_vertex(3).add_edge(0, .45).add_edge(5, -.38)
+        .for_vertex(4).add_edge(3, .36)
+        .for_vertex(5).add_edge(1, -.29).add_edge(4, .21)
+        .build();
+
+    std::stringstream ss;
+    auto n_cycle = find_negative_cycle(g, g[0], 200);
+    if (!n_cycle.empty()) {
+        auto v = n_cycle.cbegin();
+        auto first = v;
+        ss << *v;
+        do {
+            ++v;
+            ss << "-" << *v;
+        } while (v != first);
+    }
+    ASSERT_EQ("1-4-3-5-1", ss.str());
 }
 
 template<typename G>

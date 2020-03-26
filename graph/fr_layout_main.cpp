@@ -73,7 +73,7 @@ Drawable* const compose_drawables() {
 
     graph = Graph::Samples::hamilton_path_sample<graph_type>();
     dout << graph;
-    auto h_path = Graph::compose_hamilton_path(graph);
+    auto h_path = Graph::compose_hamilton_path(graph, graph[0], graph[1]);
     print_path(dout, h_path.cbegin(), h_path.cend());
 
     dout <<"\ngraph with bridges";
