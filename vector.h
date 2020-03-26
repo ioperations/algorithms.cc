@@ -12,7 +12,7 @@ class Vector {
 
         T* array_;
         size_t array_size_;
-        size_t size_; // todo size or current max index?
+        size_t size_;
 
         void fill_defaults() {
             for (size_t i = 0; i < array_size_; ++i)
@@ -49,7 +49,7 @@ class Vector {
                 array_[i] = o.array_[i];
             return *this;
         }
-        
+
         Vector(Vector&& o) 
             :array_(o.array_), array_size_(o.array_size_), size_(o.size_) 
         {
@@ -79,17 +79,21 @@ class Vector {
         const_reverse_iterator crend() const { return {array_ - 1}; }
 
         template<typename TT>
-        void push_back(TT&& t) {
-            if (size_ + 1 > array_size_) {
-                array_size_ *= SIZE_MULTIPLIER;
-                T* old_array = array_;
-                array_ = new T[array_size_];
-                for (size_t i = 0; i < size_; ++i)
-                    array_[i] = std::move(old_array[i]);
-                delete[] old_array;
+            void push_back(TT&& t) {
+                if (size_ + 1 > array_size_) {
+                    array_size_ *= SIZE_MULTIPLIER;
+                    T* old_array = array_;
+                    array_ = new T[array_size_];
+                    for (size_t i = 0; i < size_; ++i)
+                        array_[i] = std::move(old_array[i]);
+                    delete[] old_array;
+                }
+                array_[size_++] = std::forward<TT>(t);
             }
-            array_[size_++] = std::forward<TT>(t);
-        }
+        template<typename... Args>
+            void emplace_back(Args&&... args) {
+                push_back(T(std::forward<Args>(args)...));
+            }
 
         T& operator[](size_t i) {
             return array_[i];

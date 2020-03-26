@@ -143,7 +143,6 @@ TEST(Parent_link_array_tree, replace_2) {
 
 TEST(Parent_link_array_tree, replace_3) {
     auto g = Graph::Samples::simplex_sample();
-    g.add_edge(g[5], g[0], 200, 150, 100); // TODO doesn't participate in the test, delete?
     Replace_test_case t(std::move(g), {{1, 0}, {4, 1}, {0, 2}, {2, 3}, {5, 4}});
     replace_tree_link(t.tree_, t.g_.get_link(1, 4), t.g_.get_link(2, 4));
     ASSERT_EQ("2-0, 0-1, 4-2, 2-3, 5-4, --5", stringify(t.tree_));

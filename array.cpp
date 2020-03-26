@@ -14,5 +14,5 @@ Array<bool> Array_builder<Array<bool>, bool>::build() {
 }
 
 Array<bool>::Array(size_t size) 
-    :actual_size_(divide_round_up(size, static_cast<size_t>(CHAR_BIT))), ptr_(new char[actual_size_]), size_(size) 
+    :actual_size_(divide_round_up_int(size, static_cast<size_t>(CHAR_BIT))), ptr_(new char[actual_size_]), size_(size) 
 {}

@@ -18,7 +18,7 @@ T least_common_multiple(T o1, T o2) {
  * Divides integers rounding up.
  */
 template<typename T>
-T divide_round_up(T dividend, T divisor) { // todo rename to divide_round_up_int
+T divide_round_up_int(T dividend, T divisor) {
     T mod = 0;
     for (; dividend > divisor; dividend -= divisor, ++mod);
     if (divisor - dividend != divisor) 

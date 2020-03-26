@@ -70,7 +70,7 @@ namespace Graph {
                     }
 
                     vertex_type& create_vertex(const V& t) {
-                        vertices_.push_back(vertex_type(t, this)); // todo add emplace back method
+                        vertices_.emplace_back(t, this);
                         return vertices_[vertices_.size() - 1];
                     }
                     size_t vertices_count() const {
@@ -161,13 +161,6 @@ namespace Graph {
                     void set_edge(const vertex_type& v1, const vertex_type& v2, const E& e) {
                         Base::edges_[v1][v2] = e;
                     }
-            };
-
-        template<typename V, typename E, typename ET>
-            class Adjacency_matrix<Graph_type::FLOW, V, E, ET> {
-                // Adjacency matrix flow graph not supported
-                private:
-                    Adjacency_matrix() {}
             };
 
         template<typename V, typename E>

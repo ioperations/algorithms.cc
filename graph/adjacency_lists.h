@@ -53,22 +53,11 @@ namespace Graph {
                     Vertex_link(size_t target, const Edge<bool>& edge) :Vertex_link_base(target) {}
             };
 
-        template<typename E>
-            class Vertex_link<Graph_type::FLOW, E> : public Vertex_link_base, public E {
-                private:
-                    bool out_;
-                public:
-                    Vertex_link(size_t target, const E& edge, bool out) 
-                        :Vertex_link_base(target), E(edge), out_(out) 
-                    {}
-                    bool is_out() const { return out_; }
-            };
-
         template<Graph_type TT_graph_type, typename VV>
             class Adjacency_lists_base;
 
-        template<Graph_type T_graph_type, typename V, typename E, typename D>
-            class Adj_lists_vertex_base : public Vertex_base<V> {
+        template<Graph_type T_graph_type, typename VT, typename E, typename D>
+            class Adj_lists_vertex_base : public Vertex_base<VT> {
                 private:
                     template<bool T_is_const>
                         class Iterator;
@@ -86,8 +75,8 @@ namespace Graph {
                     adj_lists_type* adjacency_lists_;
                     Forward_list<vertex_link_type> links_;
 
-                    Adj_lists_vertex_base(V value, adj_lists_type* adjacency_lists)
-                        :Vertex_base<V>(value), adjacency_lists_(adjacency_lists)
+                    Adj_lists_vertex_base(const VT& value, adj_lists_type* adjacency_lists)
+                        :Vertex_base<VT>(value), adjacency_lists_(adjacency_lists)
                     {}
                     Adj_lists_vertex_base() :adjacency_lists_(nullptr) {}
 
@@ -96,6 +85,9 @@ namespace Graph {
                             if(link->target() == v.index())
                                 return true;
                         return false;
+                    }
+                    void add_link(const Adj_lists_vertex_base& v, const E& edge) {
+                        links_.emplace_back(v.index(), edge);
                     }
                 public:
                     using edge_type = E;
@@ -143,54 +135,22 @@ namespace Graph {
                     }
             };
 
-        // todo remove graph type>
-        template<Graph_type T_graph_type, typename V, typename E> // todo remove parent?
-            class Vertex : public Adj_lists_vertex_base<T_graph_type, V, E, Vertex<T_graph_type, V, E>> {
+        template<Graph_type T_graph_type, typename VT, typename E>
+            class Vertex : public Adj_lists_vertex_base<T_graph_type, VT, E, Vertex<T_graph_type, VT, E>> {
                 private:
-                    using Base = Adj_lists_vertex_base<T_graph_type, V, E, Vertex<T_graph_type, V, E>>;
+                    using Base = Adj_lists_vertex_base<T_graph_type, VT, E, Vertex<T_graph_type, VT, E>>;
                     template<Graph_type TT_graph_type, typename VV>
                         friend class Adjacency_lists_base;
                     template<Graph_type TT_graph_type, typename VV, typename ET>
                         friend class Adjacency_lists;
                     friend class Vector<Vertex>;
-                    void add_link(const Vertex& v, const E& edge) {
-                        Base::links_.emplace_back(v.index(), edge);
-                    }
-                protected:
-                    using adj_lists_type = typename Base::adj_lists_type;
-                public: // todo move to private?
-                    using edge_type = E;
-                    Vertex(V value, adj_lists_type* adjacency_lists) // todo pass value by ref
+                    Vertex(const VT& value, typename Base::adj_lists_type* adjacency_lists)
                         :Base(value, adjacency_lists)
                     {}
                     Vertex() :Base() {}
-
-            };
-
-        template<typename V, typename E>
-            class Vertex<Graph_type::FLOW, V, E> 
-            : public Adj_lists_vertex_base<Graph_type::FLOW, V, E, Vertex<Graph_type::FLOW, V, E>> {
-                private:
-                    using Base = Adj_lists_vertex_base<Graph_type::FLOW, V, E, Vertex<Graph_type::FLOW, V, E>>;
-                    using adj_lists_type = typename Base::adj_lists_type;
-                    template<Graph_type TT_graph_type, typename VV, typename EE>
-                        friend class Adjacency_lists_base;
-                    template<Graph_type TT_graph_type, typename VV, typename EE, typename EET>
-                        friend class Adjacency_lists;
-                    friend class Vector<Vertex>;
-                    Vertex(V value, adj_lists_type* adjacency_lists)
-                        :Base(value, adjacency_lists)
-                    {}
-                    Vertex() :Base() {}
-
-                    void add_out_link(const Vertex& v, const E& edge) {
-                        Base::links_.emplace_back(v.index(), edge, true);
-                    }
-                    void add_in_link(const Vertex& v, const E& edge) {
-                        Base::links_.emplace_back(v.index(), edge, false);
-                    }
                 public:
                     using edge_type = E;
+
             };
 
         template<Graph_type T_graph_type, typename V>
@@ -231,7 +191,7 @@ namespace Graph {
                     }
 
                     vertex_type& create_vertex(const typename V::value_type& t) {
-                        vertices_.push_back(vertex_type(t, this)); // todo emplace back?
+                        vertices_.emplace_back(t, this);
                         return vertices_[vertices_.size() - 1];
                     }
 
@@ -322,23 +282,9 @@ namespace Graph {
                     }
             };
 
-        template<typename V>
-            class Adjacency_lists<Graph_type::FLOW, V>  // todo remove
-            : public Adjacency_lists_base<Graph_type::FLOW, V>, public Edges_remover<Graph_type::FLOW, V> {
-                public:
-                    Adjacency_lists& add_edge(V& v1, V& v2, const typename V::edge_type& edge) {
-                        if (!v1.link_exists(v2)) {
-                            v1.add_out_link(v2, edge);
-                            v2.add_in_link(v1, edge);
-                        }
-                        return *this;
-                    }
-            };
-
-        // todo rename V to VT
-        template<Graph_type T_graph_type, typename V, typename E, typename D>
+        template<Graph_type T_graph_type, typename VT, typename E, typename D>
             template<bool T_is_const>
-            class Adj_lists_vertex_base<T_graph_type, V, E, D>::Iterator {
+            class Adj_lists_vertex_base<T_graph_type, VT, E, D>::Iterator {
                 private:
                     using value_type = std::conditional_t<T_is_const, const D, D>;
                 protected:
@@ -366,9 +312,9 @@ namespace Graph {
                     }
             };
 
-        template<Graph_type T_graph_type, typename V, typename E, typename D>
+        template<Graph_type T_graph_type, typename VT, typename E, typename D>
             template<bool T_is_const>
-            class Adj_lists_vertex_base<T_graph_type, V, E, D>::Edges_iterator : public Iterator<T_is_const> {
+            class Adj_lists_vertex_base<T_graph_type, VT, E, D>::Edges_iterator : public Iterator<T_is_const> {
                 private:
                     using Base = Iterator<T_is_const>;
                     using link_type = typename Base::link_type;

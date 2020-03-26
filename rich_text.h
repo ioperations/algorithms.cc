@@ -67,7 +67,6 @@ namespace Rich_text {
                     }
         };
 
-    // todo move to Sequence class
     template<typename It>
         void remove_styles(It b, It e) {
             for (auto it = b; it != e; ++it)

@@ -94,7 +94,7 @@ namespace Graph {
                 using Base = Adjacency_lists_ns::Adj_lists_vertex_base
                     <Graph_type::GRAPH, V, Flow_edge<this_type>, this_type>;
                 using adj_lists_type = typename Base::adj_lists_type;
-                Flow_vertex(V value, adj_lists_type* adjacency_lists)
+                Flow_vertex(const V& value, adj_lists_type* adjacency_lists)
                     :Base(value, adjacency_lists)
                 {}
                 Flow_vertex() :Base() {}
@@ -109,9 +109,6 @@ namespace Graph {
                             delete link;
                     }
                 }
-                void add_link(const Flow_vertex& v, const edge_type& edge) {
-                    Base::links_.emplace_back(v.index(), edge);
-                } // todo move to parent, remove FLOW specialization
                 void remove_edge(const Flow_vertex& v) {
                     Base::links_.remove_first_if([&v](auto& edge) {
                         bool found = v.index() == edge.target();

@@ -262,8 +262,6 @@ struct Max_flow {
     }
 };
 
-// todo rename edge.edge() to edge.link() ?
-
 template<typename G>
 class Pre_flow_push_max_flow {
     private:
