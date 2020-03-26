@@ -212,7 +212,7 @@ namespace Graph {
             for (auto w = g.cbegin(); w != g.cend(); ++w)
                 if (count_vertex_edges(*w) % 2 != 0)
                     return path;
-            
+
             struct Helper {
                 const G& original_g_;
                 G& g_;
@@ -851,6 +851,54 @@ namespace Graph {
                         if (distances_[w] < distance) {
                             distances_[w] = distance;
                             lpt_[w] = *e;
+                        }
+                    }
+                }
+            }
+        };
+
+    template<typename G>
+        struct Dag_full_spts {
+            using vertex_t = typename G::vertex_type;
+            using w_t = typename G::edge_type::value_type;
+            using edge_t = typename G::vertex_type::const_edges_iterator::entry_type;
+            static auto empty_edge_it() {
+                auto create = []() {
+                    edge_t e;
+                    e.target_ = nullptr;
+                    return e;
+                };
+                static edge_t e(create());
+                return e;
+            }
+            const G& g_;
+            Array<Array<w_t>> distances_;
+            Array<Array<edge_t>> spts_;
+            Dag_full_spts(const G& g, w_t max_weight) 
+                :g_(g),
+                distances_(g.vertices_count(), Array<w_t>(g.vertices_count(), max_weight)),
+                spts_(g.vertices_count(), Array<edge_t>(g.vertices_count(), empty_edge_it())) 
+            {
+                for (size_t i = 0; i < g.vertices_count(); ++i)
+                    if (!spts_[i][i].target_)
+                        dfs(g[i]);
+            }
+            void dfs(const vertex_t& s) {
+                for (auto e = s.cedges_begin(); e != s.cedges_end(); ++e) {
+                    auto& t = e->target();
+                    auto weight = e->edge().weight();
+                    if (distances_[s][t] > weight) {
+                        distances_[s][t] = weight;
+                        spts_[s][t] = *e;
+                    }
+                    if (!spts_[t][t].target_)
+                        dfs(t);
+                    for (auto it = g_.cbegin(); it != g_.cend(); ++it) {
+                        auto& i = *it;
+                        auto distance = distances_[t][i] + weight;
+                        if (spts_[t][i].target_ && distances_[s][i] > distance) {
+                            distances_[s][i] = distance;
+                            spts_[s][i] = *e;
                         }
                     }
                 }

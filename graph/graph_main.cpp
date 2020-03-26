@@ -21,68 +21,6 @@ void print_aligned_collection(const C& c) {
 }
 
 template<typename G>
-struct Dag_full_spts {
-    using vertex_t = typename G::vertex_type;
-    using w_t = typename G::edge_type::value_type;
-    using edge_t = typename G::vertex_type::const_edges_iterator::entry_type;
-    static auto empty_edge_it() {
-        auto create = []() {
-            edge_t e;
-            e.target_ = nullptr;
-            return e;
-        };
-        static edge_t e(create());
-        return e;
-    }
-    const G& g_;
-    Array<Array<w_t>> distances_;
-    Array<Array<edge_t>> spts_;
-    Dag_full_spts(const G& g, w_t max_weight) 
-        :g_(g),
-        distances_(g.vertices_count(), Array<w_t>(g.vertices_count(), max_weight)),
-        spts_(g.vertices_count(), Array<edge_t>(g.vertices_count(), empty_edge_it())) 
-    {
-        for (size_t i = 0; i < g.vertices_count(); ++i)
-            if (!spts_[i][i].target_)
-                dfs(g[i]);
-    }
-    void dfs(const vertex_t& s) {
-        for (auto e = s.cedges_begin(); e != s.cedges_end(); ++e) {
-            auto& t = e->target();
-            auto weight = e->edge().weight();
-            if (distances_[s][t] > weight) {
-                distances_[s][t] = weight;
-                spts_[s][t] = *e;
-            }
-            if (!spts_[t][t].target_)
-                dfs(t);
-            for (auto it = g_.cbegin(); it != g_.cend(); ++it) {
-                auto& i = *it;
-                auto distance = distances_[t][i] + weight;
-                if (spts_[t][i].target_ && distances_[s][i] > distance) {
-                    distances_[s][i] = distance;
-                    spts_[s][i] = *e;
-                }
-            }
-        }
-    }
-};
-
-template<typename G>
-void test_weighted_dag() {
-    auto g = Samples::weighted_dag_sample<G>();
-    validate_dag(g);
-
-    Dag_lpt dag_lpt(g);
-    auto lpt = compose_path_tree(g, dag_lpt.lpt_.cbegin(), dag_lpt.lpt_.cend());
-    std::cout << "lpt:" << std::endl;
-    trace_dfs(lpt, std::cout);
-
-    Dag_full_spts dd(g, g.vertices_count());
-    std::cout << dd.distances_[0] << std::endl;
-}
-
-template<typename G>
 struct Max_flow {
     using vertex_t = typename G::vertex_type;
     using w_t = typename G::edge_type::value_type;
@@ -347,10 +285,6 @@ Array_cycle find_negative_cycle(const G& g, const typename G::vertex_type& s,
 }
 
 int main(int argc, char** argv) {
-
-    test_weighted_dag<Adjacency_matrix<Graph_type::DIGRAPH, int, double>>();
-    test_weighted_dag<Adjacency_lists<Graph_type::DIGRAPH, int, double>>();
-
     {
         auto f = Samples::flow_sample();
         Max_flow m(f, f[0], f[5], f.vertices_count() * 10);

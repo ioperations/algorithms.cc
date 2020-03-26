@@ -250,4 +250,33 @@ TEST(Graphs_algorithms_test, weighted_graph) {
     test_weighted_graph<Adjacency_lists<Graph_type::GRAPH, int, double>>();
 }
 
+template<typename G>
+void test_weighted_dag() {
+    auto g = Samples::weighted_dag_sample<G>();
+    validate_dag(g);
+
+    Dag_lpt dag_lpt(g);
+    auto lpt = compose_path_tree(g, dag_lpt.lpt_.cbegin(), dag_lpt.lpt_.cend());
+    std::stringstream ss;
+    trace_dfs(lpt, reset_with_new_line(ss));
+    ASSERT_EQ(R"(
+0
+ 9 (0.41) (down)
+  6 (0.29) (down)
+   8 (0.21) (down)
+    2 (0.32) (down)
+   3 (0.21) (down)
+  4 (0.29) (down)
+ 7 (0.41) (down)
+ 1 (0.41) (down)
+5
+)", ss.str());
+    Dag_full_spts dd(g, g.vertices_count());
+    ASSERT_EQ("[10, 0.41, 0.92, 0.73, 0.7, 10, 0.7, 0.41, 0.73, 0.41]", stringify(dd.distances_[0]));
+}
+
+TEST(Graphs_algorithms_test, weighted_dag) {
+    test_weighted_dag<Adjacency_matrix<Graph_type::DIGRAPH, int, double>>();
+    test_weighted_dag<Adjacency_lists<Graph_type::DIGRAPH, int, double>>();
+}
 
