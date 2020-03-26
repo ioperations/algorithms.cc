@@ -168,41 +168,40 @@ namespace Graph {
         }
 
     template<typename G, typename V = typename G::vertex_type>
-        Array<const V*> compose_hamilton_path(const G& graph) {
+        Array<const V*> compose_hamilton_path(const G& graph, const V& s, const V& t) {
             if (graph.vertices_count() < 1)
                 return {};
             if (graph.vertices_count() < 2)
                 return {&graph[0]};
-
-            Array<bool> visited(graph.vertices_count());
-            for (auto& b : visited)
-                b = false;
-            using Stack = Fixed_size_stack<const V*>;
-            static struct {
-                bool has_hamilton_path(const G& graph, const V& v1, const V& v2,
-                                       Array<bool>& visited, size_t depth, Stack& stack) {
+            struct Helper {
+                Array<bool> visited_;
+                Fixed_size_stack<const V*> stack_;
+                const size_t size_;
+                Helper(size_t size) :visited_(size, false), stack_(size), size_(size) {}
+                bool compose_path(const V& s, const V& t) {
+                    return compose_path(s, t, size_ - 1);
+                }
+                bool compose_path(const V& s, const V& t, size_t depth) {
                     bool has;
-                    if (v1 == v2)
+                    if (s == t)
                         has = depth == 0;
                     else {
                         has = false;
-                        visited[v1] = true;
-                        for (auto v = v1.cbegin(); v != v1.cend() && !has; ++v)
-                            has = !visited[*v] 
-                                && has_hamilton_path(graph, *v, v2, visited, depth - 1, stack);
+                        visited_[s] = true;
+                        for (auto v = s.cbegin(); v != s.cend() && !has; ++v)
+                            has = !visited_[*v] && compose_path(*v, t, depth - 1);
                         if (!has)
-                            visited[v1] = false;
+                            visited_[s] = false;
                     }
                     if (has)
-                        stack.push(&v1);
+                        stack_.push(&s);
                     return has;
                 }
-            } helper;
-            Stack stack(graph.vertices_count());
+            };
             Array<const V*> path;
-            if (helper.has_hamilton_path(
-                    graph, graph[0], graph[1], visited, graph.vertices_count() - 1, stack))
-                path = std::move(stack.to_reversed_array());
+            Helper helper(graph.vertices_count());
+            if (helper.compose_path(s, t))
+                path = std::move(helper.stack_.to_reversed_array());
             return path;
         }
 

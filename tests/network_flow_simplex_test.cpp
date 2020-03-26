@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 
+#include "test_utils.h"
 #include "network_flow.h"
 #include "network_flow_simplex.h"
 #include "graph.h"
@@ -11,13 +12,6 @@ using graph_type = Graph::Network_flow_with_cost<int, int>;
 using vertex_type = typename graph_type::vertex_type;
 using link_type = typename graph_type::link_type;
 using tree_type = Parent_link_array_tree<link_type>;
-
-template<typename T>
-std::string stringify(const T& t) {
-    std::stringstream ss;
-    ss << t;
-    return ss.str();
-}
 
 void add_link(graph_type& g, tree_type& tree, vertex_type& v, vertex_type& w) { 
     tree[w] = g.add_edge(v, w, 5, 0, 0);

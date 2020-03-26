@@ -1,6 +1,8 @@
 #pragma once
 
 #include "graph.h"
+#include "graph_common.h"
+#include "network_flow.h"
 
 namespace Graph {
 

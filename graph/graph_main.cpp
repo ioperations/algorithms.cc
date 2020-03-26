@@ -11,71 +11,6 @@
 
 using namespace Graph;
 
-template<typename P>
-void print_path(const P& p) {
-    print_collection(p.cbegin(), p.cend(), " - ", [](auto p) -> auto& { return *p; }, std::cout);
-}
-
-template<typename G>
-void test_graph(const char* label) {
-    std::cout << std::endl << label << ":" << std::endl;
-    G graph;
-    Constructor constructor(graph);
-
-    constructor.add_edge(1, 2)
-        .add_edge(2, 3)
-        .add_edge(2, 4)
-        .add_edge(3, 4);
-    constructor.get_or_create_vertex(5);
-
-    auto has_simple_path = [&graph, &constructor](const auto& l1, const auto& l2) {
-        std::cout << l1 << " - " << l2 << ": ";
-        if (::has_simple_path(graph, constructor.get_vertex(l1), constructor.get_vertex(l2)))
-            std::cout << "simple path found";
-        else
-            std::cout << "no simple path";
-        std::cout << std::endl;
-    };
-    has_simple_path(1, 4);
-    has_simple_path(1, 5);
-
-    std::cout << "Hamilton path: ";
-    auto h_path = compose_hamilton_path(graph);
-    print_path(h_path); // todo empty, fix
-
-    std::cout << std::endl << "internal structure: " << std::endl;
-    print_representation(graph, std::cout);
-
-    std::cout << "euler tour:" << std::endl;
-    graph = Samples::euler_tour_sample<G>();
-    auto path = compose_euler_tour(graph, graph[0]);
-    print_path(path);
-    std::cout << std::endl;
-
-    std::cout << "graph with bridges:" << std::endl;
-    graph = Samples::bridges_sample<G>();
-    auto bridges = find_bridges(graph);
-    auto b = bridges.begin();
-    if (b != bridges.end()) {
-        auto print_bridge = [](auto& b) {
-            std::cout << *b->first << " - " << *b->second;
-        };
-        print_bridge(b);
-        for (++b; b != bridges.end(); ++b) {
-            std::cout << ", ";
-            print_bridge(b);
-        }
-    }
-
-    std::cout << std::endl << "shortest paths" << std::endl;
-    graph = Samples::shortest_paths_sample<G>();
-    auto matrix = find_shortest_paths(graph);
-
-    print_path(matrix.find_path(graph[0], graph[7]));
-    std::cout << std::endl;
-    print_path(matrix.find_path(graph[1], graph[7]));
-}
-
 template<typename C>
 void print_aligned_collection(const C& c) {
     for (auto it = c.cbegin(); it != c.cend(); ++it) {
@@ -325,46 +260,6 @@ class Pre_flow_push_max_flow {
         }
 };
 
-/**
- * Transforms digraph with cycles to dag, to calculate flow, does not work for some reason.
- * TODO
- */
-template<typename G>
-class Acyclic_flow_composer : public Dfs<G, bool, Acyclic_flow_composer<G>> { // todo does not work
-    private:
-        using Base = Dfs<G, bool, Acyclic_flow_composer<G>>;
-        size_t v_count_;
-    public:
-        Network_flow<typename G::vertex_type::value_type, typename G::edge_type::value_type> n_; // todo template types
-
-        Acyclic_flow_composer(const G& g) :Base(g), v_count_(g.vertices_count()) {}
-        void compose() {
-            for (auto v = Base::g_.cbegin(); v != Base::g_.cend(); ++v)
-                n_.create_vertex(*v);
-            for (size_t i = 0; i < v_count_; ++i) {
-                auto& v = n_[i];
-                auto& w = n_.create_vertex(v + v_count_);
-                n_.add_edge(v, w, 25, 0); // todo 25 hardcoded
-            }
-            Base::search();
-            size_t j = v_count_ * 2;
-            auto& s = n_.create_vertex(j);
-            auto& t = n_.create_vertex(++j);
-            for (size_t i = 0; i < v_count_; ++i) {
-                auto& ov = Base::g_[i];
-                decltype(ov.cedges_begin()->edge().weight()) cap = 0;
-                for (auto e = ov.cedges_begin(); e != ov.cedges_end(); ++e)
-                    cap += e->edge().weight();
-                n_.add_edge(s, n_[i], cap, 0);
-                n_.add_edge(n_[i + v_count_], t, cap, 0);
-            }
-            Max_flow m(n_, s, t, n_.vertices_count() * 10); // todo sentinel_ hardcoded
-        }
-        void visit_edge(const typename Base::edge_type& e) {
-            n_.add_edge(n_[e.source()], n_[e.target() + v_count_], e.edge().weight(), 0);
-        }
-};
-
 template<typename F, typename M>
 void find_feasible_flow(F& f, const M& supply, const M& demand) {
     auto& s = f.create_vertex(-1);
@@ -504,9 +399,6 @@ Array_cycle find_negative_cycle(const G& g, const typename G::vertex_type& s,
 }
 
 int main(int argc, char** argv) {
-    test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>("adjacency matrix");
-    test_graph<Adjacency_lists<Graph_type::GRAPH, int>>("adjacency lists");
-
     {
         std::cout << "Warshall transitive closure" << std::endl;
         auto g = Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
@@ -551,11 +443,6 @@ int main(int argc, char** argv) {
         .build();
 
     print_representation(g, std::cout);
-
-    Acyclic_flow_composer composer(g);
-    composer.compose();
-
-    print_representation(composer.n_, std::cout);
 
     {
         auto f = Samples::flow_sample();

@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 
+#include "test_utils.h"
 #include "array.h"
 
 #include <iostream>
@@ -25,7 +26,6 @@ TEST(Array_test, base) {
 }
 
 TEST(Array_test, bool_specialization) {
-
     Array<bool> a(20);
     a[0] = true;
     a[10] = true;
@@ -57,6 +57,15 @@ TEST(Array_test, bool_specialization) {
 
     a = Array<bool>::build_array(false, true, false, true);
     ASSERT_EQ("0 1 0 1 ", to_string_const(a));
+
+    a = Array<bool>(5, true);
+    ASSERT_EQ("[1, 1, 1, 1, 1]", stringify(a));
+    a = Array<bool>(5, true);
+    ASSERT_EQ("[1, 1, 1, 1, 1]", stringify(a));
+    a = Array<bool>(5, false);
+    ASSERT_EQ("[0, 0, 0, 0, 0]", stringify(a));
+    a = Array<bool>(5, false);
+    ASSERT_EQ("[0, 0, 0, 0, 0]", stringify(a));
 }
 
 TEST(Array_test, initializer_list) {

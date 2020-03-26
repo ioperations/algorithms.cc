@@ -150,9 +150,9 @@ class Array<bool> {
             private:
                 friend class Array;
                 bool value_;
-                char* char_ptr_;
+                unsigned char* char_ptr_;
                 int bit_index_;
-                void set_index(char* ptr, size_t index) {
+                void set_index(unsigned char* ptr, size_t index) {
                     char_ptr_ = ptr + index / CHAR_BIT;
                     bit_index_ = index % CHAR_BIT;
                     value_ = *char_ptr_ & (0x80 >> bit_index_);
@@ -180,10 +180,10 @@ class Array<bool> {
         class Base_iterator {
             private:
                 friend class Array;
-                char* const ptr_;
+                unsigned char* const ptr_;
                 size_t index_;
                 Reference reference_;
-                Base_iterator(char* ptr, size_t index) :ptr_(ptr), index_(index) {}
+                Base_iterator(unsigned char* ptr, size_t index) :ptr_(ptr), index_(index) {}
             public:
                 void operator++() {
                     ++index_;
@@ -200,13 +200,14 @@ class Array<bool> {
                 }
         };
         size_t actual_size_;
-        char* ptr_;
+        unsigned char* ptr_;
         size_t size_;
         Reference current_reference_;
     public:
         using iterator = Base_iterator<Reference>;
         using const_iterator = Base_iterator<const Reference>;
         Array(size_t size);
+        Array(size_t size, bool value);
         Array(Array&& o) : actual_size_(o.actual_size_), ptr_(o.ptr_), size_(o.size_) {
             o.ptr_ = nullptr;
         }
