@@ -66,6 +66,12 @@ TEST(Array_test, bool_specialization) {
     ASSERT_EQ("[0, 0, 0, 0, 0]", stringify(a));
     a = Array<bool>(5, false);
     ASSERT_EQ("[0, 0, 0, 0, 0]", stringify(a));
+
+    auto a2 = a;
+    ASSERT_EQ("[0, 0, 0, 0, 0]", stringify(a2));
+    a[0] = true;
+    ASSERT_EQ("[1, 0, 0, 0, 0]", stringify(a));
+    ASSERT_EQ("[0, 0, 0, 0, 0]", stringify(a2));
 }
 
 TEST(Array_test, initializer_list) {

@@ -58,7 +58,9 @@ class Array {
 
         Array() :Array(nullptr, 0) {}
         explicit Array(size_t size) :Array(new T[size], size) {}
+
         Array(size_t size, const T& t) :Array(size) { fill(t); }
+
         Array(const std::initializer_list<T>& i_list) :Array(i_list.size()) {
             size_t i = -1;
             for (auto& el : i_list)
@@ -206,8 +208,19 @@ class Array<bool> {
     public:
         using iterator = Base_iterator<Reference>;
         using const_iterator = Base_iterator<const Reference>;
+        Array() :actual_size_(0), ptr_(nullptr), size_(0) {}
         Array(size_t size);
         Array(size_t size, bool value);
+        Array(const Array& o) :actual_size_(o.actual_size_), ptr_(new unsigned char[actual_size_]), size_(o.size_) {
+            auto p = ptr_;
+            auto p_o = o.ptr_;
+            for (; p != ptr_ + actual_size_; *p = *p_o, ++p, ++p_o);
+        }
+        Array& operator=(const Array& o) {
+            auto copy = o;
+            std::swap(*this, copy);
+            return *this;
+        }
         Array(Array&& o) : actual_size_(o.actual_size_), ptr_(o.ptr_), size_(o.size_) {
             o.ptr_ = nullptr;
         }

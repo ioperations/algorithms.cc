@@ -10,6 +10,8 @@ namespace Graph {
 
         template<typename C>
             auto construct_euler_tour_sample(C& constructor) {
+                for (int i = 0; i < 7; ++i)
+                    constructor.get_or_create_vertex(i);
                 constructor
                     .add_edge(0, 1)
                     .add_edge(0, 2)
@@ -96,8 +98,8 @@ namespace Graph {
                     .add_edge(v0, v5)
                     .add_edge(v5, v4)
                     .add_edge(v4, v5)
-                    .add_edge(v3, v4)
                     .add_edge(v3, v2)
+                    .add_edge(v3, v4)
                     .add_edge(v2, v1)
                     .add_edge(v1, v0);
                 return g;

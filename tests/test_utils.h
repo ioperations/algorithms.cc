@@ -7,3 +7,8 @@ std::string stringify(const T& t) {
     return ss.str();
 }
 
+std::stringstream& reset_with_new_line(std::stringstream& ss) {
+    ss.str("");
+    ss << std::endl;
+    return ss;
+}

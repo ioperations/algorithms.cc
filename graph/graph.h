@@ -206,58 +206,46 @@ namespace Graph {
         }
 
     template<typename G, typename V = typename G::vertex_type>
-        auto compose_euler_tour(const G& g, const V& v) {
-            Array<size_t> degrees(g.vertices_count());
-            {
-                auto e = degrees.begin();
-                for (auto v = g.cbegin(); v != g.cend(); ++v, ++e)
-                    *e = count_vertex_edges(*v);
-            }
-            auto degree = degrees[v] + degrees[v];
-
+        auto compose_euler_tour(const G& g, const V& s) {
             using Path = Forward_list<const V*>;
             Path path;
-
-            if (degree % 2 == 0) {
-                bool found = true;
-                for (auto w = g.cbegin(); w != g.cend() && found; ++w)
-                    if (*w != v && degrees[*w] % 2 != 0)
-                        found = false;
-                if (found) {
-                    using Stack = Stack<V*>;
-                    struct Helper {
-                        const G& original_g_;
-                        G& g_;
-                        Stack stack_;
-                        Helper(const G& original_graph, G& g) :original_g_(original_graph), g_(g) {}
-                        V* tour(V* v) {
-                            while (true) {
-                                auto it = v->begin();
-                                if (it == v->end())
-                                    break;
-                                stack_.push(v);
-                                auto& w = *it;
-                                g_.remove_edge(*v, w);
-                                v = &w;
-                            }
-                            return v;
-                        }
-                        void compose(V* v, Path& path) {
-                            auto push_original_v = [this, &path](const V* v) {
-                                auto& original_v = original_g_[*v];
-                                path.push_back(&original_v);
-                            };
-                            push_original_v(v);
-                            while (tour(v) == v && !stack_.empty()) {
-                                v = stack_.pop();
-                                push_original_v(v);
-                            }
-                        }
-                    };
-                    auto g_copy = g;
-                    Helper(g, g_copy).compose(&g_copy[v], path);
+            for (auto w = g.cbegin(); w != g.cend(); ++w)
+                if (count_vertex_edges(*w) % 2 != 0)
+                    return path;
+            
+            struct Helper {
+                const G& original_g_;
+                G& g_;
+                Stack<V*> stack_;
+                Path& path_;
+                Helper(const G& original_graph, G& g, Path& path) 
+                    :original_g_(original_graph), g_(g), path_(path)
+                {}
+                V* tour(V* v) {
+                    while (true) {
+                        auto it = v->begin();
+                        if (it == v->end())
+                            break;
+                        stack_.push(v);
+                        auto& w = *it;
+                        g_.remove_edge(*v, w);
+                        v = &w;
+                    }
+                    return v;
                 }
-            }
+                void compose(V* v) {
+                    push_original_v(v);
+                    while (tour(v) == v && !stack_.empty()) {
+                        v = stack_.pop();
+                        push_original_v(v);
+                    }
+                }
+                void push_original_v(const V* v) { 
+                    path_.push_back(&original_g_[*v]);
+                }
+            };
+            auto g_copy = g;
+            Helper(g, g_copy, path).compose(&g_copy[s]);
             return path;
         }
 
@@ -381,26 +369,29 @@ namespace Graph {
                 int depth_;
                 Stack<std::string> lines_stack_;
             protected:
+                std::ostream& stream_;
                 using Base = Post_dfs_base<G, size_t, size_t, D>;
                 using vertex_type = typename Base::vertex_type;
                 using edge_type = typename Base::edge_type;
                 size_t last_root_id_;
             public:
-                Dfs_tracer_base(const G& g) :Base(g), depth_(-1), last_root_id_(-1) {}
+                Dfs_tracer_base(const G& g, std::ostream& stream) 
+                    :Base(g), depth_(-1), stream_(stream), last_root_id_(-1) 
+                {}
                 void print_stack() {
                     while (!lines_stack_.empty())
-                        std::cout << lines_stack_.pop() << std::endl;
+                        stream_ << lines_stack_.pop() << std::endl;
                 }
                 void search() {
                     Base::search();
-                    std::cout << last_root_id_ << std::endl;
+                    stream_ << last_root_id_ << std::endl;
                     print_stack();
                 }
                 void visit_vertex(const vertex_type& v) {
                     ++depth_;
                     if (depth_ == 0) {
                         if (lines_stack_.empty()) {
-                            std::cout << v << std::endl;
+                            stream_ << v << std::endl;
                         } else
                             print_stack();
                         last_root_id_ = v;
@@ -444,12 +435,12 @@ namespace Graph {
         };
 
     template<typename G>
-        void trace_dfs(const G& g) {
+        void trace_dfs(const G& g, std::ostream& stream) {
             class Tracer : public Dfs_tracer_base<G, Tracer> {
                 public:
-                    Tracer(const G& g) :Dfs_tracer_base<G, Tracer>(g) {}
+                    Tracer(const G& g, std::ostream& stream) :Dfs_tracer_base<G, Tracer>(g, stream) {}
             };
-            Tracer(g).search();
+            Tracer(g, stream).search();
         }
 
     template<typename G, typename D>
@@ -516,12 +507,12 @@ namespace Graph {
         }
 
     template<typename G>
-        void trace_dfs_topo_sorted(const G& g) {
+        void trace_dfs_topo_sorted(const G& g, std::ostream& stream) {
             class Tracer : public Dfs_tracer_base<G, Tracer> {
                 public:
                     using Base = Dfs_tracer_base<G, Tracer>;
                     using vertex_type = typename Base::vertex_type;
-                    Tracer(const G& g) :Base(g) {}
+                    Tracer(const G& g, std::ostream& stream) :Base(g, stream) {}
                     void search() {
                         auto t_order = topological_sort_relabel(Base::g_);
                         for (auto it = Base::g_.crbegin(); it != Base::g_.crend(); ++it) {
@@ -529,11 +520,11 @@ namespace Graph {
                             if (Base::pre_.is_unset(v))
                                 Base::search_vertex(v);
                         }
-                        std::cout << Base::last_root_id_ << std::endl;
+                        Base::stream_ << Base::last_root_id_ << std::endl;
                         Base::print_stack();
                     }
             };
-            Tracer(g).search();
+            Tracer(g, stream).search();
         }
 
     template<typename G>
@@ -599,8 +590,7 @@ namespace Graph {
         }
 
     template<typename G, typename V = typename G::vertex_type>
-        void topological_sort_sinks_queue(const G& g) {
-            std::cout << "topological sort (sinks queue)" << std::endl;
+        auto topological_sort_sinks_queue(const G& g) {
             Array<size_t> in(g.vertices_count());
             in.fill(0);
             for (auto v = g.cbegin(); v != g.cend(); ++v)
@@ -618,7 +608,7 @@ namespace Graph {
                     if (--in[*w] == 0)
                         queue.push_back(&*w);
             }
-            std::cout << ordered << std::endl;
+            return ordered;
         }
 
     template<typename G, typename V = typename G::vertex_type>

@@ -21,37 +21,6 @@ void print_aligned_collection(const C& c) {
 }
 
 template<typename G>
-void test_digraph() {
-    std::cout << "dfs transitive closure" << std::endl;
-    auto g = Samples::digraph_sample<G>();
-    auto transitive_closure = dfs_transitive_closure(g);
-    print_representation(transitive_closure, std::cout);
-
-    g = Samples::digraph_sample<G>();
-
-    trace_dfs(g);
-    std::cout << "DAG is valid: " << is_dag(g) << std::endl;
-
-    std::cout << "topological sort (rearrange): " << std::endl << topological_sort_rearrange(g) << std::endl;
-    std::cout << "topological sort (relabel): " << std::endl << topological_sort_relabel(g) << std::endl;
-
-    g = Samples::dag_sample<G>();
-    std::cout << "DAG is valid: " << is_dag(g) << std::endl;
-
-    topological_sort_sinks_queue(g);
-
-    g = Samples::strong_components_sample<decltype(g)>();
-
-    std::cout << "dfs trace" << std::endl;
-    trace_dfs(g);
-    std::cout << "dfs with topological sort:" << std::endl;
-    trace_dfs_topo_sorted(g);
-
-    std::cout << "strong components (Kosaraju): " << std::endl << strong_components_kosaraju(g) << std::endl;
-    std::cout << "strong components (Tarjan)" << std::endl << strong_components_tarjan(g) << std::endl;
-}
-
-template<typename G>
 void test_weighted_graph() {
     auto g = Samples::weighted_graph_sample<G>();
     trace_dfs(pq_mst(g));
@@ -399,16 +368,6 @@ Array_cycle find_negative_cycle(const G& g, const typename G::vertex_type& s,
 }
 
 int main(int argc, char** argv) {
-    {
-        std::cout << "Warshall transitive closure" << std::endl;
-        auto g = Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
-        auto transitive_closure = warshall_transitive_closure(g);
-        print_representation(transitive_closure, std::cout);
-    }
-
-    test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
-    test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
-
     test_weighted_graph<Adjacency_matrix<Graph_type::GRAPH, int, double>>();
     test_weighted_graph<Adjacency_lists<Graph_type::GRAPH, int, double>>();
 
