@@ -10,9 +10,9 @@ using namespace Graph::Network_flow_ns;
 
 TEST(Network_flow_test, max_flow) {
     std::stringstream ss;
-    auto f = Samples::flow_sample();
-    Max_flow m(f, f[0], f[5], f.vertices_count() * 10);
-    print_representation(f, reset_with_new_line(ss));
+    auto g = Samples::flow_sample();
+    Max_flow m(g, g[0], g[5], g.vertices_count() * 10);
+    print_representation(g, reset_with_new_line(ss));
     ASSERT_EQ(R"(
 0: ->1(2/2) ->2(2/3) 
 1: <-0(2/2) ->3(1/3) ->4(1/1) 
@@ -25,9 +25,9 @@ TEST(Network_flow_test, max_flow) {
 
 TEST(Network_flow_test, pre_flow_push_max_flow) {
     std::stringstream ss;
-    auto f = Samples::flow_sample();
-    Pre_flow_push_max_flow m(f, f[0], f[5], f.vertices_count() * 10);
-    print_representation(f, reset_with_new_line(ss));
+    auto g = Samples::flow_sample();
+    Pre_flow_push_max_flow m(g, g[0], g[5], g.vertices_count() * 10);
+    print_representation(g, reset_with_new_line(ss));
     ASSERT_EQ(R"(
 0: ->1(2/2) ->2(2/3) 
 1: <-0(2/2) ->3(1/3) ->4(1/1) 
@@ -39,9 +39,9 @@ TEST(Network_flow_test, pre_flow_push_max_flow) {
 }
 
 TEST(Network_flow_test, feasible_flow) {
-    auto f = Samples::flow_sample();
+    auto g = Samples::flow_sample();
     auto p = find_feasible_flow(
-        f,
+        g,
         std::map<int, int>{{0, 3}, {1, 3}, {3, 1}},
         std::map<int, int>{{2, 1}, {4, 1}, {5, 5}});
     std::stringstream ss;

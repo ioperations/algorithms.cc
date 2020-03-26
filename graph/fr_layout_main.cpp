@@ -52,7 +52,7 @@ Drawables_stream& operator<<(Drawables_stream& stream,
 template<typename It>
 void print_path(Drawables_stream& dout, const It& b, const It& e) {
     std::stringstream ss;
-    Graph::print_collection(b, e, " - ", [](auto p) { return *p; }, ss);
+    Graph::print_collection(b, e, " - ", [](auto p) -> decltype(auto) { return *p; }, ss);
     dout << ss.str();
 }
 

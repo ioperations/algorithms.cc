@@ -144,13 +144,18 @@ namespace Graph {
                     template<Graph_type TT_graph_type, typename VV, typename ET>
                         friend class Adjacency_lists;
                     friend class Vector<Vertex>;
+
                     Vertex(const VT& value, typename Base::adj_lists_type* adjacency_lists)
                         :Base(value, adjacency_lists)
                     {}
                     Vertex() :Base() {}
+
+                    Vertex(const Vertex&) = default;
+                    Vertex& operator=(const Vertex&) = default;
+                    Vertex(Vertex&&) = default;
+                    Vertex& operator=(Vertex&&) = default;
                 public:
                     using edge_type = E;
-
             };
 
         template<Graph_type T_graph_type, typename V>

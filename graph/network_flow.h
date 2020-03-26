@@ -101,6 +101,11 @@ namespace Graph {
                     :Base(value, adjacency_lists)
                 {}
                 Flow_vertex() :Base() {}
+
+                Flow_vertex(const Flow_vertex&) = default;
+                Flow_vertex& operator=(const Flow_vertex&) = default;
+                Flow_vertex(Flow_vertex&&) = default;
+                Flow_vertex& operator=(Flow_vertex&&) = default;
             public:
                 using edge_type = typename Base::edge_type;
                 using link_base_type = LB;
