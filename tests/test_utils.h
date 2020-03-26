@@ -12,3 +12,8 @@ std::stringstream& reset_with_new_line(std::stringstream& ss) {
     ss << std::endl;
     return ss;
 }
+
+std::stringstream& reset(std::stringstream& ss) {
+    ss.str("");
+    return ss;
+}

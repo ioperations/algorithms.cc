@@ -61,6 +61,11 @@ void test_graph() {
     ASSERT_EQ("2 - 0 - 7 - 1", path_to_string(matrix.find_path(graph[1], graph[7])));
 }
 
+TEST(Graphs_algorithms_test, graph) {
+    test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>();
+    test_graph<Adjacency_lists<Graph_type::GRAPH, int>>();
+}
+
 template<typename G>
 std::string graph_to_str_matrix(const G& g) {
     Array<Array<bool>> matrix(g.vertices_count(), Array<bool>(g.vertices_count(), false));
@@ -177,11 +182,6 @@ void test_digraph() {
     ASSERT_EQ("[2, 1, 2, 2, 2, 2, 2, 3, 3, 0, 0, 0, 0]", stringify(strong_components_tarjan(g)));
 }
 
-TEST(Graphs_algorithms_test, graph) {
-    test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>();
-    test_graph<Adjacency_lists<Graph_type::GRAPH, int>>();
-}
-
 TEST(Graphs_algorithms_test, digraph) {
     test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
     test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
@@ -200,4 +200,54 @@ TEST(Graphs_algorithms_test, digraph) {
 0 0 0 0 1 1 
 )", ss.str());
 }
+
+template<typename G>
+void test_weighted_graph() {
+    std::stringstream ss;
+    auto g = Samples::weighted_graph_sample<G>();
+    trace_dfs(pq_mst(g), reset_with_new_line(ss));
+    ASSERT_EQ(R"(
+0
+0
+ 7 (0.31) (down)
+  6 (0.25) (down)
+  4 (0.46) (down)
+   3 (0.34) (down)
+    5 (0.18) (down)
+  1 (0.21) (down)
+ 2 (0.29) (down)
+  0 (0.29) (back)
+)", ss.str());
+
+    g = Samples::spt_sample<G>();
+    Spt spt(g, g[0], g.vertices_count());
+    trace_dfs(compose_path_tree(g, spt.spt_.cbegin() + 1, spt.spt_.cend()), reset_with_new_line(ss));
+    ASSERT_EQ(R"(
+0
+0
+ 5 (0.29) (down)
+  4 (0.21) (down)
+   2 (0.32) (down)
+ 3 (0.45) (down)
+ 1 (0.41) (down)
+)", ss.str());
+
+    Full_spts full_spts(g, 1);
+    auto diameter = full_spts.diameter();
+
+    reset(ss);
+    ss << *diameter.first;
+    for (auto v = diameter.first; v != diameter.second; ) {
+        v = full_spts.path(*v, *diameter.second).source_;
+        ss << " - " << *v;
+    }
+    ASSERT_EQ("1 - 0 - 3", ss.str());
+    ASSERT_EQ(.86, full_spts.distance(*diameter.first, *diameter.second));
+}
+
+TEST(Graphs_algorithms_test, weighted_graph) {
+    test_weighted_graph<Adjacency_matrix<Graph_type::GRAPH, int, double>>();
+    test_weighted_graph<Adjacency_lists<Graph_type::GRAPH, int, double>>();
+}
+
 
