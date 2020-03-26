@@ -48,7 +48,7 @@ void test_graph(const char* label) {
 
     std::cout << "euler tour:" << std::endl;
     graph = Samples::euler_tour_sample<G>();
-    auto path = compose_euler_tour(graph, graph.vertex_at(0));
+    auto path = compose_euler_tour(graph, graph[0]);
     print_path(path);
     std::cout << std::endl;
 
@@ -71,9 +71,9 @@ void test_graph(const char* label) {
     graph = Samples::shortest_paths_sample<G>();
     auto matrix = find_shortest_paths(graph);
 
-    print_path(matrix.find_path(graph.vertex_at(0), graph.vertex_at(7)));
+    print_path(matrix.find_path(graph[0], graph[7]));
     std::cout << std::endl;
-    print_path(matrix.find_path(graph.vertex_at(1), graph.vertex_at(7)));
+    print_path(matrix.find_path(graph[1], graph[7]));
 }
 
 template<typename C>
@@ -122,7 +122,7 @@ void test_weighted_graph() {
     trace_dfs(pq_mst(g));
 
     g = Samples::spt_sample<G>();
-    Spt spt(g, g.vertex_at(0), g.vertices_count());
+    Spt spt(g, g[0], g.vertices_count());
     trace_dfs(compose_path_tree(g, spt.spt_.cbegin() + 1, spt.spt_.cend()));
 
     Full_spts full_spts(g, 1);
@@ -161,7 +161,7 @@ struct Dag_full_spts {
     {
         for (size_t i = 0; i < g.vertices_count(); ++i)
             if (!spts_[i][i].target_)
-                dfs(g.vertex_at(i));
+                dfs(g[i]);
     }
     void dfs(const vertex_t& s) {
         for (auto e = s.cedges_begin(); e != s.cedges_end(); ++e) {
@@ -342,7 +342,7 @@ class Acyclic_flow_composer : public Dfs<G, bool, Acyclic_flow_composer<G>> { //
             for (auto v = Base::g_.cbegin(); v != Base::g_.cend(); ++v)
                 n_.create_vertex(*v);
             for (size_t i = 0; i < v_count_; ++i) {
-                auto& v = n_.vertex_at(i);
+                auto& v = n_[i];
                 auto& w = n_.create_vertex(v + v_count_);
                 n_.add_edge(v, w, 25, 0); // todo 25 hardcoded
             }
@@ -351,17 +351,17 @@ class Acyclic_flow_composer : public Dfs<G, bool, Acyclic_flow_composer<G>> { //
             auto& s = n_.create_vertex(j);
             auto& t = n_.create_vertex(++j);
             for (size_t i = 0; i < v_count_; ++i) {
-                auto& ov = Base::g_.vertex_at(i);
+                auto& ov = Base::g_[i];
                 decltype(ov.cedges_begin()->edge().weight()) cap = 0;
                 for (auto e = ov.cedges_begin(); e != ov.cedges_end(); ++e)
                     cap += e->edge().weight();
-                n_.add_edge(s, n_.vertex_at(i), cap, 0);
-                n_.add_edge(n_.vertex_at(i + v_count_), t, cap, 0);
+                n_.add_edge(s, n_[i], cap, 0);
+                n_.add_edge(n_[i + v_count_], t, cap, 0);
             }
             Max_flow m(n_, s, t, n_.vertices_count() * 10); // todo sentinel_ hardcoded
         }
         void visit_edge(const typename Base::edge_type& e) {
-            n_.add_edge(n_.vertex_at(e.source()), n_.vertex_at(e.target() + v_count_), e.edge().weight(), 0);
+            n_.add_edge(n_[e.source()], n_[e.target() + v_count_], e.edge().weight(), 0);
         }
 };
 
@@ -371,9 +371,9 @@ void find_feasible_flow(F& f, const M& supply, const M& demand) {
     auto& t = f.create_vertex(-1);
 
     for (auto e = supply.cbegin(); e != supply.cend(); ++e)
-        f.add_edge(s, f.vertex_at(e->first), e->second, 0);
+        f.add_edge(s, f[e->first], e->second, 0);
     for (auto e = demand.cbegin(); e != demand.cend(); ++e)
-        f.add_edge(f.vertex_at(e->first), t, e->second, 0);
+        f.add_edge(f[e->first], t, e->second, 0);
 
     Pre_flow_push_max_flow m(f, s, t, f.vertices_count() * 10);
     std::cout << "feasible flow, demands met: " << std::endl;
@@ -403,17 +403,17 @@ auto bipartite_matching(const M& mapping) {
     auto& s = f.create_vertex(default_value);
     size_t i = 0;
     for (; i < mapping.size(); ++i)
-        f.add_edge(s, f.vertex_at(i), 1, 0);
+        f.add_edge(s, f[i], 1, 0);
 
     auto& t = f.create_vertex(default_value);
     for (; i < f.vertices_count(); ++i)
-        f.add_edge(f.vertex_at(i), t, 1, 0);
+        f.add_edge(f[i], t, 1, 0);
 
     Max_flow m(f, s, t, f.vertices_count() * 10);
 
     std::map<value_type, value_type> result;
     for (i = 0; i < mapping.size(); ++i) {
-        auto& v = f.vertex_at(i);
+        auto& v = f[i];
         for (auto e = v.cedges_begin(); e != v.cedges_end(); ++e) {
             auto& link = *e->edge().link();
             if (v == link.source() && link.flow() > 0) {
@@ -475,7 +475,7 @@ Array_cycle find_negative_cycle(const G& g, const typename G::vertex_type& s,
 
     for (auto& s : spt)
         if (s.target_)
-            gg.add_edge(gg.vertex_at(s.source()), gg.vertex_at(s.target()));
+            gg.add_edge(gg[s.source()], gg[s.target()]);
 
     struct Searcher : public Post_dfs_base<cycle_g_type, size_t, size_t, Searcher> {
         using Base = Post_dfs_base<cycle_g_type, size_t, size_t, Searcher>;
@@ -525,14 +525,14 @@ int main(int argc, char** argv) {
 
     {
         auto f = Samples::flow_sample();
-        Max_flow m(f, f.vertex_at(0), f.vertex_at(5), f.vertices_count() * 10);
+        Max_flow m(f, f[0], f[5], f.vertices_count() * 10);
         std::cout << "max flow:" << std::endl;
         print_representation(f, std::cout);
     }
     std::cout << std::endl;
     {
         auto f = Samples::flow_sample();
-        Pre_flow_push_max_flow m(f, f.vertex_at(0), f.vertex_at(5), f.vertices_count() * 10);
+        Pre_flow_push_max_flow m(f, f[0], f[5], f.vertices_count() * 10);
         std::cout << "pre flow push max flow:" << std::endl;
         print_representation(f, std::cout);
     }
@@ -590,7 +590,7 @@ int main(int argc, char** argv) {
             .for_vertex(5).add_edge(1, -.29).add_edge(4, .21)
             .build();
 
-        auto n_cycle = find_negative_cycle(g, g.vertex_at(0), 200);
+        auto n_cycle = find_negative_cycle(g, g[0], 200);
         if (!n_cycle.empty()) {
             auto v = n_cycle.cbegin();
             auto first = v;

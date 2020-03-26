@@ -143,7 +143,7 @@ namespace Graph {
                                 link_type* new_link;
                                 if (it == map.end()) {
                                     new_link = new link_type(
-                                        &Base::vertex_at(link->source()), &Base::vertex_at(link->target()),
+                                        &Base::operator[](link->source()), &Base::operator[](link->target()),
                                         link->cap(), link->flow()); 
                                     map.insert({link, new_link});
                                 } else

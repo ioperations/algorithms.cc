@@ -66,7 +66,7 @@ Drawable* const compose_drawables() {
     auto graph = Graph::Samples::euler_tour_sample<graph_type>();
     dout << graph;
 
-    auto path = Graph::compose_euler_tour(graph, graph.vertex_at(0));
+    auto path = Graph::compose_euler_tour(graph, graph[0]);
     print_path(dout, path.cbegin(), path.cend());
 
     dout << "\ngraph with Hamilton path";

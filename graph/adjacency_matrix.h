@@ -76,10 +76,11 @@ namespace Graph {
                     size_t vertices_count() const {
                         return vertices_.size();
                     }
-                    const vertex_type& vertex_at(size_t index) const {
+
+                    const vertex_type& operator[](size_t index) const {
                         return vertices_[index];
                     }
-                    vertex_type& vertex_at(size_t index) {
+                    vertex_type& operator[](size_t index) {
                         return vertices_[index];
                     }
                     bool has_edge(const vertex_type& v, const vertex_type& w) {

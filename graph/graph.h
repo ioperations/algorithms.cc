@@ -172,7 +172,7 @@ namespace Graph {
             if (graph.vertices_count() < 1)
                 return {};
             if (graph.vertices_count() < 2)
-                return {&graph.vertex_at(0)};
+                return {&graph[0]};
 
             Array<bool> visited(graph.vertices_count());
             for (auto& b : visited)
@@ -200,8 +200,8 @@ namespace Graph {
             } helper;
             Stack stack(graph.vertices_count());
             Array<const V*> path;
-            if (helper.has_hamilton_path(graph, graph.vertex_at(0), graph.vertex_at(1), 
-                                         visited, graph.vertices_count() - 1, stack))
+            if (helper.has_hamilton_path(
+                    graph, graph[0], graph[1], visited, graph.vertices_count() - 1, stack))
                 path = std::move(stack.to_reversed_array());
             return path;
         }
@@ -245,7 +245,7 @@ namespace Graph {
                         }
                         void compose(V* v, Path& path) {
                             auto push_original_v = [this, &path](const V* v) {
-                                auto& original_v = original_g_.vertex_at(*v);
+                                auto& original_v = original_g_[*v];
                                 path.push_back(&original_v);
                             };
                             push_original_v(v);
@@ -256,7 +256,7 @@ namespace Graph {
                         }
                     };
                     auto g_copy = g;
-                    Helper(g, g_copy).compose(&g_copy.vertex_at(v), path);
+                    Helper(g, g_copy).compose(&g_copy[v], path);
                 }
             }
             return path;
@@ -469,7 +469,7 @@ namespace Graph {
             void do_invert(const G& g, G& inverted) {
                 for (auto v = g.cbegin(); v != g.cend(); ++v)
                     for (auto e = v->cedges_begin(); e != v->cedges_end(); ++e)
-                        inverted.add_edge(inverted.vertex_at(e->target()), inverted.vertex_at(*v),
+                        inverted.add_edge(inverted[e->target()], inverted[*v],
                                           e->edge().weight());
             }
         };
@@ -479,7 +479,7 @@ namespace Graph {
             void do_invert(const G& g, G& inverted) {
                 for (auto v = g.cbegin(); v != g.cend(); ++v)
                     for (auto w = v->cbegin(); w != v->cend(); ++w)
-                        inverted.add_edge(inverted.vertex_at(*w), inverted.vertex_at(*v));
+                        inverted.add_edge(inverted[*w], inverted[*v]);
             }
         };
 
@@ -526,7 +526,7 @@ namespace Graph {
                     void search() {
                         auto t_order = topological_sort_relabel(Base::g_);
                         for (auto it = Base::g_.crbegin(); it != Base::g_.crend(); ++it) {
-                            const vertex_type& v = Base::g_.vertex_at(t_order[*it]);
+                            const vertex_type& v = Base::g_[t_order[*it]];
                             if (Base::pre_.is_unset(v))
                                 Base::search_vertex(v);
                         }
@@ -636,7 +636,7 @@ namespace Graph {
                 void search() {
                     auto t_order = topological_sort_relabel(g_);
                     for (auto v = g_.crbegin(); v != g_.crend(); ++v) {
-                        auto& t = g_.vertex_at(t_order[*v]);
+                        auto& t = g_[t_order[*v]];
                         if (ids_[t] == static_cast<size_t>(-1)) {
                             ++group_id_;
                             search(t);
@@ -709,7 +709,7 @@ namespace Graph {
                 mst.create_vertex(v->value());
             for (auto e = edges_b; e != edges_e; ++e)
                 if (e->target_)
-                    mst.add_edge(mst.vertex_at(e->source()), mst.vertex_at(e->target()), e->edge().weight());
+                    mst.add_edge(mst[e->source()], mst[e->target()], e->edge().weight());
             return mst;
         }
 
@@ -836,7 +836,7 @@ namespace Graph {
                             v_max = *v;
                             w_max = *w;
                         }
-                return {&g_.vertex_at(v_max), &g_.vertex_at(w_max)};
+                return {&g_[v_max], &g_[w_max]};
             }
         };
 
@@ -855,7 +855,7 @@ namespace Graph {
                 auto& t_sorted = sorter.post_i_;
 
                 for (auto i = t_sorted.crbegin(); i != t_sorted.crend(); ++i) {
-                    auto& v = g.vertex_at(*i);
+                    auto& v = g[*i];
                     for (auto e = v.cedges_begin(); e != v.cedges_end(); ++e) {
                         auto& w = e->target();
                         auto distance = distances_[v] + e->edge().weight();

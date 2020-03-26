@@ -197,16 +197,12 @@ namespace Graph {
 
                     size_t vertices_count() const { return vertices_.size(); }
 
-                    // todo remove vertex_at methods
-                    const vertex_type& vertex_at(size_t index) const { return vertices_[index]; }
-                    vertex_type& vertex_at(size_t index) { return vertices_[index]; }
-
                     const vertex_type& operator[](size_t index) const { return vertices_[index]; }
                     vertex_type& operator[](size_t index) { return vertices_[index]; }
 
                     bool has_edge(const vertex_type& v, const vertex_type& w) const { return v.has_edge(w); }
 
-                    edge_type* get_edge(size_t v, size_t w) { return vertex_at(v).get_edge(w); }
+                    edge_type* get_edge(size_t v, size_t w) { return vertices_[v].get_edge(w); }
 
                     const edge_type* get_edge(const vertex_type& v, const vertex_type& w) const { return v.get_edge(w); }
                     edge_type* get_edge(vertex_type& v, const vertex_type& w) { return v.get_edge(w); }
