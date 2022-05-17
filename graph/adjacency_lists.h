@@ -2,401 +2,447 @@
 
 #include <iostream>
 
+#include "forward_list.h"
 #include "graph_common.h"
 #include "vector.h"
-#include "forward_list.h"
 
 namespace Graph {
 
-    namespace Adjacency_lists_ns {
+namespace Adjacency_lists_ns {
 
-        template<typename T>
-            class Edge {
-                protected:
-                    T weight_;
-                public:
-                    using value_type = T;
-                    Edge(const T& t) :weight_(t) {}
-                    T weight() const { return weight_; }
-                    void set_weight(const T& weight) { weight_ = weight; }
-            };
+template <typename T>
+class Edge {
+   protected:
+    T weight_;
 
-        template<typename T>
-            class Flow_edge : public Edge<T> {
-                private:
-                    T flow_;
-                public:
-                    Flow_edge(const T& cap, const T& flow) :Edge<T>(cap), flow_(flow) {}
-                    T cap() const { return Edge<T>::weight_; }
-                    T flow() const { return flow_; }
-                    void set_flow(const T& flow) { flow_ = flow; }
-            };
+   public:
+    using value_type = T;
+    Edge(const T& t) : weight_(t) {}
+    T weight() const { return weight_; }
+    void set_weight(const T& weight) { weight_ = weight; }
+};
 
-        class Vertex_link_base {
-            private:
-                size_t target_;
-            public:
-                Vertex_link_base(size_t target) :target_(target) {}
-                size_t target() const { return target_; }
-        };
+template <typename T>
+class Flow_edge : public Edge<T> {
+   private:
+    T flow_;
 
-        template<Graph_type T_graph_type, typename E>
-            class Vertex_link : public Vertex_link_base, public E {
-                public:
-                    Vertex_link(size_t target, const E& edge) :Vertex_link_base(target), E(edge) {}
-            };
+   public:
+    Flow_edge(const T& cap, const T& flow) : Edge<T>(cap), flow_(flow) {}
+    T cap() const { return Edge<T>::weight_; }
+    T flow() const { return flow_; }
+    void set_flow(const T& flow) { flow_ = flow; }
+};
 
-        template<Graph_type T_graph_type>
-            class Vertex_link<T_graph_type, Edge<bool>> : public Vertex_link_base {
-                public:
-                    using value_type = bool;
-                    Vertex_link(size_t target, const Edge<bool>& edge) :Vertex_link_base(target) {}
-            };
+class Vertex_link_base {
+   private:
+    size_t target_;
 
-        template<Graph_type TT_graph_type, typename VV>
-            class Adjacency_lists_base;
+   public:
+    Vertex_link_base(size_t target) : target_(target) {}
+    size_t target() const { return target_; }
+};
 
-        template<Graph_type T_graph_type, typename VT, typename E, typename D>
-            class Adj_lists_vertex_base : public Vertex_base<VT> {
-                private:
-                    template<bool T_is_const>
-                        class Iterator;
-                    template<bool T_is_const>
-                        class Edges_iterator;
-                    template<Graph_type TT_graph_type, typename VV, typename ET>
-                        friend class Adjacency_lists;
+template <Graph_type T_graph_type, typename E>
+class Vertex_link : public Vertex_link_base, public E {
+   public:
+    Vertex_link(size_t target, const E& edge)
+        : Vertex_link_base(target), E(edge) {}
+};
 
-                    using vertex_link_type = Vertex_link<T_graph_type, E>;
+template <Graph_type T_graph_type>
+class Vertex_link<T_graph_type, Edge<bool>> : public Vertex_link_base {
+   public:
+    using value_type = bool;
+    Vertex_link(size_t target, const Edge<bool>& edge)
+        : Vertex_link_base(target) {}
+};
 
-                    inline D* derived() { return static_cast<D*>(this); }
-                    inline const D* derived() const { return static_cast<const D*>(this); }
-                protected:
-                    using adj_lists_type = Adjacency_lists_base<T_graph_type, D>;
-                    adj_lists_type* adjacency_lists_;
-                    Forward_list<vertex_link_type> links_;
+template <Graph_type TT_graph_type, typename VV>
+class Adjacency_lists_base;
 
-                    Adj_lists_vertex_base(const VT& value, adj_lists_type* adjacency_lists)
-                        :Vertex_base<VT>(value), adjacency_lists_(adjacency_lists)
-                    {}
-                    Adj_lists_vertex_base() :adjacency_lists_(nullptr) {}
+template <Graph_type T_graph_type, typename VT, typename E, typename D>
+class Adj_lists_vertex_base : public Vertex_base<VT> {
+   private:
+    template <bool T_is_const>
+    class Iterator;
+    template <bool T_is_const>
+    class Edges_iterator;
+    template <Graph_type TT_graph_type, typename VV, typename ET>
+    friend class Adjacency_lists;
 
-                    bool link_exists(const Adj_lists_vertex_base& v) {
-                        for (auto link = links_.begin(); link != links_.end(); ++link)
-                            if(link->target() == v.index())
-                                return true;
-                        return false;
-                    }
-                    void add_link(const Adj_lists_vertex_base& v, const E& edge) {
-                        links_.emplace_back(v.index(), edge);
-                    }
-                public:
-                    using edge_type = E;
+    using vertex_link_type = Vertex_link<T_graph_type, E>;
 
-                    using iterator = Iterator<false>;
-                    using const_iterator = Iterator<true>;
-                    using edges_iterator = Edges_iterator<false>;
-                    using const_edges_iterator = Edges_iterator<true>;
+    inline D* derived() { return static_cast<D*>(this); }
+    inline const D* derived() const { return static_cast<const D*>(this); }
 
-                    inline size_t index() const { 
-                        return derived() - adjacency_lists_->vertices_.cbegin(); 
-                    }
-                    inline operator size_t() const { return index(); }
+   protected:
+    using adj_lists_type = Adjacency_lists_base<T_graph_type, D>;
+    adj_lists_type* adjacency_lists_;
+    Forward_list<vertex_link_type> links_;
 
-                    iterator begin() { return {derived(), links_.begin()}; }
-                    iterator end() { return {derived(), links_.end()}; }
-                    const_iterator cbegin() const { return {derived(), links_.cbegin()}; }
-                    const_iterator cend() const { return {derived(), links_.cend()}; }
+    Adj_lists_vertex_base(const VT& value, adj_lists_type* adjacency_lists)
+        : Vertex_base<VT>(value), adjacency_lists_(adjacency_lists) {}
+    Adj_lists_vertex_base() : adjacency_lists_(nullptr) {}
 
-                    edges_iterator edges_begin() { return {derived(), links_.begin()}; }
-                    edges_iterator edges_end() { return {derived(), links_.end()}; }
-                    const_edges_iterator cedges_begin() const { return {derived(), links_.cbegin()}; }
-                    const_edges_iterator cedges_end() const { return {derived(), links_.cend()}; }
-
-                    void remove_edge(const Adj_lists_vertex_base& v) {
-                        links_.remove_first_if([&v](const vertex_link_type& edge) { return v.index() == edge.target(); });
-                    }
-                    bool has_edge(const Adj_lists_vertex_base& v) const {
-                        for (auto l = cbegin(); l != cend(); ++l)
-                            if (*l == v)
-                                return true;
-                        return false;
-                    }
-                    const E* get_edge(size_t v) const {
-                        for (auto e = cedges_begin(); e != cedges_end(); ++e)
-                            if (e->target().index() == v)
-                                return e->edge_;
-                        return nullptr;
-                    }
-                    E* get_edge(size_t v) {
-                        for (auto e = edges_begin(); e != edges_end(); ++e)
-                            if (e->target().index() == v)
-                                return e->edge_;
-                        return nullptr;
-                    }
-            };
-
-        template<Graph_type T_graph_type, typename VT, typename E>
-            class Vertex : public Adj_lists_vertex_base<T_graph_type, VT, E, Vertex<T_graph_type, VT, E>> {
-                private:
-                    using Base = Adj_lists_vertex_base<T_graph_type, VT, E, Vertex<T_graph_type, VT, E>>;
-                    template<Graph_type TT_graph_type, typename VV>
-                        friend class Adjacency_lists_base;
-                    template<Graph_type TT_graph_type, typename VV, typename ET>
-                        friend class Adjacency_lists;
-                    friend class Vector<Vertex>;
-
-                    Vertex(const VT& value, typename Base::adj_lists_type* adjacency_lists)
-                        :Base(value, adjacency_lists)
-                    {}
-                    Vertex() :Base() {}
-
-                    Vertex(const Vertex&) = default;
-                    Vertex& operator=(const Vertex&) = default;
-                    Vertex(Vertex&&) = default;
-                    Vertex& operator=(Vertex&&) = default;
-                public:
-                    using edge_type = E;
-            };
-
-        template<Graph_type T_graph_type, typename V>
-            class Adjacency_lists_base {
-                public:
-                    using vertex_type = V;
-                    using edge_type = typename V::edge_type;
-                protected:
-                    Vector<vertex_type> vertices_;
-                private:
-                    template<Graph_type TT_graph_type, typename VV, typename EE, typename D>
-                        friend class Adj_lists_vertex_base;
-                    void update_vertices_this_link() {
-                        for (auto& v : vertices_)
-                            v.adjacency_lists_ = this;
-                    }
-                public:
-                    Adjacency_lists_base() = default;
-
-                    Adjacency_lists_base(const Adjacency_lists_base& o, bool update_links)
-                        :vertices_(o.vertices_) {}
-                    Adjacency_lists_base(const Adjacency_lists_base& o) :Adjacency_lists_base(o, true) {
-                        update_vertices_this_link();
-                    }
-                    Adjacency_lists_base& operator=(const Adjacency_lists_base& o) {
-                        auto copy = o;
-                        std::swap(*this, copy);
-                        return *this;
-                    }
-                    Adjacency_lists_base(Adjacency_lists_base&& o) :vertices_(std::move(o.vertices_)) {
-                        update_vertices_this_link();
-                    }
-                    Adjacency_lists_base& operator=(Adjacency_lists_base&& o) {
-                        std::swap(vertices_, o.vertices_);
-                        update_vertices_this_link();
-                        o.update_vertices_this_link();
-                        return *this;
-                    }
-
-                    vertex_type& create_vertex(const typename V::value_type& t) {
-                        vertices_.emplace_back(t, this);
-                        return vertices_[vertices_.size() - 1];
-                    }
-
-                    size_t vertices_count() const { return vertices_.size(); }
-
-                    const vertex_type& operator[](size_t index) const { return vertices_[index]; }
-                    vertex_type& operator[](size_t index) { return vertices_[index]; }
-
-                    bool has_edge(const vertex_type& v, const vertex_type& w) const { return v.has_edge(w); }
-
-                    edge_type* get_edge(size_t v, size_t w) { return vertices_[v].get_edge(w); }
-
-                    const edge_type* get_edge(const vertex_type& v, const vertex_type& w) const { return v.get_edge(w); }
-                    edge_type* get_edge(vertex_type& v, const vertex_type& w) { return v.get_edge(w); }
-
-                    auto cbegin() const { return vertices_.cbegin(); }
-                    auto cend() const { return vertices_.cend(); }
-                    auto begin() { return vertices_.begin(); }
-                    auto end() { return vertices_.end(); } 
-
-                    auto crbegin() const { return vertices_.crbegin(); }
-                    auto crend() const { return vertices_.crend(); }
-            };
-
-        template<Graph_type T_graph_type, typename V>
-            struct Edges_remover {
-                void remove_edge(V& v1, V& v2) {
-                    v1.remove_edge(v2);
-                    v2.remove_edge(v1);
-                }
-            };
-
-        template<typename V>
-            struct Edges_remover<Graph_type::DIGRAPH, V> {
-                void remove_edge(V& v1, V& v2) {
-                    v1.remove_edge(v2);
-                }
-            };
-
-        template<Graph_type T_graph_type, typename V, typename ET = typename V::edge_type::value_type>
-            class Adjacency_lists : public Adjacency_lists_base<T_graph_type, V>, public Edges_remover<T_graph_type, V> {
-                public:
-                    Adjacency_lists& add_edge(V& v1, V& v2, const typename V::edge_type& edge) {
-                        if (!v1.link_exists(v2)) {
-                            v1.add_link(v2, edge);
-                            v2.add_link(v1, edge);
-                        }
-                        return *this;
-                    }
-            };
-
-        template<typename V>
-            class Adjacency_lists<Graph_type::GRAPH, V, bool>
-            : public Adjacency_lists_base<Graph_type::GRAPH, V>, public Edges_remover<Graph_type::GRAPH, V> {
-                public:
-                    Adjacency_lists& add_edge(V& v1, V& v2) {
-                        if (!v1.link_exists(v2)) {
-                            v1.add_link(v2, true);
-                            v2.add_link(v1, true);
-                        }
-                        return *this;
-                    }
-            };
-
-        template<typename V, typename ET>
-            class Adjacency_lists<Graph_type::DIGRAPH, V, ET> 
-            : public Adjacency_lists_base<Graph_type::DIGRAPH, V>, public Edges_remover<Graph_type::DIGRAPH, V> {
-                public:
-                    Adjacency_lists& add_edge(V& v1, V& v2, const typename V::edge_type& edge) {
-                        if (!v1.link_exists(v2))
-                            v1.add_link(v2, edge);
-                        return *this;
-                    }
-            };
-
-        template<typename V>
-            class Adjacency_lists<Graph_type::DIGRAPH, V, bool>
-            : public Adjacency_lists_base<Graph_type::DIGRAPH, V>, public Edges_remover<Graph_type::DIGRAPH, V> {
-                public:
-                    Adjacency_lists& add_edge(V& v1, V& v2) {
-                        if (!v1.link_exists(v2))
-                            v1.add_link(v2, true);
-                        return *this;
-                    }
-            };
-
-        template<Graph_type T_graph_type, typename VT, typename E, typename D>
-            template<bool T_is_const>
-            class Adj_lists_vertex_base<T_graph_type, VT, E, D>::Iterator {
-                private:
-                    using value_type = std::conditional_t<T_is_const, const D, D>;
-                protected:
-                    using link_type = Vertex_link<T_graph_type, E>;
-                    using links_type = Forward_list<link_type>;
-                    using links_iterator_type = std::conditional_t<T_is_const,
-                          typename links_type::const_iterator, typename links_type::iterator>;
-                    value_type* vertex_;
-                private:
-                    friend class Adj_lists_vertex_base;
-                    links_iterator_type it_;
-                    Iterator(value_type* vertex, const links_iterator_type& it)
-                        :vertex_(vertex), it_(it)
-                    {}
-                public:
-                    const Iterator& operator++() {
-                        ++it_;
-                        return *this;
-                    }
-                    bool operator==(const Iterator& o) const { return it_ == o.it_; }
-                    bool operator!=(const Iterator& o) const { return !operator==(o); }
-                    value_type* operator->() const { return &operator*(); }
-                    value_type& operator*() const {
-                        return vertex_->adjacency_lists_->vertices_[it_->target()];
-                    }
-            };
-
-        template<Graph_type T_graph_type, typename VT, typename E, typename D>
-            template<bool T_is_const>
-            class Adj_lists_vertex_base<T_graph_type, VT, E, D>::Edges_iterator : public Iterator<T_is_const> {
-                private:
-                    using Base = Iterator<T_is_const>;
-                    using link_type = typename Base::link_type;
-                public:
-                    using entry_type = Edges_iterator_entry<D, link_type, T_is_const>;
-                private:
-                    using vertex_base_type = typename Base::value_type;
-                    using links_type = typename Base::links_type;
-                    using links_iterator_type = typename Base::links_iterator_type;
-
-                    entry_type entry_;
-
-                    static auto links_end(Forward_list<link_type>& links) { return links.end(); }
-                    static auto links_end(const Forward_list<link_type>& links) { return links.cend(); }
-
-                    template<typename VV, typename EE, bool TT_is_const, typename It>
-                        static void update_edge_p(Edges_iterator_entry<VV, EE, TT_is_const>& entry, const It& it) {
-                            entry.edge_ = &*it;
-                        }
-
-                    void update_entry() {
-                        if (Base::it_ != links_end(Base::vertex_->links_)) {
-                            // todo target_ is redundant, delete
-                            entry_.target_ = &Base::vertex_->adjacency_lists_->vertices_[Base::it_->target()];
-                            update_edge_p(entry_, Base::it_);
-                        }
-                    }
-                public:
-                    Edges_iterator(vertex_base_type* vertex, const links_iterator_type& it)
-                        :Base(vertex, it), entry_(vertex)
-                    { update_entry(); }
-                    const entry_type& operator*() const { return entry_; }
-                    const entry_type* operator->() const { return &entry_; }
-                    Edges_iterator& operator++() { 
-                        Base::operator++();
-                        update_entry();
-                        return *this;
-                    }
-            };
-
-        template<typename G, typename D>
-            struct Internal_printer_base {
-                static void print(const G& g, std::ostream& stream) {
-                    for (auto v = g.cbegin(); v != g.cend(); ++v) {
-                        stream << *v << ": ";
-                        D::print_vertex(*v, stream);
-                        stream << std::endl;
-                    }
-                }
-            };
-
-        template<Graph_type TT_graph_type, typename VV, typename EE>
-            struct Internal_printer 
-            : public Internal_printer_base<Adjacency_lists<TT_graph_type, Vertex<TT_graph_type, VV, EE>>,
-            Internal_printer<TT_graph_type, VV, EE>> {
-                static void print_vertex(const Vertex<TT_graph_type, VV, EE>& v, std::ostream& stream) {
-                    for (auto w = v.cedges_begin(); w != v.cedges_end(); ++w)
-                        stream << w->target().index() << "(" << w->edge().weight() << ") ";
-                }
-            };
-
-        template<Graph_type TT_graph_type, typename VV>
-            struct Internal_printer<TT_graph_type, VV, Edge<bool>> 
-            : public Internal_printer_base<Adjacency_lists<TT_graph_type, Vertex<TT_graph_type, VV, Edge<bool>>>,
-            Internal_printer<TT_graph_type, VV, Edge<bool>>> {
-                static void print_vertex(const Vertex<TT_graph_type, VV, Edge<bool>>& v, std::ostream& stream) {
-                    for (auto w = v.cedges_begin(); w != v.cedges_end(); ++w)
-                        stream << w->target().index() << " ";
-                }
-            };
-
+    bool link_exists(const Adj_lists_vertex_base& v) {
+        for (auto link = links_.begin(); link != links_.end(); ++link)
+            if (link->target() == v.index()) return true;
+        return false;
+    }
+    void add_link(const Adj_lists_vertex_base& v, const E& edge) {
+        links_.emplace_back(v.index(), edge);
     }
 
-    template<Graph_type T_graph_type, typename V, typename TE = bool, typename E = Adjacency_lists_ns::Edge<TE>>
-        using Adjacency_lists = Adjacency_lists_ns::Adjacency_lists<T_graph_type,
-              Adjacency_lists_ns::Vertex<T_graph_type, V, E>>;
+   public:
+    using edge_type = E;
 
-    template<Graph_type T_graph_type, typename V>
-        void print_representation(const Adjacency_lists_ns::Adjacency_lists<T_graph_type, V>& g, std::ostream& stream) {
-            Adjacency_lists_ns::Internal_printer<T_graph_type, typename V::value_type, typename V::edge_type>
-                ::print(g, stream);
+    using iterator = Iterator<false>;
+    using const_iterator = Iterator<true>;
+    using edges_iterator = Edges_iterator<false>;
+    using const_edges_iterator = Edges_iterator<true>;
+
+    inline size_t index() const {
+        return derived() - adjacency_lists_->vertices_.cbegin();
+    }
+    inline operator size_t() const { return index(); }
+
+    iterator begin() { return {derived(), links_.begin()}; }
+    iterator end() { return {derived(), links_.end()}; }
+    const_iterator cbegin() const { return {derived(), links_.cbegin()}; }
+    const_iterator cend() const { return {derived(), links_.cend()}; }
+
+    edges_iterator edges_begin() { return {derived(), links_.begin()}; }
+    edges_iterator edges_end() { return {derived(), links_.end()}; }
+    const_edges_iterator cedges_begin() const {
+        return {derived(), links_.cbegin()};
+    }
+    const_edges_iterator cedges_end() const {
+        return {derived(), links_.cend()};
+    }
+
+    void remove_edge(const Adj_lists_vertex_base& v) {
+        links_.remove_first_if([&v](const vertex_link_type& edge) {
+            return v.index() == edge.target();
+        });
+    }
+    bool has_edge(const Adj_lists_vertex_base& v) const {
+        for (auto l = cbegin(); l != cend(); ++l)
+            if (*l == v) return true;
+        return false;
+    }
+    const E* get_edge(size_t v) const {
+        for (auto e = cedges_begin(); e != cedges_end(); ++e)
+            if (e->target().index() == v) return e->edge_;
+        return nullptr;
+    }
+    E* get_edge(size_t v) {
+        for (auto e = edges_begin(); e != edges_end(); ++e)
+            if (e->target().index() == v) return e->edge_;
+        return nullptr;
+    }
+};
+
+template <Graph_type T_graph_type, typename VT, typename E>
+class Vertex : public Adj_lists_vertex_base<T_graph_type, VT, E,
+                                            Vertex<T_graph_type, VT, E>> {
+   private:
+    using Base =
+        Adj_lists_vertex_base<T_graph_type, VT, E, Vertex<T_graph_type, VT, E>>;
+    template <Graph_type TT_graph_type, typename VV>
+    friend class Adjacency_lists_base;
+    template <Graph_type TT_graph_type, typename VV, typename ET>
+    friend class Adjacency_lists;
+    friend class Vector<Vertex>;
+
+    Vertex(const VT& value, typename Base::adj_lists_type* adjacency_lists)
+        : Base(value, adjacency_lists) {}
+    Vertex() : Base() {}
+
+    Vertex(const Vertex&) = default;
+    Vertex& operator=(const Vertex&) = default;
+    Vertex(Vertex&&) = default;
+    Vertex& operator=(Vertex&&) = default;
+
+   public:
+    using edge_type = E;
+};
+
+template <Graph_type T_graph_type, typename V>
+class Adjacency_lists_base {
+   public:
+    using vertex_type = V;
+    using edge_type = typename V::edge_type;
+
+   protected:
+    Vector<vertex_type> vertices_;
+
+   private:
+    template <Graph_type TT_graph_type, typename VV, typename EE, typename D>
+    friend class Adj_lists_vertex_base;
+    void update_vertices_this_link() {
+        for (auto& v : vertices_) v.adjacency_lists_ = this;
+    }
+
+   public:
+    Adjacency_lists_base() = default;
+
+    Adjacency_lists_base(const Adjacency_lists_base& o, bool update_links)
+        : vertices_(o.vertices_) {}
+    Adjacency_lists_base(const Adjacency_lists_base& o)
+        : Adjacency_lists_base(o, true) {
+        update_vertices_this_link();
+    }
+    Adjacency_lists_base& operator=(const Adjacency_lists_base& o) {
+        auto copy = o;
+        std::swap(*this, copy);
+        return *this;
+    }
+    Adjacency_lists_base(Adjacency_lists_base&& o)
+        : vertices_(std::move(o.vertices_)) {
+        update_vertices_this_link();
+    }
+    Adjacency_lists_base& operator=(Adjacency_lists_base&& o) {
+        std::swap(vertices_, o.vertices_);
+        update_vertices_this_link();
+        o.update_vertices_this_link();
+        return *this;
+    }
+
+    vertex_type& create_vertex(const typename V::value_type& t) {
+        vertices_.emplace_back(t, this);
+        return vertices_[vertices_.size() - 1];
+    }
+
+    size_t vertices_count() const { return vertices_.size(); }
+
+    const vertex_type& operator[](size_t index) const {
+        return vertices_[index];
+    }
+    vertex_type& operator[](size_t index) { return vertices_[index]; }
+
+    bool has_edge(const vertex_type& v, const vertex_type& w) const {
+        return v.has_edge(w);
+    }
+
+    edge_type* get_edge(size_t v, size_t w) { return vertices_[v].get_edge(w); }
+
+    const edge_type* get_edge(const vertex_type& v,
+                              const vertex_type& w) const {
+        return v.get_edge(w);
+    }
+    edge_type* get_edge(vertex_type& v, const vertex_type& w) {
+        return v.get_edge(w);
+    }
+
+    auto cbegin() const { return vertices_.cbegin(); }
+    auto cend() const { return vertices_.cend(); }
+    auto begin() { return vertices_.begin(); }
+    auto end() { return vertices_.end(); }
+
+    auto crbegin() const { return vertices_.crbegin(); }
+    auto crend() const { return vertices_.crend(); }
+};
+
+template <Graph_type T_graph_type, typename V>
+struct Edges_remover {
+    void remove_edge(V& v1, V& v2) {
+        v1.remove_edge(v2);
+        v2.remove_edge(v1);
+    }
+};
+
+template <typename V>
+struct Edges_remover<Graph_type::DIGRAPH, V> {
+    void remove_edge(V& v1, V& v2) { v1.remove_edge(v2); }
+};
+
+template <Graph_type T_graph_type, typename V,
+          typename ET = typename V::edge_type::value_type>
+class Adjacency_lists : public Adjacency_lists_base<T_graph_type, V>,
+                        public Edges_remover<T_graph_type, V> {
+   public:
+    Adjacency_lists& add_edge(V& v1, V& v2, const typename V::edge_type& edge) {
+        if (!v1.link_exists(v2)) {
+            v1.add_link(v2, edge);
+            v2.add_link(v1, edge);
         }
+        return *this;
+    }
+};
 
+template <typename V>
+class Adjacency_lists<Graph_type::GRAPH, V, bool>
+    : public Adjacency_lists_base<Graph_type::GRAPH, V>,
+      public Edges_remover<Graph_type::GRAPH, V> {
+   public:
+    Adjacency_lists& add_edge(V& v1, V& v2) {
+        if (!v1.link_exists(v2)) {
+            v1.add_link(v2, true);
+            v2.add_link(v1, true);
+        }
+        return *this;
+    }
+};
+
+template <typename V, typename ET>
+class Adjacency_lists<Graph_type::DIGRAPH, V, ET>
+    : public Adjacency_lists_base<Graph_type::DIGRAPH, V>,
+      public Edges_remover<Graph_type::DIGRAPH, V> {
+   public:
+    Adjacency_lists& add_edge(V& v1, V& v2, const typename V::edge_type& edge) {
+        if (!v1.link_exists(v2)) v1.add_link(v2, edge);
+        return *this;
+    }
+};
+
+template <typename V>
+class Adjacency_lists<Graph_type::DIGRAPH, V, bool>
+    : public Adjacency_lists_base<Graph_type::DIGRAPH, V>,
+      public Edges_remover<Graph_type::DIGRAPH, V> {
+   public:
+    Adjacency_lists& add_edge(V& v1, V& v2) {
+        if (!v1.link_exists(v2)) v1.add_link(v2, true);
+        return *this;
+    }
+};
+
+template <Graph_type T_graph_type, typename VT, typename E, typename D>
+template <bool T_is_const>
+class Adj_lists_vertex_base<T_graph_type, VT, E, D>::Iterator {
+   private:
+    using value_type = std::conditional_t<T_is_const, const D, D>;
+
+   protected:
+    using link_type = Vertex_link<T_graph_type, E>;
+    using links_type = Forward_list<link_type>;
+    using links_iterator_type =
+        std::conditional_t<T_is_const, typename links_type::const_iterator,
+                           typename links_type::iterator>;
+    value_type* vertex_;
+
+   private:
+    friend class Adj_lists_vertex_base;
+    links_iterator_type it_;
+    Iterator(value_type* vertex, const links_iterator_type& it)
+        : vertex_(vertex), it_(it) {}
+
+   public:
+    const Iterator& operator++() {
+        ++it_;
+        return *this;
+    }
+    bool operator==(const Iterator& o) const { return it_ == o.it_; }
+    bool operator!=(const Iterator& o) const { return !operator==(o); }
+    value_type* operator->() const { return &operator*(); }
+    value_type& operator*() const {
+        return vertex_->adjacency_lists_->vertices_[it_->target()];
+    }
+};
+
+template <Graph_type T_graph_type, typename VT, typename E, typename D>
+template <bool T_is_const>
+class Adj_lists_vertex_base<T_graph_type, VT, E, D>::Edges_iterator
+    : public Iterator<T_is_const> {
+   private:
+    using Base = Iterator<T_is_const>;
+    using link_type = typename Base::link_type;
+
+   public:
+    using entry_type = Edges_iterator_entry<D, link_type, T_is_const>;
+
+   private:
+    using vertex_base_type = typename Base::value_type;
+    using links_type = typename Base::links_type;
+    using links_iterator_type = typename Base::links_iterator_type;
+
+    entry_type entry_;
+
+    static auto links_end(Forward_list<link_type>& links) {
+        return links.end();
+    }
+    static auto links_end(const Forward_list<link_type>& links) {
+        return links.cend();
+    }
+
+    template <typename VV, typename EE, bool TT_is_const, typename It>
+    static void update_edge_p(Edges_iterator_entry<VV, EE, TT_is_const>& entry,
+                              const It& it) {
+        entry.edge_ = &*it;
+    }
+
+    void update_entry() {
+        if (Base::it_ != links_end(Base::vertex_->links_)) {
+            // todo target_ is redundant, delete
+            entry_.target_ = &Base::vertex_->adjacency_lists_
+                                  ->vertices_[Base::it_->target()];
+            update_edge_p(entry_, Base::it_);
+        }
+    }
+
+   public:
+    Edges_iterator(vertex_base_type* vertex, const links_iterator_type& it)
+        : Base(vertex, it), entry_(vertex) {
+        update_entry();
+    }
+    const entry_type& operator*() const { return entry_; }
+    const entry_type* operator->() const { return &entry_; }
+    Edges_iterator& operator++() {
+        Base::operator++();
+        update_entry();
+        return *this;
+    }
+};
+
+template <typename G, typename D>
+struct Internal_printer_base {
+    static void print(const G& g, std::ostream& stream) {
+        for (auto v = g.cbegin(); v != g.cend(); ++v) {
+            stream << *v << ": ";
+            D::print_vertex(*v, stream);
+            stream << std::endl;
+        }
+    }
+};
+
+template <Graph_type TT_graph_type, typename VV, typename EE>
+struct Internal_printer
+    : public Internal_printer_base<
+          Adjacency_lists<TT_graph_type, Vertex<TT_graph_type, VV, EE>>,
+          Internal_printer<TT_graph_type, VV, EE>> {
+    static void print_vertex(const Vertex<TT_graph_type, VV, EE>& v,
+                             std::ostream& stream) {
+        for (auto w = v.cedges_begin(); w != v.cedges_end(); ++w)
+            stream << w->target().index() << "(" << w->edge().weight() << ") ";
+    }
+};
+
+template <Graph_type TT_graph_type, typename VV>
+struct Internal_printer<TT_graph_type, VV, Edge<bool>>
+    : public Internal_printer_base<
+          Adjacency_lists<TT_graph_type, Vertex<TT_graph_type, VV, Edge<bool>>>,
+          Internal_printer<TT_graph_type, VV, Edge<bool>>> {
+    static void print_vertex(const Vertex<TT_graph_type, VV, Edge<bool>>& v,
+                             std::ostream& stream) {
+        for (auto w = v.cedges_begin(); w != v.cedges_end(); ++w)
+            stream << w->target().index() << " ";
+    }
+};
+
+}  // namespace Adjacency_lists_ns
+
+template <Graph_type T_graph_type, typename V, typename TE = bool,
+          typename E = Adjacency_lists_ns::Edge<TE>>
+using Adjacency_lists = Adjacency_lists_ns::Adjacency_lists<
+    T_graph_type, Adjacency_lists_ns::Vertex<T_graph_type, V, E>>;
+
+template <Graph_type T_graph_type, typename V>
+void print_representation(
+    const Adjacency_lists_ns::Adjacency_lists<T_graph_type, V>& g,
+    std::ostream& stream) {
+    Adjacency_lists_ns::Internal_printer<T_graph_type, typename V::value_type,
+                                         typename V::edge_type>::print(g,
+                                                                       stream);
 }
+
+}  // namespace Graph

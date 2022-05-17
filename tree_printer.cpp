@@ -11,24 +11,21 @@ void Tree_printer_base::Siblings::fix_positions(Siblings* previous) {
     };
 
     auto shift = 0;
-    if (previous)
-        shift = previous->tail_->border() - head_->position();
+    if (previous) shift = previous->tail_->border() - head_->position();
     int current_middle = middle();
-    if (parent_) 
-        shift = std::max(shift, parent_->center() - current_middle);
+    if (parent_) shift = std::max(shift, parent_->center() - current_middle);
 
     if (shift > 0)
-        for (auto node = head_; node; node = node->next())
-            node->shift(shift);
+        for (auto node = head_; node; node = node->next()) node->shift(shift);
 
     if (parent_) {
-        if (shift > 0)
-            current_middle = middle();
+        if (shift > 0) current_middle = middle();
         if (parent_->center() != current_middle) {
             parent_->center(current_middle);
 
             auto previous = parent_;
-            for (auto sibling = parent_->next(); sibling; sibling = sibling->next()) {
+            for (auto sibling = parent_->next(); sibling;
+                 sibling = sibling->next()) {
                 int min_position = previous->border();
                 if (min_position > sibling->position())
                     sibling->position(min_position);
@@ -38,7 +35,8 @@ void Tree_printer_base::Siblings::fix_positions(Siblings* previous) {
             parent_->siblings_->fix_positions();
 
             auto previous_siblings = parent_->siblings_;
-            for (auto siblings = previous_siblings->next_; siblings; siblings = siblings->next_) {
+            for (auto siblings = previous_siblings->next_; siblings;
+                 siblings = siblings->next_) {
                 siblings->fix_positions(previous_siblings);
                 previous_siblings = siblings;
             }
@@ -46,39 +44,37 @@ void Tree_printer_base::Siblings::fix_positions(Siblings* previous) {
     }
 }
 
-template<typename S>
+template <typename S>
 class Base_appender {
-    protected:
-        S stream_;
-        int count_;
-        Base_appender(S&& stream): stream_(std::forward<S>(stream)), count_(0) {}
-    public:
-        void operator<<(const char* s) {
-            stream_ << s;
-            ++count_;
-        }
-        void operator<<(const std::string& s) {
-            stream_ << s;
-            count_ += s.size();
-        }
-        void operator<<(const Tree_printer_base::Printed_node* node) {
-            stream_ << node->label();
-            count_ += node->label_width();
-        }
-        void repeat_until(int bound, const char* s) {
-            while (count_ < bound)
-                *this << s;
-        }
-        int count() { return count_; }
-        void reset() { count_ = 0; }
+   protected:
+    S stream_;
+    int count_;
+    Base_appender(S&& stream) : stream_(std::forward<S>(stream)), count_(0) {}
+
+   public:
+    void operator<<(const char* s) {
+        stream_ << s;
+        ++count_;
+    }
+    void operator<<(const std::string& s) {
+        stream_ << s;
+        count_ += s.size();
+    }
+    void operator<<(const Tree_printer_base::Printed_node* node) {
+        stream_ << node->label();
+        count_ += node->label_width();
+    }
+    void repeat_until(int bound, const char* s) {
+        while (count_ < bound) *this << s;
+    }
+    int count() { return count_; }
+    void reset() { count_ = 0; }
 };
 
 void Tree_printer_base::print(Lines& lines, std::ostream& stream) {
     struct Appender : Base_appender<std::ostream&> {
-        Appender(std::ostream& stream) :Base_appender<std::ostream&>(stream) {}
-        void new_line() {
-            stream_ << std::endl;
-        }
+        Appender(std::ostream& stream) : Base_appender<std::ostream&>(stream) {}
+        void new_line() { stream_ << std::endl; }
     };
     print(lines, Appender(stream));
 }
@@ -86,7 +82,7 @@ void Tree_printer_base::print(Lines& lines, std::ostream& stream) {
 Forward_list<std::string> Tree_printer_base::compose_text_lines(Lines& lines) {
     struct Appender : Base_appender<std::stringstream> {
         Forward_list<std::string> lines_;
-        Appender(): Base_appender<std::stringstream>(std::stringstream()) {}
+        Appender() : Base_appender<std::stringstream>(std::stringstream()) {}
         void new_line() {
             lines_.push_back(stream_.str());
             stream_ = std::stringstream();
@@ -98,14 +94,13 @@ Forward_list<std::string> Tree_printer_base::compose_text_lines(Lines& lines) {
     return std::move(appender.lines_);
 }
 
-template<typename A>
+template <typename A>
 void Tree_printer_base::print(Lines& lines, A&& appender) {
     for (auto& line : lines) {
         Printed_node* previous = nullptr;
         for (auto& siblings : line) {
             siblings.for_each([&previous](auto node) {
-                if (previous)
-                    node->position(previous->border());
+                if (previous) node->position(previous->border());
                 previous = node;
             });
         }
@@ -136,8 +131,10 @@ void Tree_printer_base::print(Lines& lines, A&& appender) {
                             else
                                 appender << bc::bottom_t;
                             auto end = node->center();
-                            if (parent_center > appender.count() && parent_center < end) {
-                                appender.repeat_until(parent_center, bc::h_line);
+                            if (parent_center > appender.count() &&
+                                parent_center < end) {
+                                appender.repeat_until(parent_center,
+                                                      bc::h_line);
                                 appender << bc::top_t;
                                 appender.repeat_until(end, bc::h_line);
                             } else
@@ -171,5 +168,4 @@ void Tree_printer_base::print(Lines& lines, A&& appender) {
     }
 
     do_print();
-
 }

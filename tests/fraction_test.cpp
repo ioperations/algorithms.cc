@@ -1,9 +1,8 @@
-#include "gtest/gtest.h"
-
 #include "fraction.h"
 
-TEST(Fraction_test, test_1) {
+#include "gtest/gtest.h"
 
+TEST(Fraction_test, test_1) {
     Fraction f1(3, 8);
     Fraction f2(5, 12);
 
@@ -22,5 +21,4 @@ TEST(Fraction_test, test_1) {
     ASSERT_EQ(Fraction(9, 10), f1 / f2);
     f1_copy = f1;
     ASSERT_EQ(Fraction(9, 10), f1_copy /= f2);
-
 }

@@ -1,10 +1,10 @@
-#include "gtest/gtest.h"
+#include "rich_text.h"
 
 #include <sstream>
 
 #include "array.h"
+#include "gtest/gtest.h"
 #include "std_ext.h"
-#include "rich_text.h"
 
 TEST(Rich_text, test_1) {
     using namespace Rich_text;
@@ -48,13 +48,14 @@ TEST(Rich_text, test_2) {
     Sequence s(array.begin(), array.end());
     std::stringstream ss;
     ss << std::endl;
-    s.print_with_styled_entry(ss, Style::bold(), *array.begin(), *(array.begin() + 1));
+    s.print_with_styled_entry(ss, Style::bold(), *array.begin(),
+                              *(array.begin() + 1));
     ss << std::endl;
 
-    s.print_with_styled_entries(ss, 
-          styled_entries(Style::bold(), *array.begin(), *(array.begin() + 1)),
-          styled_entries(Style::red_bg(), *(array.begin() + 1), *(array.begin() + 2))
-          );
+    s.print_with_styled_entries(
+        ss, styled_entries(Style::bold(), *array.begin(), *(array.begin() + 1)),
+        styled_entries(Style::red_bg(), *(array.begin() + 1),
+                       *(array.begin() + 2)));
     ss << std::endl;
 
     ASSERT_EQ(ss.str(), R"(
@@ -62,4 +63,3 @@ TEST(Rich_text, test_2) {
 [1m0[0m [1m[41m0[0m [41m0[0m 0
 )");
 }
-

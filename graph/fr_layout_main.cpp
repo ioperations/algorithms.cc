@@ -1,58 +1,65 @@
+#include "adjacency_lists.h"
+#include "adjacency_matrix.h"
+#include "drawables.h"
 #include "fr_layout.h"
-
 #include "graph.h"
 #include "graphs.h"
-#include "adjacency_matrix.h"
-#include "adjacency_lists.h"
-#include "drawables.h"
 
 class Drawables_stream {
-    private:
-        Vertical_drawable_block* const block_;
-    public:
-        Drawables_stream(Vertical_drawable_block* block) :block_(block) {}
-        Vertical_drawable_block* const block() { return block_; }
+   private:
+    Vertical_drawable_block* const block_;
+
+   public:
+    Drawables_stream(Vertical_drawable_block* block) : block_(block) {}
+    Vertical_drawable_block* const block() { return block_; }
 };
 
-Drawables_stream& operator<<(Drawables_stream& stream, const std::string& text) {
+Drawables_stream& operator<<(Drawables_stream& stream,
+                             const std::string& text) {
     stream.block()->add(new Drawable_text(text));
     return stream;
 }
 
-template<typename G>
+template <typename G>
 Drawables_stream& print_graph(Drawables_stream& stream, const G& graph) {
     Graph::Layout::Calculator calculator;
     std::map<size_t, Graph::Layout::Calculator::vertex_descriptor> map;
-    Graph::dfs(graph,
-               [&calculator, &map](const auto& v) {
-                   map[v.index()] = calculator.add_vertex(std::to_string(v.value()));
-               },
-               [&calculator, &map](const auto& e) {
-                   auto& v = e.source();
-                   auto& w = e.target();
-                   if (v.index() < w.index())
-                       calculator.add_edge(map.find(v.index())->second, map.find(w.index())->second);
-               });
-    stream.block()->add(new Drawable_graph(calculator.calculate_layout_2(200, 1000)));
+    Graph::dfs(
+        graph,
+        [&calculator, &map](const auto& v) {
+            map[v.index()] = calculator.add_vertex(std::to_string(v.value()));
+        },
+        [&calculator, &map](const auto& e) {
+            auto& v = e.source();
+            auto& w = e.target();
+            if (v.index() < w.index())
+                calculator.add_edge(map.find(v.index())->second,
+                                    map.find(w.index())->second);
+        });
+    stream.block()->add(
+        new Drawable_graph(calculator.calculate_layout_2(200, 1000)));
     return stream;
 }
 
-template<typename T>
-Drawables_stream& operator<<(Drawables_stream& stream, 
-                             const Graph::Adjacency_matrix<Graph::Graph_type::GRAPH, T>& graph) {
+template <typename T>
+Drawables_stream& operator<<(
+    Drawables_stream& stream,
+    const Graph::Adjacency_matrix<Graph::Graph_type::GRAPH, T>& graph) {
     return print_graph(stream, graph);
 }
 
-template<typename T>
-Drawables_stream& operator<<(Drawables_stream& stream,
-                             const Graph::Adjacency_lists<Graph::Graph_type::GRAPH, T>& graph) {
+template <typename T>
+Drawables_stream& operator<<(
+    Drawables_stream& stream,
+    const Graph::Adjacency_lists<Graph::Graph_type::GRAPH, T>& graph) {
     return print_graph(stream, graph);
 }
 
-template<typename It>
+template <typename It>
 void print_path(Drawables_stream& dout, const It& b, const It& e) {
     std::stringstream ss;
-    Graph::print_collection(b, e, " - ", [](auto p) -> decltype(auto) { return *p; }, ss);
+    Graph::print_collection(
+        b, e, " - ", [](auto p) -> decltype(auto) { return *p; }, ss);
     dout << ss.str();
 }
 
@@ -76,7 +83,7 @@ Drawable* const compose_drawables() {
     auto h_path = Graph::compose_hamilton_path(graph, graph[0], graph[1]);
     print_path(dout, h_path.cbegin(), h_path.cend());
 
-    dout <<"\ngraph with bridges";
+    dout << "\ngraph with bridges";
     graph = Graph::Samples::bridges_sample<graph_type>();
     dout << graph;
 
@@ -102,4 +109,3 @@ Drawable* const compose_drawables() {
 }
 
 IMPLEMENT_CANVAS_APP(compose_drawables)
-

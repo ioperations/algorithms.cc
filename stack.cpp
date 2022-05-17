@@ -1,6 +1,6 @@
-#include <sstream>
-
 #include "stack.h"
+
+#include <sstream>
 
 struct Postfix_expr {
     struct Entry;
@@ -22,27 +22,20 @@ struct Postfix_expr {
     };
     struct Operand : public Entry {
         int value_ = 0;
-        void print(std::ostream& stream) override {
-            stream << value_;
-        }
+        void print(std::ostream& stream) override { stream << value_; }
         void visit(Entry_visitor& visitor) override {
             visitor.visit_operand(*this);
         }
     };
-    struct Operator : public Entry {
-    };
+    struct Operator : public Entry {};
     struct Addition : Operator {
-        void print(std::ostream& stream) override {
-            stream << '+';
-        }
+        void print(std::ostream& stream) override { stream << '+'; }
         void visit(Entry_visitor& visitor) override {
             visitor.visit_addition(*this);
         }
     };
     struct Multiplication : Operator {
-        void print(std::ostream& stream) override {
-            stream << '*';
-        }
+        void print(std::ostream& stream) override { stream << '*'; }
         void visit(Entry_visitor& visitor) override {
             visitor.visit_multiplication(*this);
         }
@@ -54,14 +47,14 @@ struct Postfix_expr {
     Operand* current_operand_ = nullptr;
 
     ~Postfix_expr() {
-        for (auto entry = head_; entry; ) {
+        for (auto entry = head_; entry;) {
             auto previous = entry;
             entry = entry->next_;
             delete previous;
         }
     }
     void add(Entry* entry) {
-        if (head_) 
+        if (head_)
             tail_->next_ = entry;
         else
             head_ = entry;
@@ -86,7 +79,8 @@ struct Postfix_expr {
         } else if (c >= '0' && c <= '9') {
             int value = c - '0';
             if (current_operand_)
-                current_operand_->value_ = 10 * current_operand_->value_ + value;
+                current_operand_->value_ =
+                    10 * current_operand_->value_ + value;
             else {
                 current_operand_ = new Operand;
                 current_operand_->value_ = value;
@@ -94,8 +88,7 @@ struct Postfix_expr {
         }
     }
     void post_construct() {
-        while (!operator_stack_.empty())
-            add(operator_stack_.pop());
+        while (!operator_stack_.empty()) add(operator_stack_.pop());
     }
     int evaluate() {
         Entry_visitor entry_visitor;
@@ -109,12 +102,13 @@ void Postfix_expr::Entry_visitor::visit_operand(Operand& operand) {
     stack_.push(operand.value_);
 }
 
-void Postfix_expr::Entry_visitor::visit_multiplication(Multiplication& multiplication) {
-   stack_.push(stack_.pop() * stack_.pop()); 
+void Postfix_expr::Entry_visitor::visit_multiplication(
+    Multiplication& multiplication) {
+    stack_.push(stack_.pop() * stack_.pop());
 }
 
 void Postfix_expr::Entry_visitor::visit_addition(Addition& addition) {
-   stack_.push(stack_.pop() + stack_.pop()); 
+    stack_.push(stack_.pop() + stack_.pop());
 }
 
 std::ostream& operator<<(std::ostream& stream, const Postfix_expr& expr) {
@@ -132,10 +126,9 @@ int main() {
     const char* p;
     char c;
     Postfix_expr postfix_expr;
-    for (p = infix; ; ++p) {
+    for (p = infix;; ++p) {
         c = *p;
-        if (c == '\0')
-            break;
+        if (c == '\0') break;
         postfix_expr.add(c);
     }
     postfix_expr.post_construct();

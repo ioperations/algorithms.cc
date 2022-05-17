@@ -1,4 +1,8 @@
 
+.ccls-cache
+.cache
+compile_commands.json
+build/
 *.swp
 *.ini
 build

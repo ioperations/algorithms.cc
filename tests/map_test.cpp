@@ -1,10 +1,9 @@
+#include "map.h"
+
+#include "array.h"
 #include "gtest/gtest.h"
 
-#include "map.h"
-#include "array.h"
-
 TEST(Binary_tree, binary_tree) {
-
     Array<int> a{10, 20, 50, 40, 5, 21, 21};
     Map<int, int> map;
     int i = 0;

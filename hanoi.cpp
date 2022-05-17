@@ -1,18 +1,18 @@
-#include <iostream> 
-#include <sstream>
 #include <cmath>
+#include <iostream>
+#include <sstream>
 
 #include "array.h"
-#include "text_block.h"
 #include "box_drawing_chars.h"
+#include "text_block.h"
 
 struct Peg {
     struct Disk {
         int number_;
         Disk* next_ = nullptr;
         Peg* peg_ = nullptr;
-        Disk() :Disk(0) {}
-        Disk(int number) :number_(number) {}
+        Disk() : Disk(0) {}
+        Disk(int number) : number_(number) {}
     };
     Disk* head_ = nullptr;
     int size_ = 0;
@@ -39,7 +39,8 @@ std::ostream& operator<<(std::ostream& stream, const Peg& p) {
 struct Pegs {
     Array<Peg> pegs_;
     Array<Peg::Disk> disks_;
-    Pegs(size_t peg_count, int disk_count) :pegs_(peg_count), disks_(disk_count) {
+    Pegs(size_t peg_count, int disk_count)
+        : pegs_(peg_count), disks_(disk_count) {
         for (int i = disk_count - 1; i >= 0; --i) {
             disks_.emplace(i, i + 1);
             pegs_[0].place(&disks_[i]);
@@ -48,15 +49,13 @@ struct Pegs {
 
     Text_blocks& to_text_blocks(Text_blocks& text_blocks) {
         int lines_count = 0;
-        for (auto& peg : pegs_)
-            lines_count = std::max(lines_count, peg.size_);
+        for (auto& peg : pegs_) lines_count = std::max(lines_count, peg.size_);
         lines_count = std::max(3, lines_count);
 
         for (auto& peg : pegs_) {
             Text_block::Lines lines;
             auto repeat = [](std::ostream& stream, int times, const char* str) {
-                for (int i = 0; i < times; ++i)
-                    stream << str;
+                for (int i = 0; i < times; ++i) stream << str;
             };
             if (peg.size_ > 0) {
                 for (int i = peg.size_; i < lines_count; ++i)
@@ -86,21 +85,28 @@ struct Pegs {
     void shift(int disk_number, int shift) {
         auto& disk = disks_[disk_number - 1];
         if (&disk != disk.peg_->head_)
-            throw std::runtime_error(std::string("disk ") + std::to_string(disk_number) + " is not on top");
+            throw std::runtime_error(std::string("disk ") +
+                                     std::to_string(disk_number) +
+                                     " is not on top");
         int peg_index = disk.peg_ - &pegs_[0] + shift;
-        for (; peg_index < 0; peg_index += pegs_.size());
-        for (; peg_index >= static_cast<int>(pegs_.size()); peg_index -= pegs_.size());
+        for (; peg_index < 0; peg_index += pegs_.size())
+            ;
+        for (; peg_index >= static_cast<int>(pegs_.size());
+             peg_index -= pegs_.size())
+            ;
         pegs_[peg_index].place(disk.peg_->remove());
     }
 
     void print_iteration(int n, int d, int level) {
         std::string offset;
-        for (int i = 0; i < level; ++i)
-            offset += "  ";
+        for (int i = 0; i < level; ++i) offset += "  ";
         Text_block::Lines lines;
-        std::string hanoi_invocation = offset + "hanoi(" + std::to_string(n - 1) + ", " + std::to_string(-d) + ");";
+        std::string hanoi_invocation = offset + "hanoi(" +
+                                       std::to_string(n - 1) + ", " +
+                                       std::to_string(-d) + ");";
         lines.push_back(hanoi_invocation);
-        lines.push_back(offset + "shift(" + std::to_string(n) + ", " + std::to_string(d) + ");");
+        lines.push_back(offset + "shift(" + std::to_string(n) + ", " +
+                        std::to_string(d) + ");");
         lines.push_back(hanoi_invocation);
         Text_blocks text_blocks;
         to_text_blocks(text_blocks);
@@ -120,9 +126,7 @@ struct Pegs {
 struct Rule {
     Array<int> marks_;
     int h_;
-    Rule(int size, int h) :marks_(size), h_(h) {
-        mark(0, size - 1, h);
-    }
+    Rule(int size, int h) : marks_(size), h_(h) { mark(0, size - 1, h); }
     void mark(int l, int r, int h) {
         if (h > 0) {
             auto middle = (l + r) / 2;

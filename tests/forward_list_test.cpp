@@ -1,11 +1,11 @@
-#include "gtest/gtest.h"
-
 #include "forward_list.h"
-#include "pair.h"
 
 #include <sstream>
 
-template<typename T>
+#include "gtest/gtest.h"
+#include "pair.h"
+
+template <typename T>
 auto to_string(const Forward_list<T>& l) {
     std::stringstream ss;
     for (auto it = l.cbegin(); it != l.cend(); ++it) ss << (*it) << " ";
@@ -30,11 +30,16 @@ TEST(Forward_list_test, base) {
 
     ASSERT_EQ("3 7 9 2 ", to_string(l));
 
-    auto it = l.begin(); *it = 4;
-    ++it; *it = 5;
-    ++it; *it = 7;
-    ++it; *it = 8;
-    ++it; ASSERT_TRUE(it == l.end());
+    auto it = l.begin();
+    *it = 4;
+    ++it;
+    *it = 5;
+    ++it;
+    *it = 7;
+    ++it;
+    *it = 8;
+    ++it;
+    ASSERT_TRUE(it == l.end());
 
     ASSERT_EQ("4 5 7 8 ", to_string(l));
 
@@ -51,12 +56,10 @@ TEST(Forward_list_test, pair) {
 
 TEST(Forward_list_test, pop_front) {
     Forward_list<int> list;
-    for (int i = 0; i < 10; ++i)
-        list.push_back(i);
+    for (int i = 0; i < 10; ++i) list.push_back(i);
 
     Forward_list<int> list_2;
-    while (!list.empty())
-        list_2.push_back(list.pop_front());
+    while (!list.empty()) list_2.push_back(list.pop_front());
 
     ASSERT_EQ("0 1 2 3 4 5 6 7 8 9 ", to_string(list_2));
 
@@ -100,4 +103,3 @@ TEST(Forward_list_test, remove_element) {
     ASSERT_EQ(true, list.empty());
     ASSERT_EQ("", to_string(list));
 }
-

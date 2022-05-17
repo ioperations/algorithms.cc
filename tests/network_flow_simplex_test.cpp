@@ -1,10 +1,10 @@
-#include "gtest/gtest.h"
-
-#include "test_utils.h"
-#include "network_flow.h"
 #include "network_flow_simplex.h"
+
 #include "graph.h"
 #include "graphs.h"
+#include "gtest/gtest.h"
+#include "network_flow.h"
+#include "test_utils.h"
 
 using namespace Graph::Network_flow_ns;
 
@@ -13,18 +13,19 @@ using vertex_type = typename graph_type::vertex_type;
 using link_type = typename graph_type::link_type;
 using tree_type = Parent_link_array_tree<link_type>;
 
-void add_link(graph_type& g, tree_type& tree, vertex_type& v, vertex_type& w) { 
+void add_link(graph_type& g, tree_type& tree, vertex_type& v, vertex_type& w) {
     tree[w] = g.add_edge(v, w, 5, 0, 0);
 }
 
 struct Replace_test_case {
     graph_type g_;
     tree_type tree_;
-    Replace_test_case(graph_type&& g, Forward_list<std::pair<size_t, size_t>>&& links_map)
-        :g_(std::move(g)), tree_(g_.vertices_count()) {
-            for (auto e : links_map)
-                tree_[e.second] = g_.get_edge(e.first, e.second)->link();
-        }
+    Replace_test_case(graph_type&& g,
+                      Forward_list<std::pair<size_t, size_t>>&& links_map)
+        : g_(std::move(g)), tree_(g_.vertices_count()) {
+        for (auto e : links_map)
+            tree_[e.second] = g_.get_edge(e.first, e.second)->link();
+    }
 };
 
 TEST(Parent_link_array_tree, get_vertex_potential) {
@@ -73,7 +74,8 @@ TEST(Parent_link_array_tree, find_lca_2) {
     ASSERT_EQ(2, t.tree_.find_lca(t.g_.get_link(2, 4))->index());
 }
 
-void replace_tree_link(tree_type& tree, link_type* old_link, link_type* new_link) {
+void replace_tree_link(tree_type& tree, link_type* old_link,
+                       link_type* new_link) {
     auto lca = tree.find_lca(new_link);
     tree.replace(old_link, new_link, lca);
 }
@@ -171,6 +173,7 @@ TEST(Parent_link_array_tree, simplex) {
 3: <-1(2/2[1]) <-2(0/1[4]) ->5(2/2[2]) 
 4: <-1(0/2[1]) <-2(2/2[2]) ->5(2/2[1]) 
 5: <-3(2/2[2]) <-4(2/2[1]) 
-)", ss.str());
+)",
+              ss.str());
     ASSERT_EQ(20, calculate_network_flow_cost(f));
 }

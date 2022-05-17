@@ -1,31 +1,29 @@
+#include <cmath>
 #include <iostream>
 #include <sstream>
-#include <cmath>
 
-#include "random.h"
-#include "rich_text.h"
 #include "array.h"
 #include "box_drawing_chars.h"
+#include "random.h"
+#include "rich_text.h"
 #include "string_utils.h"
 
 using Entry = Rich_text::Entry<int>;
 using Style = Rich_text::Style;
 
-template<typename It>
+template <typename It>
 void print_sequence(const It& b, const It& e) {
-    for (auto el = b; el != e; ++el)
-        std::cout << *el << " ";
+    for (auto el = b; el != e; ++el) std::cout << *el << " ";
 }
 
-template<typename It>
+template <typename It>
 void sequential_search(It b, It e, int value) {
     std::cout << "searching for " << value << std::endl;
     int index = -1;
     int i = 0;
     for (auto el = b; index == -1 && el != e; ++el, ++i) {
         el->set_style(Style::bold());
-        if (el->value_ == value)
-            index = i;
+        if (el->value_ == value) index = i;
     }
     print_sequence(b, e);
     std::cout << std::endl << "index = " << index << std::endl;
@@ -57,86 +55,80 @@ void eratosthenes_sieve(int n) {
     for (int i = 2; i < n; ++i) a1[i] = true;
     for (int i = 2; i < n; ++i)
         if (a1[i])
-            for (int j = i; j * i < n; j++)
-                a1[i * j] = 0;
+            for (int j = i; j * i < n; j++) a1[i * j] = 0;
     for (int i = 2; i < n; ++i)
-        if (a1[i])
-            std::cout << i << " ";
+        if (a1[i]) std::cout << i << " ";
 }
 
-void coin_flipping_simulation() { // coin-flipping simulation
+void coin_flipping_simulation() {  // coin-flipping simulation
     int histogram_point_count = 20;
     int flip_count = 500;
     Array<int> heads(histogram_point_count + 1);
-    for (auto& i : heads) 
-        i = 0;
+    for (auto& i : heads) i = 0;
     int head_count;
     for (int i = 0; i < flip_count; ++i, ++heads[head_count]) {
         head_count = 0;
         for (int j = 0; j <= histogram_point_count; ++j)
-            if (rand() < RAND_MAX / 2) 
-                ++head_count;
+            if (rand() < RAND_MAX / 2) ++head_count;
     }
     for (int i = 0; i <= histogram_point_count; ++i) {
-        if (heads[i] == 0) 
+        if (heads[i] == 0)
             std::cout << ".";
         else
-            for (int j = 0; j < heads[i]; j += 10)
-                std::cout << "*";
+            for (int j = 0; j < heads[i]; j += 10) std::cout << "*";
         std::cout << std::endl;
     }
 }
 
 struct Point {
     float x_, y_;
-    Point() :Point(0, 0) {}
-    Point(float x, float y) :x_(x), y_(y) {}
+    Point() : Point(0, 0) {}
+    Point(float x, float y) : x_(x), y_(y) {}
     float distance(const Point& o) const {
         float dx = x_ - o.x_, dy = y_ - o.y_;
         return sqrt(dx * dx + dy * dy);
     }
 };
 
-void count_points_within_distance(const Array<Point>& points, float max_distance) {
+void count_points_within_distance(const Array<Point>& points,
+                                  float max_distance) {
     int count = 0;
     for (size_t i = 0; i < points.size(); ++i)
         for (size_t j = i + 1; j < points.size(); ++j) {
             float distance = points[i].distance(points[j]);
-            if (distance < max_distance)
-                ++count;
+            if (distance < max_distance) ++count;
         }
     std::cout << count << " pairs within " << max_distance << std::endl;
 }
 
-template<typename T>
+template <typename T>
 struct Node {
     Node* next_;
     T data_;
-    Node(Node* next, T data) :next_(next), data_(data) {}
+    Node(Node* next, T data) : next_(next), data_(data) {}
     void print() {
         for (Node* node = this; node; node = node->next_)
             std::cout << node->data_ << " ";
         std::cout << std::endl;
-
     }
 };
 
-template<typename T>
+template <typename T>
 void delete_forward_list(Node<T>* head) {
-    for (auto node = head; node; ) {
+    for (auto node = head; node;) {
         auto previous = node;
         node = node->next_;
         delete previous;
     }
 }
 
-void count_points_within_distance_using_grids(const Array<Point>& points, float max_distance) {
+void count_points_within_distance_using_grids(const Array<Point>& points,
+                                              float max_distance) {
     int g = 1 / max_distance;
     Array<Array<Node<Point>*>> grid(g + 2);
     for (auto& item : grid) {
         item = Array<Node<Point>*>(g + 2);
-        for (auto& point : item)
-            point = nullptr;
+        for (auto& point : item) point = nullptr;
     }
     int count = 0;
     for (auto point = points.cbegin(); point != points.cend(); ++point) {
@@ -145,14 +137,12 @@ void count_points_within_distance_using_grids(const Array<Point>& points, float 
         for (size_t i = grid_x - 1; i <= grid_x + 1; ++i)
             for (size_t j = grid_y - 1; j <= grid_y + 1; ++j)
                 for (Node<Point>* node = grid[i][j]; node; node = node->next_)
-                    if (node->data_.distance(*point) < max_distance)
-                        ++count;
+                    if (node->data_.distance(*point) < max_distance) ++count;
         grid[grid_x][grid_y] = new Node<Point>(grid[grid_x][grid_y], *point);
     }
     std::cout << count << " pairs within " << max_distance << std::endl;
     for (auto& item : grid)
-        for (auto& point : item)
-            delete_forward_list(point);
+        for (auto& point : item) delete_forward_list(point);
 }
 
 struct Cirtular_list {
@@ -165,8 +155,10 @@ struct Cirtular_list {
     void add(int i) {
         Node* node = new Node;
         node->data_ = i;
-        if (tail_) tail_->next_ = node;
-        else head_ = node;
+        if (tail_)
+            tail_->next_ = node;
+        else
+            head_ = node;
         tail_ = node;
         node->next_ = head_;
     }
@@ -182,15 +174,15 @@ struct Cirtular_list {
             ss << bc::left_bottom;
             std::cout << ss.str();
             std::cout << std::endl << bc::right_top;
-            for (size_t i = 0; i < string_actual_printed_length(ss.str()) - 2; ++i)
+            for (size_t i = 0; i < string_actual_printed_length(ss.str()) - 2;
+                 ++i)
                 std::cout << bc::h_line;
             std::cout << bc::left_top;
-
         }
     }
     ~Cirtular_list() {
         if (head_) {
-            for (Node* node = head_->next_; node && node != head_; ) {
+            for (Node* node = head_->next_; node && node != head_;) {
                 Node* previous = node;
                 node = node->next_;
                 delete previous;
@@ -239,7 +231,7 @@ void list_reversal() {
     head->print();
     {
         Node<int>* previous = nullptr;
-        for (auto current = head; current; ) {
+        for (auto current = head; current;) {
             auto next = current->next_;
             current->next_ = previous;
             previous = current;
@@ -251,7 +243,7 @@ void list_reversal() {
     delete_forward_list(head);
 }
 
-template<typename It>
+template <typename It>
 void list_insertion_sort(It begin, It end) {
     auto it = begin;
     if (it == end) return;
@@ -266,8 +258,7 @@ void list_insertion_sort(It begin, It end) {
         else {
             Node<int>* node;
             for (node = head; node->next_; node = node->next_)
-                if (*it < node->next_->data_)
-                    break;
+                if (*it < node->next_->data_) break;
             node->next_ = new Node<int>(node->next_, *it);
         }
     }
@@ -276,8 +267,7 @@ void list_insertion_sort(It begin, It end) {
 }
 
 int recursive_max(const Array<int> a, size_t l, size_t r) {
-    if (l == r)
-        return a[l];
+    if (l == r) return a[l];
     auto middle = (l + r) / 2;
     auto max_l = recursive_max(a, l, middle);
     auto max_r = recursive_max(a, middle + 1, r);
@@ -296,8 +286,7 @@ int main() {
     }
 
     Array<int> ints(array.size());
-    for (size_t i = 0; i < array.size(); ++i)
-        ints[i] = array[i].value_;
+    for (size_t i = 0; i < array.size(); ++i) ints[i] = array[i].value_;
 
     std::cout << "array sequential search" << std::endl;
     Rich_text::remove_styles(array.begin(), array.end());
@@ -322,9 +311,7 @@ int main() {
 
     Array<Point> points(200);
     {
-        auto random = []() {
-            return ((float) rand()) / RAND_MAX;
-        };
+        auto random = []() { return ((float)rand()) / RAND_MAX; };
         for (auto& point : points) {
             point.x_ = random();
             point.y_ = random();
@@ -342,7 +329,8 @@ int main() {
 
     josephus_problem();
     list_reversal();
-    std::cout << "max = " << recursive_max(ints, 0, ints.size() - 1) << std::endl;
+    std::cout << "max = " << recursive_max(ints, 0, ints.size() - 1)
+              << std::endl;
 
     std::cout << "list insertion_sort" << std::endl;
     auto ints_copy = ints;

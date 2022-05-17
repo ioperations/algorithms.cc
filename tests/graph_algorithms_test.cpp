@@ -1,32 +1,31 @@
-#include "gtest/gtest.h"
-
-#include "test_utils.h"
-#include "adjacency_matrix.h"
 #include "adjacency_lists.h"
+#include "adjacency_matrix.h"
 #include "graphs.h"
+#include "gtest/gtest.h"
+#include "test_utils.h"
 
 using namespace Graph;
 
-template<typename P>
+template <typename P>
 std::string path_to_string(const P& p) {
     std::stringstream ss;
-    print_collection(p.cbegin(), p.cend(), " - ", [](auto p) -> auto& { return *p; }, ss);
+    print_collection(
+        p.cbegin(), p.cend(), " - ", [](auto p) -> auto& { return *p; }, ss);
     return ss.str();
 }
 
-template<typename G>
+template <typename G>
 void test_graph() {
     G graph;
     Constructor constructor(graph);
 
-    constructor.add_edge(1, 2)
-        .add_edge(2, 3)
-        .add_edge(2, 4)
-        .add_edge(3, 4);
+    constructor.add_edge(1, 2).add_edge(2, 3).add_edge(2, 4).add_edge(3, 4);
     constructor.get_or_create_vertex(5);
 
-    auto has_simple_path = [&graph, &constructor](const auto& l1, const auto& l2) {
-        return ::has_simple_path(graph, constructor.get_vertex(l1), constructor.get_vertex(l2));
+    auto has_simple_path = [&graph, &constructor](const auto& l1,
+                                                  const auto& l2) {
+        return ::has_simple_path(graph, constructor.get_vertex(l1),
+                                 constructor.get_vertex(l2));
     };
     ASSERT_TRUE(has_simple_path(1, 4));
     ASSERT_FALSE(has_simple_path(1, 5));
@@ -37,7 +36,8 @@ void test_graph() {
 
     graph = Samples::euler_tour_sample<G>();
     auto euler_tour = compose_euler_tour(graph, graph[0]);
-    ASSERT_EQ("0 - 6 - 4 - 3 - 2 - 4 - 5 - 0 - 2 - 1 - 0", path_to_string(euler_tour));
+    ASSERT_EQ("0 - 6 - 4 - 3 - 2 - 4 - 5 - 0 - 2 - 1 - 0",
+              path_to_string(euler_tour));
 
     graph = Samples::bridges_sample<G>();
     auto bridges = find_bridges(graph);
@@ -57,8 +57,10 @@ void test_graph() {
 
     graph = Samples::shortest_paths_sample<G>();
     auto matrix = find_shortest_paths(graph);
-    ASSERT_EQ("0 - 7 - 1", path_to_string(matrix.find_path(graph[0], graph[7])));
-    ASSERT_EQ("2 - 0 - 7 - 1", path_to_string(matrix.find_path(graph[1], graph[7])));
+    ASSERT_EQ("0 - 7 - 1",
+              path_to_string(matrix.find_path(graph[0], graph[7])));
+    ASSERT_EQ("2 - 0 - 7 - 1",
+              path_to_string(matrix.find_path(graph[1], graph[7])));
 }
 
 TEST(Graphs_algorithms_test, graph) {
@@ -66,22 +68,21 @@ TEST(Graphs_algorithms_test, graph) {
     test_graph<Adjacency_lists<Graph_type::GRAPH, int>>();
 }
 
-template<typename G>
+template <typename G>
 std::string graph_to_str_matrix(const G& g) {
-    Array<Array<bool>> matrix(g.vertices_count(), Array<bool>(g.vertices_count(), false));
+    Array<Array<bool>> matrix(g.vertices_count(),
+                              Array<bool>(g.vertices_count(), false));
     for (auto v = g.cbegin(); v != g.cend(); ++v)
-        for (auto w = v->cbegin(); w != v->cend(); ++w)
-            matrix[*v][*w] = true;
+        for (auto w = v->cbegin(); w != v->cend(); ++w) matrix[*v][*w] = true;
     std::stringstream ss;
     for (auto& r : matrix) {
-        for (bool b : r)
-            ss << b << " ";
+        for (bool b : r) ss << b << " ";
         ss << std::endl;
     }
     return ss.str();
 }
 
-template<typename G>
+template <typename G>
 void test_digraph() {
     auto g = Samples::digraph_sample<G>();
 
@@ -98,7 +99,8 @@ void test_digraph() {
 3
  4 (cross)
  2 (cross)
-)", ss.str());
+)",
+              ss.str());
 
     auto transitive_closure = dfs_transitive_closure(g);
     ASSERT_EQ(R"(
@@ -108,7 +110,8 @@ void test_digraph() {
 1 1 1 1 1 1 
 0 0 0 0 1 1 
 0 0 0 0 1 1 
-)", std::string("\n") + graph_to_str_matrix(transitive_closure));
+)",
+              std::string("\n") + graph_to_str_matrix(transitive_closure));
     ASSERT_FALSE(is_dag(g));
 
     ASSERT_EQ("[3, 2, 1, 0, 5, 4]", stringify(topological_sort_rearrange(g)));
@@ -117,7 +120,8 @@ void test_digraph() {
     g = Samples::dag_sample<G>();
     ASSERT_TRUE(is_dag(g));
 
-    ASSERT_EQ("[0, 8, 1, 2, 7, 3, 6, 5, 4, 9, 10, 11, 12]", stringify(topological_sort_sinks_queue(g)));
+    ASSERT_EQ("[0, 8, 1, 2, 7, 3, 6, 5, 4, 9, 10, 11, 12]",
+              stringify(topological_sort_sinks_queue(g)));
 
     g = Samples::strong_components_sample<decltype(g)>();
 
@@ -147,7 +151,8 @@ void test_digraph() {
   9 (cross)
   7 (back)
  6 (cross)
-)", ss.str());
+)",
+              ss.str());
 
     trace_dfs_topo_sorted(g, reset_with_new_line(ss));
     ASSERT_EQ(R"(
@@ -176,17 +181,21 @@ void test_digraph() {
   9 (cross)
   7 (back)
  6 (cross)
-)", ss.str());
+)",
+              ss.str());
 
-    ASSERT_EQ("[2, 1, 2, 2, 2, 2, 2, 3, 3, 0, 0, 0, 0]", stringify(strong_components_kosaraju(g)));
-    ASSERT_EQ("[2, 1, 2, 2, 2, 2, 2, 3, 3, 0, 0, 0, 0]", stringify(strong_components_tarjan(g)));
+    ASSERT_EQ("[2, 1, 2, 2, 2, 2, 2, 3, 3, 0, 0, 0, 0]",
+              stringify(strong_components_kosaraju(g)));
+    ASSERT_EQ("[2, 1, 2, 2, 2, 2, 2, 3, 3, 0, 0, 0, 0]",
+              stringify(strong_components_tarjan(g)));
 }
 
 TEST(Graphs_algorithms_test, digraph) {
     test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
     test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
 
-    auto g = Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
+    auto g =
+        Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
     auto transitive_closure = warshall_transitive_closure(g);
     std::stringstream ss;
     print_representation(transitive_closure, reset_with_new_line(ss));
@@ -198,10 +207,11 @@ TEST(Graphs_algorithms_test, digraph) {
 1 1 1 1 1 1 
 0 0 0 0 1 1 
 0 0 0 0 1 1 
-)", ss.str());
+)",
+              ss.str());
 }
 
-template<typename G>
+template <typename G>
 void test_weighted_graph() {
     std::stringstream ss;
     auto g = Samples::weighted_graph_sample<G>();
@@ -217,11 +227,13 @@ void test_weighted_graph() {
   1 (0.21) (down)
  2 (0.29) (down)
   0 (0.29) (back)
-)", ss.str());
+)",
+              ss.str());
 
     g = Samples::spt_sample<G>();
     Spt spt(g, g[0], g.vertices_count());
-    trace_dfs(compose_path_tree(g, spt.spt_.cbegin() + 1, spt.spt_.cend()), reset_with_new_line(ss));
+    trace_dfs(compose_path_tree(g, spt.spt_.cbegin() + 1, spt.spt_.cend()),
+              reset_with_new_line(ss));
     ASSERT_EQ(R"(
 0
 0
@@ -230,14 +242,15 @@ void test_weighted_graph() {
    2 (0.32) (down)
  3 (0.45) (down)
  1 (0.41) (down)
-)", ss.str());
+)",
+              ss.str());
 
     Full_spts full_spts(g, 1);
     auto diameter = full_spts.diameter();
 
     reset(ss);
     ss << *diameter.first;
-    for (auto v = diameter.first; v != diameter.second; ) {
+    for (auto v = diameter.first; v != diameter.second;) {
         v = full_spts.path(*v, *diameter.second).source_;
         ss << " - " << *v;
     }
@@ -251,15 +264,24 @@ TEST(Graphs_algorithms_test, weighted_graph) {
 
     Builder<Adjacency_lists<Graph_type::DIGRAPH, int, double>> b;
     for (int i = 0; i < 6; ++i) b.for_vertex(i);
-    auto g = b
-        .for_vertex(0).add_edge(1, .41).add_edge(5, .29)
-        .for_vertex(1).add_edge(2, .51).add_edge(4, .28)
-        // .for_vertex(1).add_edge(2, .51).add_edge(4, .32)
-        .for_vertex(2).add_edge(3, .50)
-        .for_vertex(3).add_edge(0, .45).add_edge(5, -.38)
-        .for_vertex(4).add_edge(3, .36)
-        .for_vertex(5).add_edge(1, -.29).add_edge(4, .21)
-        .build();
+    auto g = b.for_vertex(0)
+                 .add_edge(1, .41)
+                 .add_edge(5, .29)
+                 .for_vertex(1)
+                 .add_edge(2, .51)
+                 .add_edge(4, .28)
+                 // .for_vertex(1).add_edge(2, .51).add_edge(4, .32)
+                 .for_vertex(2)
+                 .add_edge(3, .50)
+                 .for_vertex(3)
+                 .add_edge(0, .45)
+                 .add_edge(5, -.38)
+                 .for_vertex(4)
+                 .add_edge(3, .36)
+                 .for_vertex(5)
+                 .add_edge(1, -.29)
+                 .add_edge(4, .21)
+                 .build();
 
     std::stringstream ss;
     auto n_cycle = find_negative_cycle(g, g[0], 200);
@@ -275,7 +297,7 @@ TEST(Graphs_algorithms_test, weighted_graph) {
     ASSERT_EQ("1-4-3-5-1", ss.str());
 }
 
-template<typename G>
+template <typename G>
 void test_weighted_dag() {
     auto g = Samples::weighted_dag_sample<G>();
     validate_dag(g);
@@ -295,13 +317,14 @@ void test_weighted_dag() {
  7 (0.41) (down)
  1 (0.41) (down)
 5
-)", ss.str());
+)",
+              ss.str());
     Dag_full_spts dd(g, g.vertices_count());
-    ASSERT_EQ("[10, 0.41, 0.92, 0.73, 0.7, 10, 0.7, 0.41, 0.73, 0.41]", stringify(dd.distances_[0]));
+    ASSERT_EQ("[10, 0.41, 0.92, 0.73, 0.7, 10, 0.7, 0.41, 0.73, 0.41]",
+              stringify(dd.distances_[0]));
 }
 
 TEST(Graphs_algorithms_test, weighted_dag) {
     test_weighted_dag<Adjacency_matrix<Graph_type::DIGRAPH, int, double>>();
     test_weighted_dag<Adjacency_lists<Graph_type::DIGRAPH, int, double>>();
 }
-

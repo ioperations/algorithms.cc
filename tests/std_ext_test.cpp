@@ -1,8 +1,8 @@
-#include "gtest/gtest.h"
+#include "std_ext.h"
 
 #include <sstream>
 
-#include "std_ext.h"
+#include "gtest/gtest.h"
 
 TEST(Std_ext_test, std_array) {
     auto a = Std_ext::make_array(1, 2, 3);

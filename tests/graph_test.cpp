@@ -1,11 +1,10 @@
-#include "gtest/gtest.h"
-
-#include "adjacency_matrix.h"
 #include "adjacency_lists.h"
+#include "adjacency_matrix.h"
+#include "gtest/gtest.h"
 
 using namespace Graph;
 
-template<typename G>
+template <typename G>
 void weighted_graphs_test(bool digraph = false) {
     G g;
     auto& v1 = g.create_vertex(1);
@@ -58,12 +57,14 @@ void weighted_graphs_test(bool digraph = false) {
     std::stringstream ss;
     ss << std::endl;
     for (auto e = v1.edges_begin(); e != v1.edges_end(); ++e)
-        ss << e->source() << " " << e->target() << " " << e->edge().weight() << std::endl;
+        ss << e->source() << " " << e->target() << " " << e->edge().weight()
+           << std::endl;
     ASSERT_EQ(expected, ss.str());
     ss = std::stringstream();
     ss << std::endl;
     for (auto e = v1.cedges_begin(); e != v1.cedges_end(); ++e)
-        ss << e->source() << " " << e->target() << " " << e->edge().weight() << std::endl;
+        ss << e->source() << " " << e->target() << " " << e->edge().weight()
+           << std::endl;
     ASSERT_EQ(expected, ss.str());
 
     g.remove_edge(v1, v2);
@@ -85,7 +86,7 @@ void weighted_graphs_test(bool digraph = false) {
     }
 }
 
-template<typename G>
+template <typename G>
 void bool_edges_test(bool digraph = false) {
     G g;
     auto& v1 = g.create_vertex(1);
@@ -127,4 +128,3 @@ TEST(Graph_test, base) {
     bool_edges_test<Adjacency_matrix<Graph_type::GRAPH, int>>();
     bool_edges_test<Adjacency_matrix<Graph_type::DIGRAPH, int>>(true);
 }
-

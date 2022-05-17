@@ -1,6 +1,6 @@
 #pragma once
 
-template<typename T>
+template <typename T>
 std::string stringify(const T& t) {
     std::stringstream ss;
     ss << t;

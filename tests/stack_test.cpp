@@ -1,6 +1,6 @@
-#include "gtest/gtest.h"
-
 #include "stack.h"
+
+#include "gtest/gtest.h"
 
 TEST(Stack_test, test_0) {
     Stack<int> stack;

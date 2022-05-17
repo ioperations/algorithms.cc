@@ -10,20 +10,18 @@ std::ostream& operator<<(std::ostream& stream, const Text_blocks& blocks) {
         for (auto& entry : text_block) {
             if (!entry.empty()) {
                 std::cout << (*entry);
-                for (size_t i = 0; i < block->width() - string_actual_printed_length(*entry); ++i)
+                for (size_t i = 0;
+                     i < block->width() - string_actual_printed_length(*entry);
+                     ++i)
                     std::cout << " ";
                 ++entry;
             } else {
-                for (size_t i = 0; i < block->width(); ++i)
-                    std::cout << " ";
+                for (size_t i = 0; i < block->width(); ++i) std::cout << " ";
             }
-            for (int i = 0; i < blocks.offset_; ++i)
-                std::cout << " ";
+            for (int i = 0; i < blocks.offset_; ++i) std::cout << " ";
             ++block;
         }
-        if (line < blocks.max_line_length_ - 1)
-            std::cout << std::endl;
+        if (line < blocks.max_line_length_ - 1) std::cout << std::endl;
     }
     return stream;
 }
-
