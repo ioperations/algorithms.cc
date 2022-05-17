@@ -23,7 +23,7 @@ void sequential_search(It b, It e, int value) {
     int i = 0;
     for (auto el = b; index == -1 && el != e; ++el, ++i) {
         el->set_style(Style::bold());
-        if (el->value_ == value) index = i;
+        if (el->value == value) index = i;
     }
     print_sequence(b, e);
     std::cout << std::endl << "index = " << index << std::endl;
@@ -40,9 +40,9 @@ void quick_search(Array<Entry>& array, int value) {
         print_sequence(array.cbegin(), array.cend());
         array[middle].remove_style(Style::bold());
         std::cout << std::endl;
-        if (value == array[middle].value_)
+        if (value == array[middle].value)
             index = middle;
-        else if (value < array[middle].value_)
+        else if (value < array[middle].value)
             j = middle;
         else
             i = middle + 1;
@@ -81,11 +81,11 @@ void coin_flipping_simulation() {  // coin-flipping simulation
 }
 
 struct Point {
-    float x_, y_;
+    float m_x, m_y;
     Point() : Point(0, 0) {}
-    Point(float x, float y) : x_(x), y_(y) {}
+    Point(float x, float y) : m_x(x), m_y(y) {}
     float distance(const Point& o) const {
-        float dx = x_ - o.x_, dy = y_ - o.y_;
+        float dx = m_x - o.m_x, dy = m_y - o.m_y;
         return sqrt(dx * dx + dy * dy);
     }
 };
@@ -103,12 +103,12 @@ void count_points_within_distance(const Array<Point>& points,
 
 template <typename T>
 struct Node {
-    Node* next_;
-    T data_;
-    Node(Node* next, T data) : next_(next), data_(data) {}
+    Node* m_next;
+    T m_data;
+    Node(Node* next, T data) : m_next(next), m_data(data) {}
     void print() {
-        for (Node* node = this; node; node = node->next_)
-            std::cout << node->data_ << " ";
+        for (Node* node = this; node; node = node->m_next)
+            std::cout << node->m_data << " ";
         std::cout << std::endl;
     }
 };
@@ -117,7 +117,7 @@ template <typename T>
 void delete_forward_list(Node<T>* head) {
     for (auto node = head; node;) {
         auto previous = node;
-        node = node->next_;
+        node = node->m_next;
         delete previous;
     }
 }
@@ -131,13 +131,13 @@ void count_points_within_distance_using_grids(const Array<Point>& points,
         for (auto& point : item) point = nullptr;
     }
     int count = 0;
-    for (auto point = points.cbegin(); point != points.cend(); ++point) {
-        size_t grid_x = point->x_ * g + 1;
-        size_t grid_y = point->y_ * g + 1;
+    for (auto* point = points.cbegin(); point != points.cend(); ++point) {
+        size_t grid_x = point->m_x * g + 1;
+        size_t grid_y = point->m_y * g + 1;
         for (size_t i = grid_x - 1; i <= grid_x + 1; ++i)
             for (size_t j = grid_y - 1; j <= grid_y + 1; ++j)
-                for (Node<Point>* node = grid[i][j]; node; node = node->next_)
-                    if (node->data_.distance(*point) < max_distance) ++count;
+                for (Node<Point>* node = grid[i][j]; node; node = node->m_next)
+                    if (node->m_data.distance(*point) < max_distance) ++count;
         grid[grid_x][grid_y] = new Node<Point>(grid[grid_x][grid_y], *point);
     }
     std::cout << count << " pairs within " << max_distance << std::endl;
@@ -145,31 +145,31 @@ void count_points_within_distance_using_grids(const Array<Point>& points,
         for (auto& point : item) delete_forward_list(point);
 }
 
-struct Cirtular_list {
+struct CirtularList {
     struct Node {
-        Node* next_;
-        int data_;
+        Node* m_next;
+        int m_data;
     };
-    Node* head_ = nullptr;
-    Node* tail_ = nullptr;
+    Node* m_head = nullptr;
+    Node* m_tail = nullptr;
     void add(int i) {
         Node* node = new Node;
-        node->data_ = i;
-        if (tail_)
-            tail_->next_ = node;
+        node->m_data = i;
+        if (m_tail)
+            m_tail->m_next = node;
         else
-            head_ = node;
-        tail_ = node;
-        node->next_ = head_;
+            m_head = node;
+        m_tail = node;
+        node->m_next = m_head;
     }
     void print() {
         namespace bc = Box_drawing_chars;
-        if (head_) {
+        if (m_head) {
             std::stringstream ss;
-            ss << bc::right_bottom << head_->data_;
-            for (Node* node = head_->next_; node && node != head_;
-                 node = node->next_) {
-                ss << bc::h_line << node->data_;
+            ss << bc::right_bottom << m_head->m_data;
+            for (Node* node = m_head->m_next; node && node != m_head;
+                 node = node->m_next) {
+                ss << bc::h_line << node->m_data;
             }
             ss << bc::left_bottom;
             std::cout << ss.str();
@@ -180,14 +180,14 @@ struct Cirtular_list {
             std::cout << bc::left_top;
         }
     }
-    ~Cirtular_list() {
-        if (head_) {
-            for (Node* node = head_->next_; node && node != head_;) {
+    ~CirtularList() {
+        if (m_head) {
+            for (Node* node = m_head->m_next; node && node != m_head;) {
                 Node* previous = node;
-                node = node->next_;
+                node = node->m_next;
                 delete previous;
             }
-            delete head_;
+            delete m_head;
         }
     }
 };
@@ -195,29 +195,29 @@ struct Cirtular_list {
 void josephus_problem() {
     std::cout << "Josephus problem" << std::endl;
     Node<int>* head = new Node<int>(nullptr, 10);
-    auto node = head;
+    auto* node = head;
     for (int i = 11; i < 30; ++i)
-        node = (node->next_ = new Node<int>(nullptr, i));
-    node->next_ = head;
+        node = (node->m_next = new Node<int>(nullptr, i));
+    node->m_next = head;
 
     auto print_circle = [](Node<int>* head, std::ostream& stream) {
-        stream << head->data_;
-        for (auto node = head->next_; node != head; node = node->next_)
-            stream << " " << node->data_;
+        stream << head->m_data;
+        for (auto* node = head->m_next; node != head; node = node->m_next)
+            stream << " " << node->m_data;
     };
 
     node = head;
-    while (node != node->next_) {
-        for (int i = 0; i < 5; ++i) node = node->next_;
-        auto to_remove = node->next_;
-        node->next_ = node->next_->next_;
-        std::cout << "[" << to_remove->data_ << "] ";
+    while (node != node->m_next) {
+        for (int i = 0; i < 5; ++i) node = node->m_next;
+        auto* to_remove = node->m_next;
+        node->m_next = node->m_next->m_next;
+        std::cout << "[" << to_remove->m_data << "] ";
         std::stringstream ss;
-        print_circle(node->next_, ss);
+        print_circle(node->m_next, ss);
         std::cout << ss.str() << std::endl;
         delete to_remove;
     }
-    std::cout << "[" << node->data_ << "]" << std::endl;
+    std::cout << "[" << node->m_data << "]" << std::endl;
 
     delete node;
 }
@@ -225,15 +225,15 @@ void josephus_problem() {
 void list_reversal() {
     std::cout << "reversing list" << std::endl;
     Node<int>* head = new Node<int>(nullptr, 10);
-    auto node = head;
+    auto* node = head;
     for (int i = 11; i < 21; ++i)
-        node = (node->next_ = new Node<int>(nullptr, i));
+        node = (node->m_next = new Node<int>(nullptr, i));
     head->print();
     {
         Node<int>* previous = nullptr;
-        for (auto current = head; current;) {
-            auto next = current->next_;
-            current->next_ = previous;
+        for (auto* current = head; current;) {
+            auto* next = current->m_next;
+            current->m_next = previous;
             previous = current;
             current = next;
         }
@@ -253,13 +253,13 @@ void list_insertion_sort(It begin, It end) {
     it = begin;
     Node<int>* head = new Node<int>(nullptr, *begin);
     for (++it; it != end; ++it) {
-        if (*it < head->data_)
+        if (*it < head->m_data)
             head = new Node<int>(head, *it);
         else {
             Node<int>* node;
-            for (node = head; node->next_; node = node->next_)
-                if (*it < node->next_->data_) break;
-            node->next_ = new Node<int>(node->next_, *it);
+            for (node = head; node->m_next; node = node->m_next)
+                if (*it < node->m_next->m_data) break;
+            node->m_next = new Node<int>(node->m_next, *it);
         }
     }
     head->print();
@@ -275,18 +275,18 @@ int recursive_max(const Array<int> a, size_t l, size_t r) {
 }
 
 int main() {
-    Random_sequence_generator generator(300, 10, 99);
+    RandomSequenceGenerator generator(300, 10, 99);
 
     Array<Entry> array(15);
     Forward_list<Entry> list;
     for (auto& e : array) {
         int value = generator.generate();
-        e.value_ = value;
+        e.value = value;
         list.emplace_back(value);
     }
 
     Array<int> ints(array.size());
-    for (size_t i = 0; i < array.size(); ++i) ints[i] = array[i].value_;
+    for (size_t i = 0; i < array.size(); ++i) ints[i] = array[i].value;
 
     std::cout << "array sequential search" << std::endl;
     Rich_text::remove_styles(array.begin(), array.end());
@@ -313,14 +313,14 @@ int main() {
     {
         auto random = []() { return ((float)rand()) / RAND_MAX; };
         for (auto& point : points) {
-            point.x_ = random();
-            point.y_ = random();
+            point.m_x = random();
+            point.m_y = random();
         }
     }
     count_points_within_distance(points, 0.015);
     count_points_within_distance_using_grids(points, 0.015);
 
-    Cirtular_list c_list;
+    CirtularList c_list;
     c_list.add(1);
     c_list.add(2);
     c_list.add(3);

@@ -3,19 +3,19 @@
 #include "array.h"
 
 template <typename T>
-class Random_sequence_generator {
+class RandomSequenceGenerator {
    private:
     std::mt19937 engine;
     std::uniform_int_distribution<std::mt19937::result_type> distribution;
-    int size_;
+    int m_size;
 
    public:
-    Random_sequence_generator(unsigned long seed, T b, T e)
-        : engine(seed), distribution(b, e), size_(e - b) {}
+    RandomSequenceGenerator(unsigned long seed, T b, T e)
+        : engine(seed), distribution(b, e), m_size(e - b) {}
 
     template <typename A>
     auto generate_array() {
-        return generate_array<A>(size_);
+        return generate_array<A>(m_size);
     }
 
     template <typename A>

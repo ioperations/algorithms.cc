@@ -30,50 +30,50 @@ struct Searcher : A {
     Searcher(Connections& connections, Args&&... args)
         : A(connections, std::forward<Args>(args)...) {}
     void search(const Connection_pairs& pairs) {
-        for (size_t i = 0; i < A::connections_.size(); ++i) {
-            A::connections_[i].value_ = i;
-            A::connections_[i].remove_styles();
+        for (size_t i = 0; i < A::m_connections.size(); ++i) {
+            A::m_connections[i].value = i;
+            A::m_connections[i].remove_styles();
         }
         for (auto pair = pairs.cbegin(); pair != pairs.cend(); ++pair) {
             if (pair != pairs.cbegin())
-                for (auto& connection : A::connections_)
+                for (auto& connection : A::m_connections)
                     connection.remove_styles();
             A::add(pair, pairs);
         }
     }
 };
 
-struct Quick_find {
-    Connections& connections_;
-    Quick_find(Connections& connections) : connections_(connections) {}
+struct QuickFind {
+    Connections& m_connections;
+    QuickFind(Connections& connections) : m_connections(connections) {}
     void add(Connection_pairs::const_iterator pair,
              const Connection_pairs& pairs) {
-        if (pair == pairs.cbegin()) std::cout << connections_ << std::endl;
+        if (pair == pairs.cbegin()) std::cout << m_connections << std::endl;
         Forward_list<int> l;
-        auto c = connections_[pair->first_].value_;
-        if (c == connections_[pair->second_].value_) {
-            for (size_t i = 0; i < connections_.size(); ++i)
-                if (connections_[i].value_ == c) l.push_back(i);
+        auto c = m_connections[pair->m_first].value;
+        if (c == m_connections[pair->m_second].value) {
+            for (size_t i = 0; i < m_connections.size(); ++i)
+                if (m_connections[i].value == c) l.push_back(i);
         } else
-            for (auto& connection : connections_)
-                if (connection.value_ == c) {
-                    connection = connections_[pair->second_];
+            for (auto& connection : m_connections)
+                if (connection.value == c) {
+                    connection = m_connections[pair->m_second];
                     connection.add_style(Style::bold());
                 }
-        std::cout << connections_ << "  " << pair->first_ << "-"
-                  << pair->second_;
+        std::cout << m_connections << "  " << pair->m_first << "-"
+                  << pair->m_second;
         print_links(l, std::cout);
         std::cout << std::endl;
     };
 };
 
-using Pair_tree_node = Forward_list_tree_node<Pair<Entry, int>>;
+using Pair_tree_node = ForwardListTreeNode<Pair<Entry, int>>;
 
-struct Pair_tree_printer_node_handler
+struct PairTreePrinterNodeHandler
     : public Tree_printer_node_handler<Pair_tree_node> {
     std::string node_to_string(const Pair_tree_node& node) {
         std::stringstream ss;
-        ss << node.value().first_;
+        ss << node.value().m_first;
         return ss.str();
     }
     size_t label_width(const Pair_tree_node& node, const std::string& label) {
@@ -81,125 +81,126 @@ struct Pair_tree_printer_node_handler
     }
 };
 auto pair_tree_printer =
-    Tree_printer<Pair_tree_node, Pair_tree_printer_node_handler>();
+    Tree_printer<Pair_tree_node, PairTreePrinterNodeHandler>();
 
 template <typename A>
-struct Quick_union : A {
-    struct Custom_text_blocks : public Text_blocks {
-        size_t trees_width_ = 0;
-        Text_block* last_tree_ = nullptr;
+struct QuickUnion : A {
+    struct CustomTextBlocks : public TextBlocks {
+        size_t m_trees_width = 0;
+        TextBlock* m_last_tree = nullptr;
     };
 
-    Connections& connections_;
-    Forward_list<Custom_text_blocks> text_blocks_lines_;
+    Connections& m_connections;
+    Forward_list<CustomTextBlocks> m_text_blocks_lines;
 
     template <typename... Args>
-    Quick_union(Connections& connections, Args&&... args)
-        : A(std::forward<Args>(args)...), connections_(connections) {}
+    QuickUnion(Connections& connections, Args&&... args)
+        : A(std::forward<Args>(args)...), m_connections(connections) {}
 
     void add(Connection_pairs::const_iterator pair,
              const Connection_pairs& pairs) {
-        int f = pair->first_, s = pair->second_, fi = f, si = s;  // todo remove
+        int f = pair->m_first, s = pair->m_second, fi = f,
+            si = s;  // todo remove
         Forward_list<int> l;
         auto follow_links = [&l, this](int& index) {
             bool linked;
             do {
-                linked = index != connections_[index].value_;
+                linked = index != m_connections[index].value;
                 if (linked) {
-                    index = connections_[connections_[index].value_].value_;
-                    // index = connections_[index].value_;
+                    index = m_connections[m_connections[index].value].value;
+                    // index = connections_[index].value;
                 }
-                connections_[index].add_style(Style::bold());
+                m_connections[index].add_style(Style::bold());
                 l.push_back(index);
             } while (linked);
         };
         follow_links(f);
         follow_links(s);
         if (f != s) {
-            A::add(f, s, connections_, l);
+            A::add(f, s, m_connections, l);
         }
 
-        Custom_text_blocks blocks;
+        CustomTextBlocks blocks;
         if (f != s) {
-            Array<Pair_tree_node> nodes(connections_.size());
-            for (size_t i = 0; i < connections_.size(); ++i) {
+            Array<Pair_tree_node> nodes(m_connections.size());
+            for (size_t i = 0; i < m_connections.size(); ++i) {
                 auto style = (int)i == fi || (int)i == si ? Style::bold()
                                                           : Style::normal();
                 nodes.emplace(i, Pair<Entry, int>(Entry(i, style),
-                                                  connections_[i].value_));
+                                                  m_connections[i].value));
             }
 
             std::map<int, Pair_tree_node*> map;
             for (size_t i = 0; i < nodes.size(); ++i) map[i] = &nodes[i];
 
             for (auto& node : nodes) {
-                auto id = node.value().first_.value_;
-                auto parent_id = node.value().second_;
+                auto id = node.value().m_first.value;
+                auto parent_id = node.value().m_second;
                 if (id != parent_id) {
-                    auto parent = map[parent_id];
+                    auto* parent = map[parent_id];
                     auto& children = parent->children();
                     children.push_back(std::move(node));
                     map[id] = &children.back();
                 }
             }
             for (auto& e : map)
-                if (e.first == e.second->value().second_)
+                if (e.first == e.second->value().m_second)
                     blocks.emplace_back(
                         pair_tree_printer.compose_text_lines(*e.second));
         } else
             blocks.emplace_back("(same)");
-        blocks.trees_width_ = blocks.width();
-        blocks.last_tree_ = &blocks.back();
+        blocks.m_trees_width = blocks.width();
+        blocks.m_last_tree = &blocks.back();
 
         std::stringstream ss;
         ss << fi << "-" << si << "  ";
         print_links(l, ss);
         blocks.emplace_back(ss.str());
-        text_blocks_lines_.push_back(std::move(blocks));
+        m_text_blocks_lines.push_back(std::move(blocks));
 
         auto next_pair = pair;
         ++next_pair;
         if (next_pair == pairs.cend()) {
             size_t max_trees_width = 0;
-            for (auto& blocks : text_blocks_lines_)
+            for (auto& blocks : m_text_blocks_lines)
                 max_trees_width =
-                    std::max(max_trees_width, blocks.trees_width_);
-            for (auto& blocks : text_blocks_lines_) {
-                auto last_tree = blocks.last_tree_;
+                    std::max(max_trees_width, blocks.m_trees_width);
+            for (auto& blocks : m_text_blocks_lines) {
+                auto last_tree = blocks.m_last_tree;
                 last_tree->set_width(last_tree->width() + max_trees_width -
-                                     blocks.trees_width_);
+                                     blocks.m_trees_width);
                 std::cout << blocks << std::endl;
             }
         }
     }
 };
 
-struct Quick_union_simple_adder {
+struct QuickUnionSimpleAdder {
     void add(int f, int s, Connections& connections, Forward_list<int>& l) {
-        connections[f].value_ = s;
+        connections[f].value = s;
         l.clear();
     }
 };
 
-struct Quick_union_weighted_adder {
-    Array<int> sizes_;
-    Quick_union_weighted_adder(size_t size) : sizes_(size) {
-        for (auto& size : sizes_) size = 0;
+struct QuickUnionWeightedAdder {
+    Array<int> m_sizes;
+    QuickUnionWeightedAdder(size_t size) : m_sizes(size) {
+        for (auto& size : m_sizes) size = 0;
     }
     void add(int f, int s, Connections& connections, Forward_list<int>& l) {
-        if (sizes_[f] < sizes_[s]) {
-            connections[f].value_ = s;
-            sizes_[s] += sizes_[f];
+        if (m_sizes[f] < m_sizes[s]) {
+            connections[f].value = s;
+            m_sizes[s] += m_sizes[f];
         } else {
-            connections[s].value_ = f;
-            sizes_[f] += sizes_[s];
+            connections[s].value = f;
+            m_sizes[f] += m_sizes[s];
         }
         l.clear();
     }
 };
 
 int main() {
-    auto input = R"(
+    const auto* input = R"(
 3 4
 4 9
 8 0
@@ -236,13 +237,13 @@ q)";
     Connections connections(size);
 
     std::cout << "quick find:" << std::endl;
-    Searcher<Quick_find>(connections).search(pairs);
+    Searcher<QuickFind>(connections).search(pairs);
 
     std::cout << "quick union:" << std::endl;
-    Searcher<Quick_union<Quick_union_simple_adder>>(connections).search(pairs);
+    Searcher<QuickUnion<QuickUnionSimpleAdder>>(connections).search(pairs);
 
     std::cout << "weighted quick union:" << std::endl;
-    Searcher<Quick_union<Quick_union_weighted_adder>>(connections,
-                                                      connections.size())
+    Searcher<QuickUnion<QuickUnionWeightedAdder>>(connections,
+                                                  connections.size())
         .search(pairs);
 }

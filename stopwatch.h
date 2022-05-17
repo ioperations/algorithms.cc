@@ -4,15 +4,15 @@
 
 class Stopwatch {
    private:
-    long start_;
+    long m_start;
 
    public:
-    Stopwatch() : start_(now()) {}
+    Stopwatch() : m_start(now()) {}
     static long now() {
         using namespace std::chrono;
         return duration_cast<milliseconds>(
                    system_clock::now().time_since_epoch())
             .count();
     }
-    long read_out() { return now() - start_; }
+    long read_out() { return now() - m_start; }
 };

@@ -28,11 +28,11 @@ void radix_quick_sort(const It& begin, const It& end) {
     };
 
     struct Interval {
-        It begin_;
-        It end_;
-        unsigned int digit_;
+        It m_begin;
+        It m_end;
+        unsigned int m_digit;
         Interval(It begin, It end, unsigned int digit)
-            : begin_(begin), end_(end), digit_(digit) {}
+            : m_begin(begin), m_end(end), m_digit(digit) {}
     };
     Stack<Interval> stack;
 
@@ -42,17 +42,17 @@ void radix_quick_sort(const It& begin, const It& end) {
     print_bits();
     while (!stack.empty()) {
         auto interval = stack.pop();
-        if (interval.begin_ < interval.end_ && interval.digit_ > 0) {
-            auto i = interval.begin_;
-            auto j = interval.end_ - 1;
+        if (interval.m_begin < interval.m_end && interval.m_digit > 0) {
+            auto i = interval.m_begin;
+            auto j = interval.m_end - 1;
             while (i != j) {
-                while (get_bit(*i, interval.digit_) == 0 && i < j) ++i;
-                while (get_bit(*j, interval.digit_) == 1 && j > i) --j;
+                while (get_bit(*i, interval.m_digit) == 0 && i < j) ++i;
+                while (get_bit(*j, interval.m_digit) == 1 && j > i) --j;
                 std::swap(*i, *j);
             }
-            if (get_bit(*(interval.end_ - 1), interval.digit_) == 0) ++j;
-            stack.emplace(j, interval.end_, interval.digit_ - 1);
-            stack.emplace(interval.begin_, j, interval.digit_ - 1);
+            if (get_bit(*(interval.m_end - 1), interval.m_digit) == 0) ++j;
+            stack.emplace(j, interval.m_end, interval.m_digit - 1);
+            stack.emplace(interval.m_begin, j, interval.m_digit - 1);
         }
     }
     print_seq(begin, end);
@@ -92,11 +92,11 @@ void msd_radix_sort(const It& begin, const It& end) {
     Array<std::string> aux(end - begin);
 
     struct Frame {
-        const It begin_;
-        const It end_;
-        const size_t char_index_;
+        const It m_begin;
+        const It m_end;
+        const size_t m_char_index;
         Frame(const It& begin, const It& end, const size_t char_index)
-            : begin_(begin), end_(end), char_index_(char_index) {}
+            : m_begin(begin), m_end(end), m_char_index(char_index) {}
     };
     Stack<Frame> stack;
     stack.emplace(begin, end, 0);
@@ -106,29 +106,30 @@ void msd_radix_sort(const It& begin, const It& end) {
 
         for (auto& e : positions) e = 0;
         auto char_of = [char_index =
-                            f.char_index_](std::string& s) -> unsigned char {
+                            f.m_char_index](std::string& s) -> unsigned char {
             return char_index < s.size() ? s[char_index] : 0;
         };
-        for (auto s = f.begin_; s != f.end_; ++s) ++positions[char_of(*s) + 1];
+        for (auto s = f.m_begin; s != f.m_end; ++s)
+            ++positions[char_of(*s) + 1];
         for (size_t i = 1; i < positions.size(); ++i)
             positions[i] += positions[i - 1];
 
         size_t max_length = 0;
-        for (long int i = 0; i < f.end_ - f.begin_; ++i) {
-            std::string& str = f.begin_[i];
+        for (long int i = 0; i < f.m_end - f.m_begin; ++i) {
+            std::string& str = f.m_begin[i];
             max_length = std::max(max_length, str.size());
             auto& pos = positions[char_of(str)];
-            aux[pos] = std::move(f.begin_[i]);
+            aux[pos] = std::move(f.m_begin[i]);
             ++pos;
         }
-        for (long i = 0; i < f.end_ - f.begin_; ++i) f.begin_[i] = aux[i];
+        for (long i = 0; i < f.m_end - f.m_begin; ++i) f.m_begin[i] = aux[i];
 
-        if (f.char_index_ + 1 < max_length)
-            for (long b = 0; b < f.end_ - f.begin_;) {
-                auto e = positions[f.begin_[b][f.char_index_]];
+        if (f.m_char_index + 1 < max_length)
+            for (long b = 0; b < f.m_end - f.m_begin;) {
+                auto e = positions[f.m_begin[b][f.m_char_index]];
                 if (e - b > 1)
-                    stack.emplace(f.begin_ + b, f.begin_ + e,
-                                  f.char_index_ + 1);
+                    stack.emplace(f.m_begin + b, f.m_begin + e,
+                                  f.m_char_index + 1);
                 b = e;
             }
     }
@@ -144,9 +145,9 @@ void quick_sort_three_part(const It& begin, const It& end) {
     print();
 
     struct Frame {
-        const It begin_;
-        const It end_;
-        Frame(const It& begin, const It& end) : begin_(begin), end_(end) {}
+        const It m_begin;
+        const It m_end;
+        Frame(const It& begin, const It& end) : m_begin(begin), m_end(end) {}
     };
     struct : public Stack<Frame> {
         void emplace_if_required(const It& begin, const It& end) {
@@ -157,33 +158,34 @@ void quick_sort_three_part(const It& begin, const It& end) {
 
     while (!stack.empty()) {
         auto f = stack.pop();
-        auto i = f.begin_ - 1, p = f.begin_ - 1, j = f.end_ - 1, q = f.end_ - 1;
-        auto v = *(f.end_ - 1);
+        auto i = f.m_begin - 1, p = f.m_begin - 1, j = f.m_end - 1,
+             q = f.m_end - 1;
+        auto v = *(f.m_end - 1);
 
         while (true) {
             while (*(++i) < v)
                 ;
             while (*(--j) > v)
-                if (j == f.begin_) break;
+                if (j == f.m_begin) break;
             if (i >= j) break;
             std::swap(*i, *j);
             if (*i == v) std::swap(*i, *(++p));
             if (*j == v) std::swap(*j, *(--q));
         }
-        std::swap(*i, *(f.end_ - 1));
+        std::swap(*i, *(f.m_end - 1));
         j = i;
 
-        for (auto el = f.begin_; el <= p; ++el) std::swap(*(--i), *el);
-        for (auto el = q; el != f.end_ - 1; ++el) std::swap(*(++j), *el);
+        for (auto el = f.m_begin; el <= p; ++el) std::swap(*(--i), *el);
+        for (auto el = q; el != f.m_end - 1; ++el) std::swap(*(++j), *el);
 
-        stack.emplace_if_required(f.begin_, i);
-        stack.emplace_if_required(j + 1, f.end_);
+        stack.emplace_if_required(f.m_begin, i);
+        stack.emplace_if_required(j + 1, f.m_end);
     }
 }
 
 int main() {
     {
-        auto array = Random_sequence_generator<int>(300, 10, 99)
+        auto array = RandomSequenceGenerator<int>(300, 10, 99)
                          .generate_array<Array<int>>(15);
         std::cout << array << std::endl;
 
@@ -202,7 +204,7 @@ int main() {
     }
     {
         using type = unsigned char;
-        Random_sequence_generator<type> generator(400, 'A', 'Z');
+        RandomSequenceGenerator<type> generator(400, 'A', 'Z');
         auto array = generator.generate_array<Array<type>>(15);
         radix_quick_sort(array.begin(), array.end());
     }

@@ -15,45 +15,45 @@ C cost_r_to(const L& link, const V& vertex) {
     return link.is_from(vertex) ? -link.cost() : link.cost();
 }
 
-class Link_empty_base {};
+class LinkEmptyBase {};
 
 template <typename C>
-class Link_cost_base {
+class LinkCostBase {
    private:
-    C cost_;
+    C m_cost;
 
    public:
-    Link_cost_base(const C& cost) : cost_(cost) {}
-    C cost() const { return cost_; }
+    LinkCostBase(const C& cost) : m_cost(cost) {}
+    C cost() const { return m_cost; }
 };
 
 template <typename V, typename B>
-class Flow_link : public B {
+class FlowLink : public B {
    private:
     using cap_type = typename V::edge_value_type;
-    V* const source_;
-    V* const target_;
-    cap_type cap_;
-    cap_type flow_;
+    V* const m_source;
+    V* const m_target;
+    cap_type m_cap;
+    cap_type m_flow;
 
    public:
     using vertex_type = V;
     template <typename... Args>
-    Flow_link(V* source, V* target, const cap_type& cap, const cap_type& flow,
-              Args&&... args)
+    FlowLink(V* source, V* target, const cap_type& cap, const cap_type& flow,
+             Args&&... args)
         : B(std::forward<Args>(args)...),
-          source_(source),
-          target_(target),
-          cap_(cap),
-          flow_(flow) {}
+          m_source(source),
+          m_target(target),
+          m_cap(cap),
+          m_flow(flow) {}
 
-    const V& source() const { return *source_; }
-    V& source() { return *source_; }
-    const V& target() const { return *target_; }
-    V& target() { return *target_; }
+    const V& source() const { return *m_source; }
+    V& source() { return *m_source; }
+    const V& target() const { return *m_target; }
+    V& target() { return *m_target; }
 
-    cap_type cap() const { return cap_; }
-    cap_type flow() const { return flow_; }
+    cap_type cap() const { return m_cap; }
+    cap_type flow() const { return m_flow; }
 
     bool is_from(const V& v) const { return source() == v; }
     bool is_to(const V& v) const { return target() == v; }
@@ -63,74 +63,77 @@ class Flow_link : public B {
     }
     V& other(size_t index) { return index == source() ? target() : source(); }
 
-    int cap_r_to(const V& v) const { return is_from(v) ? flow_ : cap_ - flow_; }
+    int cap_r_to(const V& v) const {
+        return is_from(v) ? m_flow : m_cap - m_flow;
+    }
     void add_flow_r_to(const V& v, cap_type f) {
-        flow_ += (is_from(v) ? -f : f);
+        m_flow += (is_from(v) ? -f : f);
     }
 
     template <typename VV, typename BB>
     friend std::ostream& operator<<(std::ostream& stream,
-                                    const Flow_link<VV, BB>& l);
+                                    const FlowLink<VV, BB>& l);
 };
 
 template <typename VV, typename BB>
-std::ostream& operator<<(std::ostream& stream, const Flow_link<VV, BB>& l) {
+std::ostream& operator<<(std::ostream& stream, const FlowLink<VV, BB>& l) {
     return stream << l.source() << "-" << l.target();
 }
 
 template <typename V>
-class Flow_edge {
+class FlowEdge {
    public:
-    using link_type = Flow_link<V, typename V::link_base_type>;
+    using link_type = FlowLink<V, typename V::link_base_type>;
 
    private:
-    link_type* link_;
+    link_type* m_link;
 
    public:
     using value_type = typename V::edge_value_type;
-    Flow_edge(link_type* link) : link_(link) {}
-    const link_type* link() const { return link_; }
-    link_type* link() { return link_; }
-    void set_link(link_type* link) { link_ = link; }
+    FlowEdge(link_type* link) : m_link(link) {}
+    const link_type* link() const { return m_link; }
+    link_type* link() { return m_link; }
+    void set_link(link_type* link) { m_link = link; }
 };
 
 template <typename V>
 class Flow;
 
-template <typename V, typename C, typename LB = Link_empty_base>
-class Flow_vertex : public Adjacency_lists_ns::Adj_lists_vertex_base<
-                        Graph_type::GRAPH, V, Flow_edge<Flow_vertex<V, C, LB>>,
-                        Flow_vertex<V, C, LB>> {
+template <typename V, typename C, typename LB = LinkEmptyBase>
+class FlowVertex : public Adjacency_lists_ns::AdjListsVertexBase<
+                       GraphType::GRAPH, V, FlowEdge<FlowVertex<V, C, LB>>,
+                       FlowVertex<V, C, LB>> {
    private:
-    using this_type = Flow_vertex<V, C, LB>;
-    friend class Adjacency_lists_ns::Adjacency_lists_base<Graph_type::GRAPH,
-                                                          this_type>;
+    using this_type = FlowVertex<V, C, LB>;
+    friend class Adjacency_lists_ns::AdjacencyListsBase<GraphType::GRAPH,
+                                                        this_type>;
     friend class Flow<this_type>;
     friend class Vector<this_type>;
-    using Base = Adjacency_lists_ns::Adj_lists_vertex_base<
-        Graph_type::GRAPH, V, Flow_edge<this_type>, this_type>;
+    using Base =
+        Adjacency_lists_ns::AdjListsVertexBase<GraphType::GRAPH, V,
+                                               FlowEdge<this_type>, this_type>;
     using adj_lists_type = typename Base::adj_lists_type;
-    Flow_vertex(const V& value, adj_lists_type* adjacency_lists)
+    FlowVertex(const V& value, adj_lists_type* adjacency_lists)
         : Base(value, adjacency_lists) {}
-    Flow_vertex() : Base() {}
+    FlowVertex() : Base() {}
 
-    Flow_vertex(const Flow_vertex&) = default;
-    Flow_vertex& operator=(const Flow_vertex&) = default;
-    Flow_vertex(Flow_vertex&&) = default;
-    Flow_vertex& operator=(Flow_vertex&&) = default;
+    FlowVertex(const FlowVertex&) = default;
+    FlowVertex& operator=(const FlowVertex&) = default;
+    FlowVertex(FlowVertex&&) = default;
+    FlowVertex& operator=(FlowVertex&&) = default;
 
    public:
     using edge_type = typename Base::edge_type;
     using link_base_type = LB;
     using edge_value_type = C;
-    ~Flow_vertex() {
+    ~FlowVertex() {
         for (auto e = Base::cedges_begin(); e != Base::cedges_end(); ++e) {
             auto link = e->edge().link();
             if (link->is_from(*this)) delete link;
         }
     }
-    void remove_edge(const Flow_vertex& v) {
-        Base::links_.remove_first_if([&v](auto& edge) {
+    void remove_edge(const FlowVertex& v) {
+        Base::m_links.remove_first_if([&v](auto& edge) {
             bool found = v.index() == edge.target();
             if (found && v == edge.link()->source()) delete edge.link();
             return found;
@@ -139,11 +142,10 @@ class Flow_vertex : public Adjacency_lists_ns::Adj_lists_vertex_base<
 };
 
 template <typename V>
-class Flow
-    : public Adjacency_lists_ns::Adjacency_lists_base<Graph_type::GRAPH, V>,
-      public Adjacency_lists_ns::Edges_remover<Graph_type::GRAPH, V> {
+class Flow : public Adjacency_lists_ns::AdjacencyListsBase<GraphType::GRAPH, V>,
+             public Adjacency_lists_ns::EdgesRemover<GraphType::GRAPH, V> {
    private:
-    using Base = Adjacency_lists_ns::Adjacency_lists_base<Graph_type::GRAPH, V>;
+    using Base = Adjacency_lists_ns::AdjacencyListsBase<GraphType::GRAPH, V>;
 
    public:
     using vertex_type = typename Base::vertex_type;
@@ -198,7 +200,7 @@ class Flow
 };
 
 template <typename V, typename C>
-void print(const V& v, const Flow_link<V, Link_cost_base<C>>& link,
+void print(const V& v, const FlowLink<V, LinkCostBase<C>>& link,
            std::ostream& stream) {
     stream << (link.is_from(v) ? "->" : "<-") << link.other(v).value() << "("
            << link.flow() << "/" << link.cap() << "[" << link.cost() << "]"
@@ -206,28 +208,27 @@ void print(const V& v, const Flow_link<V, Link_cost_base<C>>& link,
 }
 
 template <typename V, typename LB>
-void print(const V& v, const Flow_link<V, LB>& link, std::ostream& stream) {
+void print(const V& v, const FlowLink<V, LB>& link, std::ostream& stream) {
     stream << (link.is_from(v) ? "->" : "<-") << link.other(v).value() << "("
            << link.flow() << "/" << link.cap() << ") ";
 }
 
 template <typename V, typename C, typename LB>
-struct Internal_printer
-    : public Adjacency_lists_ns::Internal_printer_base<
-          Flow<Flow_vertex<V, C, LB>>, Internal_printer<V, C, LB>> {
-    static void print_vertex(const Flow_vertex<V, C, LB>& v,
+struct InternalPrinter
+    : public Adjacency_lists_ns::InternalPrinterBase<
+          Flow<FlowVertex<V, C, LB>>, InternalPrinter<V, C, LB>> {
+    static void print_vertex(const FlowVertex<V, C, LB>& v,
                              std::ostream& stream) {
         for (auto e = v.cedges_begin(); e != v.cedges_end(); ++e)
             print(v, *e->edge().link(), stream);
     }
 };
 
-template <typename V, typename C,
-          typename LB = Network_flow_ns::Link_empty_base>
+template <typename V, typename C, typename LB = Network_flow_ns::LinkEmptyBase>
 void print_representation(
-    const Network_flow_ns::Flow<Network_flow_ns::Flow_vertex<V, C, LB>>& g,
+    const Network_flow_ns::Flow<Network_flow_ns::FlowVertex<V, C, LB>>& g,
     std::ostream& stream) {
-    Network_flow_ns::Internal_printer<V, C, LB>::print(g, stream);
+    Network_flow_ns::InternalPrinter<V, C, LB>::print(g, stream);
 }
 
 template <typename G>
@@ -243,111 +244,111 @@ auto calculate_network_flow_cost(const G& g) {
 }
 
 template <typename G>
-struct Max_flow {
+struct MaxFlow {
     using vertex_t = typename G::vertex_type;
     using w_t = typename G::edge_type::value_type;
     using edge_it_t = typename G::vertex_type::edges_iterator::entry_type;
-    G& g_;
-    vertex_t& s_;
-    vertex_t& t_;
-    Array<w_t> weights_;
-    Array<typename G::link_type*> links_;
-    w_t sentinel_;
-    Max_flow(G& g, vertex_t& s, vertex_t& t, w_t sentinel)
-        : g_(g),
-          s_(s),
-          t_(t),
-          weights_(g.vertices_count()),
-          links_(g.vertices_count()),
-          sentinel_(sentinel) {
+    G& m_g;
+    vertex_t& m_s;
+    vertex_t& m_t;
+    Array<w_t> m_weights;
+    Array<typename G::link_type*> m_links;
+    w_t m_sentinel;
+    MaxFlow(G& g, vertex_t& s, vertex_t& t, w_t sentinel)
+        : m_g(g),
+          m_s(s),
+          m_t(t),
+          m_weights(g.vertices_count()),
+          m_links(g.vertices_count()),
+          m_sentinel(sentinel) {
         while (pfs()) augment();
     }
     bool pfs() {
-        Vertex_heap<vertex_t*, w_t> heap(g_.vertices_count(), weights_);
-        for (auto v = g_.cbegin(); v != g_.cend(); ++v) {
-            weights_[*v] = 0;
-            links_[*v] = nullptr;
+        VertexHeap<vertex_t*, w_t> heap(m_g.vertices_count(), m_weights);
+        for (auto v = m_g.cbegin(); v != m_g.cend(); ++v) {
+            m_weights[*v] = 0;
+            m_links[*v] = nullptr;
             heap.push(v);
         }
-        weights_[s_] = -sentinel_;
-        heap.move_up(&s_);
+        m_weights[m_s] = -m_sentinel;
+        heap.move_up(&m_s);
 
         while (!heap.empty()) {
             vertex_t& v = *heap.pop();
 
-            weights_[v] = -sentinel_;
-            if (v == t_ || (v != s_ && links_[v] == nullptr)) break;
+            m_weights[v] = -m_sentinel;
+            if (v == m_t || (v != m_s && m_links[v] == nullptr)) break;
 
             for (auto e = v.edges_begin(); e != v.edges_end(); ++e) {
                 auto link = e->edge().link();
                 auto& w = link->other(v);
                 auto cap = link->cap_r_to(w);
-                auto p = cap < -weights_[v] ? cap : -weights_[v];
-                if (cap > 0 && weights_[w] > -p) {
-                    weights_[w] = -p;
+                auto p = cap < -m_weights[v] ? cap : -m_weights[v];
+                if (cap > 0 && m_weights[w] > -p) {
+                    m_weights[w] = -p;
                     heap.move_up(&w);
-                    links_[w] = e->edge().link();
+                    m_links[w] = e->edge().link();
                 }
             }
         }
-        return links_[t_] != nullptr;
+        return m_links[m_t] != nullptr;
     }
-    vertex_t& other_vertex(vertex_t& v) { return links_[v]->other(v); }
+    vertex_t& other_vertex(vertex_t& v) { return m_links[v]->other(v); }
     void augment() {
-        auto cap = links_[t_]->cap_r_to(t_);
-        for (vertex_t* v = &other_vertex(t_); *v != s_;) {
-            auto link = links_[*v];
+        auto cap = m_links[m_t]->cap_r_to(m_t);
+        for (vertex_t* v = &other_vertex(m_t); *v != m_s;) {
+            auto link = m_links[*v];
             auto c = link->cap_r_to(*v);
             if (cap > c) cap = c;
             v = &link->other(*v);
         }
-        links_[t_]->add_flow_r_to(t_, cap);
-        for (vertex_t* v = &other_vertex(t_); *v != s_; v = &other_vertex(*v))
-            links_[*v]->add_flow_r_to(*v, cap);
+        m_links[m_t]->add_flow_r_to(m_t, cap);
+        for (vertex_t* v = &other_vertex(m_t); *v != m_s; v = &other_vertex(*v))
+            m_links[*v]->add_flow_r_to(*v, cap);
     }
 };
 
 template <typename G>
-class Pre_flow_push_max_flow {
+class PreFlowPushMaxFlow {
    private:
     using vertex_t = typename G::vertex_type;
     using w_t = typename G::edge_type::value_type;
     using edge_it_t = typename G::vertex_type::edges_iterator::entry_type;
-    G& g_;
-    vertex_t& s_;
-    vertex_t& t_;
-    const size_t v_count_;
-    Array<size_t> heights_;
-    Array<w_t> weights_;
+    G& m_g;
+    vertex_t& m_s;
+    vertex_t& m_t;
+    const size_t m_v_count;
+    Array<size_t> m_heights;
+    Array<w_t> m_weights;
     inline void init_heights() {}
 
    public:
-    Pre_flow_push_max_flow(G& g, vertex_t& s, vertex_t& t, w_t sentinel)
-        : g_(g),
-          s_(s),
-          t_(t),
-          v_count_(g.vertices_count()),
-          heights_(v_count_, v_count_ + 1),
-          weights_(v_count_, 0) {
-        Array_queue<vertex_t*> queue(v_count_);
-        queue.push(&t_);
-        heights_[t_] = 0;
-        auto default_height = v_count_ + 1;
+    PreFlowPushMaxFlow(G& g, vertex_t& s, vertex_t& t, w_t sentinel)
+        : m_g(g),
+          m_s(s),
+          m_t(t),
+          m_v_count(g.vertices_count()),
+          m_heights(m_v_count, m_v_count + 1),
+          m_weights(m_v_count, 0) {
+        Array_queue<vertex_t*> queue(m_v_count);
+        queue.push(&m_t);
+        m_heights[m_t] = 0;
+        auto default_height = m_v_count + 1;
         while (!queue.empty()) {
             auto& v = *queue.pop();
-            auto height = heights_[v] + 1;
+            auto height = m_heights[v] + 1;
             for (auto e = v.edges_begin(); e != v.edges_end(); ++e) {
                 auto link = e->edge().link();
                 auto& w = link->other(v);
-                if (heights_[w] == default_height && link->is_from(w)) {
-                    heights_[w] = height;
+                if (m_heights[w] == default_height && link->is_from(w)) {
+                    m_heights[w] = height;
                     queue.push(&w);
                 }
             }
         }
 
         queue.push(&s);
-        weights_[t] = -(weights_[s] = sentinel * v_count_);
+        m_weights[t] = -(m_weights[s] = sentinel * m_v_count);
 
         while (!queue.empty()) {
             auto& v = *queue.pop();
@@ -355,16 +356,16 @@ class Pre_flow_push_max_flow {
                 auto link = e->edge().link();
                 auto& w = link->other(v);
                 auto p = link->cap_r_to(w);
-                if (p > weights_[v]) p = weights_[v];
-                if ((p > 0 && v == s) || heights_[v] == heights_[w] + 1) {
+                if (p > m_weights[v]) p = m_weights[v];
+                if ((p > 0 && v == s) || m_heights[v] == m_heights[w] + 1) {
                     link->add_flow_r_to(w, p);
-                    weights_[v] -= p;
-                    weights_[w] += p;
+                    m_weights[v] -= p;
+                    m_weights[w] += p;
                     if (w != s && w != t) queue.push(&w);
                 }
             }
-            if (v != s && v != t && weights_[v] > 0) {
-                ++heights_[v];
+            if (v != s && v != t && m_weights[v] > 0) {
+                ++m_heights[v];
                 queue.push(&v);
             }
         }
@@ -381,17 +382,17 @@ auto find_feasible_flow(F& f, const M& supply, const M& demand) {
     for (auto e = demand.cbegin(); e != demand.cend(); ++e)
         f.add_edge(f[e->first], t, e->second, 0);
 
-    Pre_flow_push_max_flow m(f, s, t, f.vertices_count() * 10);
+    PreFlowPushMaxFlow m(f, s, t, f.vertices_count() * 10);
     return std::pair(&s, &t);
 }
 }  // namespace Network_flow_ns
 
 template <typename V, typename C>
-using Network_flow = Network_flow_ns::Flow<Network_flow_ns::Flow_vertex<V, C>>;
+using NetworkFlow = Network_flow_ns::Flow<Network_flow_ns::FlowVertex<V, C>>;
 
 template <typename V, typename C>
-using Network_flow_with_cost = Network_flow_ns::Flow<
-    Network_flow_ns::Flow_vertex<V, C, Network_flow_ns::Link_cost_base<C>>>;
+using NetworkFlowWithCost = Network_flow_ns::Flow<
+    Network_flow_ns::FlowVertex<V, C, Network_flow_ns::LinkCostBase<C>>>;
 
 namespace Network_flow_ns {
 
@@ -399,7 +400,7 @@ template <typename M>
 auto bipartite_matching(const M& mapping) {
     using value_type = typename M::key_type;
 
-    Builder<Network_flow<value_type, int>> b;
+    Builder<NetworkFlow<value_type, int>> b;
     for (auto e = mapping.cbegin(); e != mapping.cend(); ++e)
         b.for_vertex(e->first);
     for (auto e = mapping.cbegin(); e != mapping.cend(); ++e) {
@@ -418,7 +419,7 @@ auto bipartite_matching(const M& mapping) {
     auto& t = f.create_vertex(default_value);
     for (; i < f.vertices_count(); ++i) f.add_edge(f[i], t, 1, 0);
 
-    Max_flow m(f, s, t, f.vertices_count() * 10);
+    MaxFlow m(f, s, t, f.vertices_count() * 10);
 
     std::map<value_type, value_type> result;
     for (i = 0; i < mapping.size(); ++i) {

@@ -46,25 +46,25 @@ class Dfs_base {
    protected:
     using vertex_type = typename G::vertex_type;
     using edge_type = typename G::vertex_type::const_edges_iterator::entry_type;
-    const G& g_;
-    Counters<T_pre> pre_;
-    D* d_;
+    const G& m_g;
+    Counters<T_pre> m_pre;
+    D* m_d;
 
    public:
     Dfs_base(const G& g)
-        : g_(g), pre_(g.vertices_count()), d_(static_cast<D*>(this)) {}
+        : m_g(g), m_pre(g.vertices_count()), m_d(static_cast<D*>(this)) {}
     void search() {
-        for (auto v = g_.cbegin(); v != g_.cend(); ++v)
-            if (pre_.is_unset(*v)) d_->search_vertex(*v);
+        for (auto v = m_g.cbegin(); v != m_g.cend(); ++v)
+            if (m_pre.is_unset(*v)) m_d->search_vertex(*v);
     }
     void search_vertex(const vertex_type& v) {
-        d_->visit_vertex(v);
-        pre_.set_next(v);
+        m_d->visit_vertex(v);
+        m_pre.set_next(v);
         for (auto e = v.cedges_begin(); e != v.cedges_end(); ++e) {
-            if (pre_.is_unset(e->target())) search_vertex(e->target());
-            d_->visit_edge(*e);
+            if (m_pre.is_unset(e->target())) search_vertex(e->target());
+            m_d->visit_edge(*e);
         }
-        d_->search_post_process(v);
+        m_d->search_post_process(v);
     }
 };
 
@@ -90,11 +90,11 @@ class Post_dfs_base : public Dfs_base<G, T_pre, D> {
     using edge_type = typename Base::edge_type;
 
    public:
-    Counters<T_post> post_;
-    Post_dfs_base(const G& g) : Base(g), post_(g.vertices_count()) {}
+    Counters<T_post> m_post;
+    Post_dfs_base(const G& g) : Base(g), m_post(g.vertices_count()) {}
     void visit_vertex(const vertex_type& v) {}
     void visit_edge(const edge_type& e) {}
-    void search_post_process(const vertex_type& v) { post_.set_next(v); }
+    void search_post_process(const vertex_type& v) { m_post.set_next(v); }
 };
 
 template <typename G, typename T_pre, typename T_post>

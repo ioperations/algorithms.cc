@@ -25,9 +25,9 @@ T divide_round_up_int(T dividend, T divisor) {
     return mod;
 }
 
-class Factorial_registry {
+class FactorialRegistry {
    private:
-    Array<int> factorials_;
+    Array<int> m_factorials;
     static Array<int> calculate(int size) {
         Array<int> factorials(size);
         factorials[0] = 1;
@@ -41,14 +41,14 @@ class Factorial_registry {
     }
 
    public:
-    Factorial_registry(int size) : factorials_(calculate(size)) {}
-    int get(size_t index) { return factorials_[index]; }
+    FactorialRegistry(int size) : m_factorials(calculate(size)) {}
+    int get(size_t index) { return m_factorials[index]; }
 };
 
 // Tailor series: sin x = x - x^3/3! + x^5/5! - x^7/7! + ...
 template <typename T>
 T sin_tailor(T angle) {
-    static Factorial_registry factorial_registry(11);
+    static FactorialRegistry factorial_registry(11);
     auto sin = angle;
     for (int i = 0; i < 3; ++i) {
         int power = (i + 1) * 2;

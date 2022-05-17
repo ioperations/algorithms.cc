@@ -17,7 +17,7 @@ TEST(Heap_test, test_1) {
         for (auto i : {11, 5, 1, 3, 9, 2}) heap.push(i);
 
         Array<int> array(heap.size());
-        for (auto el = array.end() - 1; el != array.begin() - 1; --el)
+        for (auto* el = array.end() - 1; el != array.begin() - 1; --el)
             *el = heap.pop();
 
         Array<int> expected{1, 2, 3, 5, 9, 11};
@@ -38,13 +38,13 @@ TEST(Heap_test, test_1) {
     {
         Array<int> weights{45, 21, 83, 1, 90, 2};
         struct Comparator {
-            const Array<int>& weights_;
-            Comparator(const Array<int>& weights) : weights_(weights) {}
+            const Array<int>& m_weights;
+            Comparator(const Array<int>& weights) : m_weights(weights) {}
             bool operator()(size_t i1, size_t i2) {
-                return weights_[i1] > weights_[i2];
+                return m_weights[i1] > m_weights[i2];
             }
         };
-        Multiway_heap<int, Comparator> heap(10, Comparator(weights));
+        MultiwayHeap<int, Comparator> heap(10, Comparator(weights));
 
         auto fill_heap = [&heap]() {
             for (int i : Array<int>{4, 2, 5, 1, 3, 0}) heap.push(i);

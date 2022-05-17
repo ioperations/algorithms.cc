@@ -20,32 +20,32 @@ bool compare_and_swap(T& t1, T& t2) {
 }
 
 template <typename It>
-class Iteration_printer : protected Rich_text::Sequence<It> {
+class IterationPrinter : protected Rich_text::Sequence<It> {
    private:
     using Base = Rich_text::Sequence<It>;
-    const bool verbose_;
-    int iteration_ = -1;
+    const bool m_verbose;
+    int m_iteration = -1;
 
     void print_index() {
-        std::cout << " [" << ++iteration_ << "]" << std::endl;
+        std::cout << " [" << ++m_iteration << "]" << std::endl;
     }
 
    public:
-    Iteration_printer(const It& begin, const It& end, bool verbose)
-        : Base(begin, end), verbose_(verbose) {}
+    IterationPrinter(const It& begin, const It& end, bool verbose)
+        : Base(begin, end), m_verbose(verbose) {}
     void reset(const It& begin) {
         Base::reset(begin, begin + (Base::end() - Base::begin()));
     }
     template <typename... ES>
     void print_with_styled_entry(const Style& style, ES&... entries) {
-        if (verbose_) {
+        if (m_verbose) {
             Base::print_with_styled_entry(std::cout, style, entries...);
             print_index();
         }
     }
     template <typename... SES>
     void print_with_styled_entries(SES&&... styled_entries) {
-        if (verbose_) {
+        if (m_verbose) {
             Base::print_with_styled_entries(
                 std::cout, std::forward<SES>(styled_entries)...);
             print_index();
@@ -53,7 +53,7 @@ class Iteration_printer : protected Rich_text::Sequence<It> {
     }
     template <typename F>
     void print(F f) {
-        if (verbose_) {
+        if (m_verbose) {
             f(true);
             Base::print(std::cout);
             print_index();
@@ -64,7 +64,7 @@ class Iteration_printer : protected Rich_text::Sequence<It> {
 
 template <typename It>
 void buble_sort(const It& begin, const It& end, bool verbose = true) {
-    Iteration_printer ip(begin, end, verbose);
+    IterationPrinter ip(begin, end, verbose);
 
     auto end_in = end;
     bool swapped = true;
@@ -83,7 +83,7 @@ void buble_sort(const It& begin, const It& end, bool verbose = true) {
 
 template <typename It>
 void selection_sort(const It& begin, const It& end, bool verbose = true) {
-    Iteration_printer ip(begin, end, verbose);
+    IterationPrinter ip(begin, end, verbose);
 
     for (auto current = begin; current != end; ++current) {
         auto current_in = current;
@@ -100,7 +100,7 @@ void selection_sort(const It& begin, const It& end, bool verbose = true) {
 
 template <typename It>
 void insertion_sort(const It& begin, const It& end, bool verbose = true) {
-    Iteration_printer ip(begin, end, verbose);
+    IterationPrinter ip(begin, end, verbose);
 
     for (auto current = end - 1; current != begin; --current)
         compare_and_swap(*current, *(current - 1));
@@ -125,7 +125,7 @@ void insertion_sort(const It& begin, const It& end, bool verbose = true) {
 
 template <typename It>
 void shell_sort(const It& begin, const It& end, bool verbose = true) {
-    Iteration_printer ip(begin, end, verbose);
+    IterationPrinter ip(begin, end, verbose);
 
     size_t l = 0;
     size_t r = end - begin - 1;
@@ -150,7 +150,7 @@ void shell_sort(const It& begin, const It& end, bool verbose = true) {
 }
 
 template <typename It>
-auto partition(const It& begin, const It& end, Iteration_printer<It>& ip) {
+auto partition(const It& begin, const It& end, IterationPrinter<It>& ip) {
     const auto& last = end - 1;
     auto i = begin - 1, j = last;
     auto& v = *last;
@@ -169,13 +169,13 @@ auto partition(const It& begin, const It& end, Iteration_printer<It>& ip) {
 
 template <typename It>
 void quick_sort(const It& begin, const It& end, bool verbose = true) {
-    Iteration_printer<It> ip(begin, end, verbose);
+    IterationPrinter<It> ip(begin, end, verbose);
     ip.print_with_styled_entries();
     do_quick_sort(begin, end, ip);
 }
 
 template <typename It>
-void print_quick_sort_partition_points(Iteration_printer<It>& ip,
+void print_quick_sort_partition_points(IterationPrinter<It>& ip,
                                        const It& begin, const It& end,
                                        const It& i) {
     ip.print_with_styled_entries(
@@ -184,7 +184,7 @@ void print_quick_sort_partition_points(Iteration_printer<It>& ip,
 }
 
 template <typename It>
-void do_quick_sort(const It& begin, const It& end, Iteration_printer<It>& ip) {
+void do_quick_sort(const It& begin, const It& end, IterationPrinter<It>& ip) {
     if (end <= begin) return;
     auto i = partition(begin, end, ip);
 
@@ -195,47 +195,47 @@ void do_quick_sort(const It& begin, const It& end, Iteration_printer<It>& ip) {
 }
 
 template <typename It>
-struct Quick_sort_frame {
-    It begin_;
-    It end_;
-    int depth_;
-    Quick_sort_frame(const It& begin, const It& end, int depth)
-        : begin_(begin), end_(end), depth_(depth) {}
-    bool operator<(const Quick_sort_frame& o) {
-        return end_ - begin_ < o.end_ - o.begin_;
+struct QuickSortFrame {
+    It m_begin;
+    It m_end;
+    int m_depth;
+    QuickSortFrame(const It& begin, const It& end, int depth)
+        : m_begin(begin), m_end(end), m_depth(depth) {}
+    bool operator<(const QuickSortFrame& o) {
+        return m_end - m_begin < o.m_end - o.m_begin;
     }
 };
 
 template <typename It>
 void quick_sort_stack(const It& begin, const It& end, bool verbose = true) {
-    Iteration_printer<It> ip(begin, end, verbose);
+    IterationPrinter<It> ip(begin, end, verbose);
     ip.print_with_styled_entries();
-    Stack<Quick_sort_frame<It>> stack;
+    Stack<QuickSortFrame<It>> stack;
     auto push = [&stack](auto interval) {
-        if (interval.begin_ < interval.end_) stack.push(interval);
+        if (interval.m_begin < interval.m_end) stack.push(interval);
     };
-    push(Quick_sort_frame<It>(begin, end, 1));
+    push(QuickSortFrame<It>(begin, end, 1));
     int max_depth = 0;
     while (!stack.empty()) {
         auto interval = stack.pop();
-        auto i = partition(interval.begin_, interval.end_, ip);
+        auto i = partition(interval.m_begin, interval.m_end, ip);
 
-        print_quick_sort_partition_points(ip, interval.begin_, interval.end_,
+        print_quick_sort_partition_points(ip, interval.m_begin, interval.m_end,
                                           i);
 
-        Quick_sort_frame<It> f1(interval.begin_, i, interval.depth_ + 1);
-        Quick_sort_frame<It> f2(i + 1, interval.end_, interval.depth_ + 1);
+        QuickSortFrame<It> f1(interval.m_begin, i, interval.m_depth + 1);
+        QuickSortFrame<It> f2(i + 1, interval.m_end, interval.m_depth + 1);
         compare_and_swap(f1, f2);
         push(f2);
         push(f1);
-        max_depth = std::max(max_depth, interval.depth_);
+        max_depth = std::max(max_depth, interval.m_depth);
     };
     std::cout << "stack depth: " << max_depth << std::endl;
 }
 
 template <typename It>
 void median_of_three_quick_sort(const It& begin, const It& end,
-                                Iteration_printer<It>& ip) {
+                                IterationPrinter<It>& ip) {
     if (end - begin > 11) {
         ip.print_with_styled_entries();
         std::swap(*(begin + (end - begin) / 2), *(end - 2));
@@ -251,7 +251,7 @@ void median_of_three_quick_sort(const It& begin, const It& end,
 
 template <typename It>
 void hybrid_sort(const It& begin, const It& end, bool verbose = false) {
-    Iteration_printer ip(begin, end, verbose);
+    IterationPrinter ip(begin, end, verbose);
     median_of_three_quick_sort(begin, end, ip);
     insertion_sort(begin, end, verbose);
 }
@@ -259,40 +259,41 @@ void hybrid_sort(const It& begin, const It& end, bool verbose = false) {
 template <typename It>
 void non_recursive_hybrid_sort(const It& begin, const It& end,
                                bool verbose = false) {
-    Iteration_printer ip(begin, end, verbose);
-    Stack<Quick_sort_frame<It>> stack;
+    IterationPrinter ip(begin, end, verbose);
+    Stack<QuickSortFrame<It>> stack;
     auto push = [&stack](auto f) {
-        if (f.end_ - f.begin_ > 11) stack.push(f);
+        if (f.m_end - f.m_begin > 11) stack.push(f);
     };
-    push(Quick_sort_frame<It>(begin, end, 1));
+    push(QuickSortFrame<It>(begin, end, 1));
     int max_depth = 0;
     while (!stack.empty()) {
         ip.print_with_styled_entries();
         auto interval = stack.pop();
-        auto first = interval.begin_ + 1;
-        auto middle = interval.begin_ + (interval.end_ - interval.begin_) / 2;
-        auto last_but_one = interval.end_ - 2;
-        auto last = interval.end_ - 1;
-        auto print_ = [&ip, &first, &middle, &last_but_one, &last]() {
+        auto first = interval.m_begin + 1;
+        auto middle =
+            interval.m_begin + (interval.m_end - interval.m_begin) / 2;
+        auto last_but_one = interval.m_end - 2;
+        auto last = interval.m_end - 1;
+        auto print = [&ip, &first, &middle, &last_but_one, &last]() {
             ip.print_with_styled_entry(Style::red_bg(), *first, *middle,
                                        *last_but_one, *last);
         };
-        print_();
+        print();
 
         std::swap(*middle, *last_but_one);
-        compare_and_swap(*interval.begin_, *last_but_one);
-        compare_and_swap(*interval.begin_, *last);
+        compare_and_swap(*interval.m_begin, *last_but_one);
+        compare_and_swap(*interval.m_begin, *last);
         compare_and_swap(*last, *last_but_one);
-        print_();
+        print();
 
-        auto i = partition(first, interval.end_, ip);
+        auto i = partition(first, interval.m_end, ip);
         print_quick_sort_partition_points(ip, first, last, i);
-        Quick_sort_frame<It> f1(interval.begin_, i, interval.depth_ + 1);
-        Quick_sort_frame<It> f2(i + 1, interval.end_, interval.depth_ + 1);
+        QuickSortFrame<It> f1(interval.m_begin, i, interval.m_depth + 1);
+        QuickSortFrame<It> f2(i + 1, interval.m_end, interval.m_depth + 1);
         compare_and_swap(f1, f2);
         push(f2);
         push(f1);
-        max_depth = std::max(max_depth, interval.depth_);
+        max_depth = std::max(max_depth, interval.m_depth);
     }
     std::cout << "stack depth: " << max_depth << std::endl;
     insertion_sort(begin, end, verbose);
@@ -336,7 +337,7 @@ void merge(const It& b, const It& m, const It& e, const It& b_aux) {
 
 template <typename It>
 void do_merge_sort(const It& b, const It& e, const It& b_aux,
-                   Iteration_printer<It>& ip) {
+                   IterationPrinter<It>& ip) {
     if (e > b + 1) {
         auto m = b + ((e - b - 1) / 2);
         print_quick_sort_partition_points(ip, b, e, m);
@@ -349,7 +350,7 @@ void do_merge_sort(const It& b, const It& e, const It& b_aux,
 template <typename It>
 void merge_sort(const It& b, const It& e, bool verbose = false) {
     Array<typename std::iterator_traits<It>::value_type> aux(e - b);
-    Iteration_printer ip(b, e, verbose);
+    IterationPrinter ip(b, e, verbose);
     do_merge_sort(b, e, aux.begin(), ip);
     ip.print_with_styled_entries();
 }
@@ -380,7 +381,7 @@ void stable_merge(const It& b, const It& b_aux, In l, In m, In r) {
 
 template <typename It, typename In>
 void do_stable_merge_sort(const It& b, const It& b_aux, In l, In r,
-                          Iteration_printer<It>& ip) {
+                          IterationPrinter<It>& ip) {
     if (l < r) {
         In m = (l + r) / 2;
         ip.reset(b);
@@ -395,7 +396,7 @@ template <typename It>
 void stable_merge_sort(const It& b, const It& e, bool verbose = false) {
     Array<typename std::iterator_traits<It>::value_type> aux(e - b);
     for (decltype(e - b) i = 0; i < e - b; ++i) aux[i] = std::move(*(b + i));
-    Iteration_printer ip(b, e, verbose);
+    IterationPrinter ip(b, e, verbose);
     ip.print_with_styled_entries();
     do_stable_merge_sort(b, aux.begin(), static_cast<decltype(e - b)>(0),
                          e - b - 1, ip);
@@ -409,7 +410,7 @@ void non_recursive_merge_sort(const It& b, const It& e, bool verbose = false) {
     auto bb = b;
     auto b_aux = aux.begin();
 
-    Iteration_printer ip(b, e, verbose);
+    IterationPrinter ip(b, e, verbose);
 
     using index_type = decltype(e - b);
     auto r = e - b - 1;
@@ -436,10 +437,10 @@ int main(int argc, const char** argv) {
         Array<Entry> array(15);
         Forward_list<Entry> list;
         {
-            Random_sequence_generator generator(300, 10, 99);
+            RandomSequenceGenerator generator(300, 10, 99);
             for (auto& e : array) {
                 int value = generator.generate();
-                e.value_ = value;
+                e.value = value;
                 list.emplace_back(value);
             }
         }
@@ -467,7 +468,7 @@ int main(int argc, const char** argv) {
         int count = 10'000;
         if (argc > 1) count = atoi(argv[1]);
         std::cout << "items cout: " << count << std::endl;
-        auto array = Random_sequence_generator(300, 0, count)
+        auto array = RandomSequenceGenerator(300, 0, count)
                          .generate_array<Array<Entry>>();
         Forward_list<Entry> list;
         for (const auto& item : array) list.push_back(item);

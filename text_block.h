@@ -2,56 +2,57 @@
 #include "forward_list.h"
 #include "string_utils.h"
 
-class Text_block {
+class TextBlock {
    public:
     using Lines = Forward_list<std::string>;
 
    private:
-    Lines lines_;
-    size_t width_ = 0;
-    int lines_count_ = 0;
+    Lines m_lines;
+    size_t m_width = 0;
+    int m_lines_count = 0;
 
    public:
-    Text_block(Lines&& lines) : lines_(std::move(lines)) {
-        for (auto l : lines_) {
-            width_ = std::max<size_t>(width_, string_actual_printed_length(l));
-            ++lines_count_;
+    TextBlock(Lines&& lines) : m_lines(std::move(lines)) {
+        for (auto l : m_lines) {
+            m_width =
+                std::max<size_t>(m_width, string_actual_printed_length(l));
+            ++m_lines_count;
         }
     }
-    Text_block(const std::string& s) {
-        lines_.push_back(s);
-        width_ = string_actual_printed_length(s);
-        lines_count_ = 1;
+    TextBlock(const std::string& s) {
+        m_lines.push_back(s);
+        m_width = string_actual_printed_length(s);
+        m_lines_count = 1;
     }
-    const Lines& lines() const { return lines_; }
-    size_t width() const { return width_; }
-    void set_width(size_t width) { width_ = width; }
-    int lines_count() const { return lines_count_; }
+    const Lines& lines() const { return m_lines; }
+    size_t width() const { return m_width; }
+    void set_width(size_t width) { m_width = width; }
+    int lines_count() const { return m_lines_count; }
 };
 
-class Text_blocks : public Forward_list<Text_block> {
+class TextBlocks : public Forward_list<TextBlock> {
    private:
-    const int offset_;
-    int max_line_length_ = 0;
+    const int m_offset;
+    int m_max_line_length = 0;
     friend std::ostream& operator<<(std::ostream& stream,
-                                    const Text_blocks& blocks);
+                                    const TextBlocks& blocks);
 
    public:
-    Text_blocks(int offset = 3) : offset_(offset) {}
-    Text_blocks(Text_blocks&& o)
-        : Forward_list<Text_block>(std::move(o)),
-          offset_(o.offset_),
-          max_line_length_(o.max_line_length_) {}
+    TextBlocks(int offset = 3) : m_offset(offset) {}
+    TextBlocks(TextBlocks&& o)
+        : Forward_list<TextBlock>(std::move(o)),
+          m_offset(o.m_offset),
+          m_max_line_length(o.m_max_line_length) {}
     template <typename... Args>
     void emplace_back(Args&&... args) {
-        Forward_list<Text_block>::emplace_back(std::forward<Args>(args)...);
-        max_line_length_ = std::max(max_line_length_, back().lines_count());
+        Forward_list<TextBlock>::emplace_back(std::forward<Args>(args)...);
+        m_max_line_length = std::max(m_max_line_length, back().lines_count());
     }
     size_t width() const {
         size_t width = 0;
         if (!empty()) {
             for (auto block = cbegin(); block != cend(); ++block)
-                width += block->width() + offset_;
+                width += block->width() + m_offset;
         }
         return width;
     }

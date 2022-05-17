@@ -13,7 +13,7 @@ auto to_string(const N& node) {
 }
 
 TEST(Tree_printer_test, arbitrary_tree) {
-    using node = Array_tree_node<int>;
+    using node = ArrayTreeNode<int>;
     using nodes = Array<node>;
 
     node n(1);

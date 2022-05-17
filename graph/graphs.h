@@ -237,7 +237,7 @@ G weighted_dag_sample() {
 }
 
 auto flow_sample() {
-    Builder<Network_flow<int, int>> b;
+    Builder<NetworkFlow<int, int>> b;
     for (int i = 0; i < 6; ++i) b.for_vertex(i);
     return b.for_vertex(0)
         .add_edge(1, 2, 0)
@@ -256,7 +256,7 @@ auto flow_sample() {
 }
 
 auto simplex_sample() {
-    Builder<Network_flow_with_cost<int, int>> b;
+    Builder<NetworkFlowWithCost<int, int>> b;
     for (int i = 0; i < 6; ++i) b.for_vertex(i);
     return b.for_vertex(0)
         .add_edge(1, 3, 0, 3)

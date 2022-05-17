@@ -6,27 +6,27 @@
 
 template <typename T>
 struct Binary_tree_node {
-    T value_;
-    Binary_tree_node* l_;
-    Binary_tree_node* r_;
+    T m_value;
+    Binary_tree_node* m_l;
+    Binary_tree_node* m_r;
     Binary_tree_node(T value, Binary_tree_node* l = nullptr,
                      Binary_tree_node* r = nullptr)
-        : value_(value), l_(l), r_(r) {}
-    T value() const { return value_; }
+        : m_value(value), m_l(l), m_r(r) {}
+    T value() const { return m_value; }
     Binary_tree_node(Binary_tree_node&& o)
-        : value_(o.value_), l_(o.l_), r_(o.r_) {
-        o.l_ = nullptr;
-        o.r_ = nullptr;
+        : m_value(o.m_value), m_l(o.m_l), m_r(o.m_r) {
+        o.m_l = nullptr;
+        o.m_r = nullptr;
     }
     Binary_tree_node& operator=(Binary_tree_node&& o) {
-        value_ = o.value_;
-        std::swap(l_, o.l_);
-        std::swap(r_, o.r_);
+        m_value = o.m_value;
+        std::swap(m_l, o.m_l);
+        std::swap(m_r, o.m_r);
         return *this;
     }
     ~Binary_tree_node() {
-        delete l_;
-        delete r_;
+        delete m_l;
+        delete m_r;
     }
 };
 
@@ -36,10 +36,12 @@ class Binary_tree_printer_node_handler
    public:
     template <typename F>
     void iterate_node_children(const Binary_tree_node<T>& n, F f) {
-        f(static_cast<const Binary_tree_node<T>*>(n.l_));
-        f(static_cast<const Binary_tree_node<T>*>(n.r_));
+        f(static_cast<const Binary_tree_node<T>*>(n.m_l));
+        f(static_cast<const Binary_tree_node<T>*>(n.m_r));
     }
-    bool node_is_empty(const Binary_tree_node<T>& n) { return !n.l_ && !n.r_; }
+    bool node_is_empty(const Binary_tree_node<T>& n) {
+        return !n.m_l && !n.m_r;
+    }
 };
 
 template <typename T>

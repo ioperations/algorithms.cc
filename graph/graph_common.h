@@ -5,91 +5,92 @@
 
 namespace Graph {
 
-enum class Graph_type { GRAPH, DIGRAPH };
+enum class GraphType { GRAPH, DIGRAPH };
 
 template <typename T>
-class Vertex_base {
+class VertexBase {
    protected:
-    T value_;
-    Vertex_base(const T& value) : value_(value) {}
-    Vertex_base() = default;
+    T m_value;
+    VertexBase(const T& value) : m_value(value) {}
+    VertexBase() = default;
 
    public:
     using value_type = T;
-    const T& value() const { return value_; }
-    void set_value(const T& value) { value_ = value; }
-    bool operator==(const Vertex_base& o) const { return this == &o; }
-    bool operator!=(const Vertex_base& o) const { return !operator==(o); }
-    friend std::ostream& operator<<(std::ostream& stream,
-                                    const Vertex_base& v) {
-        return stream << v.value_;
+    const T& value() const { return m_value; }
+    void set_value(const T& value) { m_value = value; }
+    bool operator==(const VertexBase& o) const { return this == &o; }
+    bool operator!=(const VertexBase& o) const { return !operator==(o); }
+    friend std::ostream& operator<<(std::ostream& stream, const VertexBase& v) {
+        return stream << v.m_value;
     }
 };
 
 template <typename V, typename E, bool T_is_const,
           typename ET = typename E::value_type>
-class Edges_iterator_entry {
+class EdgesIteratorEntry {
    public:
     using vertex_type = std::conditional_t<T_is_const, const V, V>;
     using edge_type = std::conditional_t<T_is_const, const E, E>;
 
-    vertex_type* source_;
-    vertex_type* target_;  // todo delete
-    edge_type* edge_;
+    vertex_type* m_source;
+    vertex_type* m_target;  // todo delete
+    edge_type* m_edge;
 
-    Edges_iterator_entry() = default;
-    Edges_iterator_entry(vertex_type* source) : source_(source) {}
+    EdgesIteratorEntry() = default;
+    EdgesIteratorEntry(vertex_type* source) : m_source(source) {}
 
-    vertex_type& source() const { return *source_; }
-    vertex_type& target() const { return *target_; }
-    edge_type& edge() const { return *edge_; }
+    vertex_type& source() const { return *m_source; }
+    vertex_type& target() const { return *m_target; }
+    edge_type& edge() const { return *m_edge; }
 };
 
-struct Array_cycle {
+struct ArrayCycle {
    private:
-    Array<size_t> array_;
-    size_t begin_index_;
+    Array<size_t> m_array;
+    size_t m_begin_index;
 
     struct Iterator {
        private:
-        const Array<size_t>& cycle_;
-        size_t index_;
+        const Array<size_t>& m_cycle;
+        size_t m_index;
 
        public:
         Iterator(const Array<size_t>& cycle, size_t index)
-            : cycle_(cycle), index_(index) {}
-        bool operator!=(const Iterator& o) const { return index_ != o.index_; }
+            : m_cycle(cycle), m_index(index) {}
+        bool operator!=(const Iterator& o) const {
+            return m_index != o.m_index;
+        }
         Iterator& operator++() {
-            index_ = cycle_[index_];
+            m_index = m_cycle[m_index];
             return *this;
         }
-        size_t operator*() { return index_; }
+        size_t operator*() { return m_index; }
     };
 
    public:
-    Array_cycle(Array<size_t>&& array, size_t sentinel)
-        : array_(std::move(array)) {
-        for (size_t i = 0; i < array_.size(); ++i)
-            if (array_[i] != sentinel) {
-                begin_index_ = i;
+    ArrayCycle(Array<size_t>&& array, size_t sentinel)
+        : m_array(std::move(array)) {
+        for (size_t i = 0; i < m_array.size(); ++i)
+            if (m_array[i] != sentinel) {
+                m_begin_index = i;
                 break;
             }
     }
-    Iterator cbegin() const { return Iterator(array_, begin_index_); }
-    bool empty() const { return array_.size() == 0; }
+    Iterator cbegin() const { return Iterator(m_array, m_begin_index); }
+    bool empty() const { return m_array.size() == 0; }
 };
 
 template <typename V, typename W>
-class Vertex_heap : public Multiway_heap_base<V, Vertex_heap<V, W>> {
+class VertexHeap : public MultiwayHeapBase<V, VertexHeap<V, W>> {
    private:
-    using Base = Multiway_heap_base<V, Vertex_heap<V, W>>;
-    Array<W>& weights_;
+    using Base = MultiwayHeapBase<V, VertexHeap<V, W>>;
+    Array<W>& m_weights;
 
    public:
-    Vertex_heap(size_t size, Array<W>& weights)
-        : Base(size), weights_(weights) {}
+    VertexHeap(size_t size, Array<W>& weights)
+        : Base(size), m_weights(weights) {}
     bool compare(const V& v1, const V& v2) {
-        return weights_[*v1] > weights_[*v2];
+        return m_weights[*v1] > m_weights[*v2];
     }
     size_t get_index(const V& v) { return *v; }
 };

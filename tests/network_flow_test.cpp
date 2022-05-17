@@ -11,7 +11,7 @@ using namespace Graph::Network_flow_ns;
 TEST(Network_flow_test, max_flow) {
     std::stringstream ss;
     auto g = Samples::flow_sample();
-    Max_flow m(g, g[0], g[5], g.vertices_count() * 10);
+    MaxFlow m(g, g[0], g[5], g.vertices_count() * 10);
     print_representation(g, reset_with_new_line(ss));
     ASSERT_EQ(R"(
 0: ->1(2/2) ->2(2/3) 
@@ -27,7 +27,7 @@ TEST(Network_flow_test, max_flow) {
 TEST(Network_flow_test, pre_flow_push_max_flow) {
     std::stringstream ss;
     auto g = Samples::flow_sample();
-    Pre_flow_push_max_flow m(g, g[0], g[5], g.vertices_count() * 10);
+    PreFlowPushMaxFlow m(g, g[0], g[5], g.vertices_count() * 10);
     print_representation(g, reset_with_new_line(ss));
     ASSERT_EQ(R"(
 0: ->1(2/2) ->2(2/3) 

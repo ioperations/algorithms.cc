@@ -16,29 +16,29 @@ template <typename G, typename T = typename G::vertex_type::value_type>
 class Constructor {
    private:
     using vertex_type = typename G::vertex_type;
-    G& graph_;
-    std::map<T, typename G::vertex_type&> vertices_;
+    G& m_graph;
+    std::map<T, typename G::vertex_type&> m_vertices;
 
    public:
-    Constructor(G& graph) : graph_(graph) {}
+    Constructor(G& graph) : m_graph(graph) {}
     Constructor& add_edge(const T& l1, const T& l2) {
         auto& v1 = get_or_create_vertex(l1);
         auto& v2 = get_or_create_vertex(l2);
-        graph_.add_edge(v1, v2);
+        m_graph.add_edge(v1, v2);
         return *this;
     }
     vertex_type& get_or_create_vertex(const T& l) {
-        auto it = vertices_.find(l);
-        if (it == vertices_.end()) {
-            auto& v = graph_.create_vertex(l);
-            vertices_.insert({l, v});
+        auto it = m_vertices.find(l);
+        if (it == m_vertices.end()) {
+            auto& v = m_graph.create_vertex(l);
+            m_vertices.insert({l, v});
             return v;
-        } else
-            return it->second;
+        }
+        return it->second;
     }
     vertex_type& get_vertex(const T& label) {
-        auto it = vertices_.find(label);
-        if (it == vertices_.end())
+        auto it = m_vertices.find(label);
+        if (it == m_vertices.end())
             throw std::runtime_error("vertex "_str + label + " not found");
         return it->second;
     };
@@ -52,26 +52,26 @@ class Builder {
     using vertex_type = typename G::vertex_type;
     using value_type = typename vertex_type::value_type;
 
-    G g_;
-    std::map<value_type, vertex_type* const> map_;
+    G m_g;
+    std::map<value_type, vertex_type* const> m_map;
 
     vertex_type* const get_or_create_vertex(const value_type& value) {
-        auto vertex = map_.find(value);
-        if (vertex == map_.end()) {
-            auto p = &g_.create_vertex(value);
-            map_.insert({value, p});
+        auto vertex = m_map.find(value);
+        if (vertex == m_map.end()) {
+            auto p = &m_g.create_vertex(value);
+            m_map.insert({value, p});
             return p;
-        } else
-            return vertex->second;
+        }
+        return vertex->second;
     }
     template <typename... Args>
     void add_edge(vertex_type* const v, const value_type& w, Args&&... args) {
-        g_.add_edge(*v, *get_or_create_vertex(w), std::forward<Args>(args)...);
+        m_g.add_edge(*v, *get_or_create_vertex(w), std::forward<Args>(args)...);
     }
     template <typename E, typename... Es>
     void add_edges(Vertex& vertex, E&& edge, Es&&... edges) {
-        g_.add_edge(*vertex.vertex_,
-                    *get_or_create_vertex(std::forward<E>(edge)));
+        m_g.add_edge(*vertex.m_vertex,
+                     *get_or_create_vertex(std::forward<E>(edge)));
         add_edges(vertex, std::forward<Es>(edges)...);
     }
     void add_edges(Vertex&) {}
@@ -80,7 +80,7 @@ class Builder {
     Vertex for_vertex(const value_type& value) {
         return Vertex(*this, get_or_create_vertex(value));
     }
-    G build() { return std::move(g_); }
+    G build() { return std::move(m_g); }
 };
 
 template <typename G>
@@ -90,24 +90,24 @@ class Builder<G>::Vertex {
     using vertex_type = typename G::vertex_type;
     using value_type = typename vertex_type::value_type;
 
-    builder_type& builder_;
+    builder_type& m_builder;
 
    public:
-    vertex_type* const vertex_;
-    Vertex(builder_type& b, vertex_type* const v) : builder_(b), vertex_(v) {}
+    vertex_type* const m_vertex;
+    Vertex(builder_type& b, vertex_type* const v) : m_builder(b), m_vertex(v) {}
 
     template <typename... Args>
     Vertex& add_edge(const value_type& v, Args&&... args) {
-        builder_.add_edge(vertex_, v, std::forward<Args>(args)...);
+        m_builder.add_edge(m_vertex, v, std::forward<Args>(args)...);
         return *this;
     }
     template <typename... E>
     Vertex& add_edges(E&&... edges) {
-        builder_.add_edges(*this, std::forward<E>(edges)...);
+        m_builder.add_edges(*this, std::forward<E>(edges)...);
         return *this;
     }
-    Vertex for_vertex(const value_type& v) { return builder_.for_vertex(v); }
-    G build() { return builder_.build(); }
+    Vertex for_vertex(const value_type& v) { return m_builder.for_vertex(v); }
+    G build() { return m_builder.build(); }
 };
 
 template <typename It, typename F>
@@ -127,18 +127,18 @@ void print_collection(const It& b, const It& e, const char* del,
 }
 
 template <typename T>
-class Fixed_size_stack {
+class FixedSizeStack {
    private:
-    Array<T> array_;
-    size_t index_;
+    Array<T> m_array;
+    size_t m_index;
 
    public:
-    Fixed_size_stack(size_t size) : array_(size), index_(0) {}
-    void push(const T& t) { array_[index_++] = t; }
+    FixedSizeStack(size_t size) : m_array(size), m_index(0) {}
+    void push(const T& t) { m_array[m_index++] = t; }
     Array<T> to_reversed_array() {
-        for (size_t i = 0; i < index_ / 2; ++i)
-            std::swap(array_[i], array_[index_ - i - 1]);
-        return std::move(array_);
+        for (size_t i = 0; i < m_index / 2; ++i)
+            std::swap(m_array[i], m_array[m_index - i - 1]);
+        return std::move(m_array);
     }
 };
 
@@ -172,13 +172,13 @@ Array<const V*> compose_hamilton_path(const G& graph, const V& s, const V& t) {
     if (graph.vertices_count() < 1) return {};
     if (graph.vertices_count() < 2) return {&graph[0]};
     struct Helper {
-        Array<bool> visited_;
-        Fixed_size_stack<const V*> stack_;
-        const size_t size_;
+        Array<bool> m_visited;
+        FixedSizeStack<const V*> m_stack;
+        const size_t m_size;
         Helper(size_t size)
-            : visited_(size, false), stack_(size), size_(size) {}
+            : m_visited(size, false), m_stack(size), m_size(size) {}
         bool compose_path(const V& s, const V& t) {
-            return compose_path(s, t, size_ - 1);
+            return compose_path(s, t, m_size - 1);
         }
         bool compose_path(const V& s, const V& t, size_t depth) {
             bool has;
@@ -186,19 +186,19 @@ Array<const V*> compose_hamilton_path(const G& graph, const V& s, const V& t) {
                 has = depth == 0;
             else {
                 has = false;
-                visited_[s] = true;
+                m_visited[s] = true;
                 for (auto v = s.cbegin(); v != s.cend() && !has; ++v)
-                    has = !visited_[*v] && compose_path(*v, t, depth - 1);
-                if (!has) visited_[s] = false;
+                    has = !m_visited[*v] && compose_path(*v, t, depth - 1);
+                if (!has) m_visited[s] = false;
             }
-            if (has) stack_.push(&s);
+            if (has) m_stack.push(&s);
             return has;
         }
     };
     Array<const V*> path;
     Helper helper(graph.vertices_count());
     if (helper.compose_path(s, t))
-        path = std::move(helper.stack_.to_reversed_array());
+        path = std::move(helper.m_stack.to_reversed_array());
     return path;
 }
 
@@ -210,31 +210,33 @@ auto compose_euler_tour(const G& g, const V& s) {
         if (count_vertex_edges(*w) % 2 != 0) return path;
 
     struct Helper {
-        const G& original_g_;
-        G& g_;
-        Stack<V*> stack_;
-        Path& path_;
+        const G& m_original_g;
+        G& m_g;
+        Stack<V*> m_stack;
+        Path& m_path;
         Helper(const G& original_graph, G& g, Path& path)
-            : original_g_(original_graph), g_(g), path_(path) {}
+            : m_original_g(original_graph), m_g(g), m_path(path) {}
         V* tour(V* v) {
             while (true) {
                 auto it = v->begin();
                 if (it == v->end()) break;
-                stack_.push(v);
+                m_stack.push(v);
                 auto& w = *it;
-                g_.remove_edge(*v, w);
+                m_g.remove_edge(*v, w);
                 v = &w;
             }
             return v;
         }
         void compose(V* v) {
             push_original_v(v);
-            while (tour(v) == v && !stack_.empty()) {
-                v = stack_.pop();
+            while (tour(v) == v && !m_stack.empty()) {
+                v = m_stack.pop();
                 push_original_v(v);
             }
         }
-        void push_original_v(const V* v) { path_.push_back(&original_g_[*v]); }
+        void push_original_v(const V* v) {
+            m_path.push_back(&m_original_g[*v]);
+        }
     };
     auto g_copy = g;
     Helper(g, g_copy, path).compose(&g_copy[s]);
@@ -244,53 +246,53 @@ auto compose_euler_tour(const G& g, const V& s) {
 template <typename G, typename V = typename G::vertex_type>
 Forward_list<std::pair<const V*, const V*>> find_bridges(const G& graph) {
     struct Searcher {
-        const G& g_;
-        Array<int> orders_;
-        Array<int> mins_;
-        int order_;
-        Forward_list<std::pair<const V*, const V*>> bridges_;
+        const G& m_g;
+        Array<int> m_orders;
+        Array<int> m_mins;
+        int m_order;
+        Forward_list<std::pair<const V*, const V*>> m_bridges;
         Searcher(const G& g)
-            : g_(g),
-              orders_(g.vertices_count()),
-              mins_(g.vertices_count()),
-              order_(-1) {
-            for (auto& o : orders_) o = -1;
+            : m_g(g),
+              m_orders(g.vertices_count()),
+              m_mins(g.vertices_count()),
+              m_order(-1) {
+            for (auto& o : m_orders) o = -1;
         }
         void search() {
-            for (auto v = g_.cbegin(); v != g_.cend(); ++v)
-                if (orders_[*v] == -1) search(*v, *v);
+            for (auto v = m_g.cbegin(); v != m_g.cend(); ++v)
+                if (m_orders[*v] == -1) search(*v, *v);
         }
         void search(const V& v, const V& w) {
-            orders_[w] = ++order_;
-            mins_[w] = orders_[w];
+            m_orders[w] = ++m_order;
+            m_mins[w] = m_orders[w];
             for (auto t = w.cbegin(); t != w.cend(); ++t)
-                if (orders_[*t] == -1) {
+                if (m_orders[*t] == -1) {
                     search(w, *t);
-                    if (mins_[w] > mins_[*t]) mins_[w] = mins_[*t];
-                    if (mins_[*t] == orders_[*t])
-                        bridges_.emplace_back(&w, &*t);
+                    if (m_mins[w] > m_mins[*t]) m_mins[w] = m_mins[*t];
+                    if (m_mins[*t] == m_orders[*t])
+                        m_bridges.emplace_back(&w, &*t);
                 } else if (v != *t)
-                    mins_[w] = mins_[*t];
+                    m_mins[w] = m_mins[*t];
         }
     };
     Searcher s(graph);
     s.search();
-    return std::move(s.bridges_);
+    return std::move(s.m_bridges);
 }
 
 template <typename V>
-class Shortest_paths_matrix {
+class ShortestPathsMatrix {
    public:
     using parents_type = Two_dimensional_array<const V*>;
 
    private:
-    parents_type parents_;
+    parents_type m_parents;
 
    public:
-    Shortest_paths_matrix(parents_type&& parents) : parents_(parents) {}
+    ShortestPathsMatrix(parents_type&& parents) : m_parents(parents) {}
     auto find_path(const V& v, const V& w) {
         Forward_list<const V*> path;
-        auto row = parents_[w];
+        auto row = m_parents[w];
         for (auto t = &v; t != &w; t = row[*t]) path.push_back(t);
         path.push_back(&w);
         return path;
@@ -298,8 +300,8 @@ class Shortest_paths_matrix {
 };
 
 template <typename G, typename V = typename G::vertex_type>
-Shortest_paths_matrix<V> find_shortest_paths(const G& g) {
-    typename Shortest_paths_matrix<V>::parents_type all_parents(
+ShortestPathsMatrix<V> find_shortest_paths(const G& g) {
+    typename ShortestPathsMatrix<V>::parents_type all_parents(
         g.vertices_count(), g.vertices_count());
     all_parents.fill(nullptr);
     for (auto v = g.cbegin(); v != g.cend(); ++v) {
@@ -334,19 +336,19 @@ G warshall_transitive_closure(const G& g) {
 template <typename G, typename V = typename G::vertex_type>
 G dfs_transitive_closure(const G& g) {
     struct Helper {
-        G& g_;
-        Array<bool> a_;
-        Helper(G& g) : g_(g), a_(g.vertices_count()) {}
+        G& m_g;
+        Array<bool> m_a;
+        Helper(G& g) : m_g(g), m_a(g.vertices_count()) {}
         void search() {
-            for (auto& v : g_) {
-                a_.fill(false);
+            for (auto& v : m_g) {
+                m_a.fill(false);
                 search(v, v, v);
             }
         }
         void search(V& vv, V& v, V& w) {
-            if (!a_[w]) {
-                a_[w] = true;
-                if (!g_.has_edge(vv, w)) g_.add_edge(vv, w);
+            if (!m_a[w]) {
+                m_a[w] = true;
+                if (!m_g.has_edge(vv, w)) m_g.add_edge(vv, w);
                 for (auto& t : w) search(vv, w, t);
             }
         }
@@ -357,72 +359,72 @@ G dfs_transitive_closure(const G& g) {
 }
 
 template <typename G, typename D>
-class Dfs_tracer_base : public Post_dfs_base<G, size_t, size_t, D> {
+class DfsTracerBase : public Post_dfs_base<G, size_t, size_t, D> {
    private:
-    int depth_;
-    Stack<std::string> lines_stack_;
+    int m_depth;
+    Stack<std::string> m_lines_stack;
 
    protected:
-    std::ostream& stream_;
+    std::ostream& m_stream;
     using Base = Post_dfs_base<G, size_t, size_t, D>;
     using vertex_type = typename Base::vertex_type;
     using edge_type = typename Base::edge_type;
-    size_t last_root_id_;
+    size_t m_last_root_id;
 
    public:
-    Dfs_tracer_base(const G& g, std::ostream& stream)
-        : Base(g), depth_(-1), stream_(stream), last_root_id_(-1) {}
+    DfsTracerBase(const G& g, std::ostream& stream)
+        : Base(g), m_depth(-1), m_stream(stream), m_last_root_id(-1) {}
     void print_stack() {
-        while (!lines_stack_.empty())
-            stream_ << lines_stack_.pop() << std::endl;
+        while (!m_lines_stack.empty())
+            m_stream << m_lines_stack.pop() << std::endl;
     }
     void search() {
         Base::search();
-        stream_ << last_root_id_ << std::endl;
+        m_stream << m_last_root_id << std::endl;
         print_stack();
     }
     void visit_vertex(const vertex_type& v) {
-        ++depth_;
-        if (depth_ == 0) {
-            if (lines_stack_.empty()) {
-                stream_ << v << std::endl;
+        ++m_depth;
+        if (m_depth == 0) {
+            if (m_lines_stack.empty()) {
+                m_stream << v << std::endl;
             } else
                 print_stack();
-            last_root_id_ = v;
+            m_last_root_id = v;
         }
     }
     void visit_edge(const edge_type& e) {
         auto& v = e.source();
         auto& w = e.target();
         std::string str;
-        if (Base::pre_[w] > Base::pre_[v])
+        if (Base::m_pre[w] > Base::m_pre[v])
             str = "down";
-        else if (Base::post_.is_unset(w))
+        else if (Base::m_post.is_unset(w))
             str = "back";
         else
             str = "cross";
-        lines_stack_.push(compose_stack_line(str, e));
+        m_lines_stack.push(compose_stack_line(str, e));
     }
     void search_post_process(const vertex_type& v) {
-        --depth_;
+        --m_depth;
         Base::search_post_process(v);
     }
     template <typename E, typename ET = typename E::edge_type::value_type>
-    struct Edge_appender {
+    struct EdgeAppender {
         static void append(std::ostream& stream, const E& e) {
             stream << " (" << e.edge().weight() << ")";
         }
     };
     template <typename E>
-    struct Edge_appender<E, bool> {
+    struct EdgeAppender<E, bool> {
         static void append(std::ostream& stream, const E& e) {}
     };
     std::string compose_stack_line(const std::string label,
                                    const edge_type& e) {
         std::stringstream ss;
-        for (int i = 0; i < depth_; ++i) ss << " ";
+        for (int i = 0; i < m_depth; ++i) ss << " ";
         ss << " " << e.target();
-        Edge_appender<edge_type>::append(ss, e);
+        EdgeAppender<edge_type>::append(ss, e);
         ss << " (" << label << ")";
         return ss.str();
     }
@@ -430,16 +432,16 @@ class Dfs_tracer_base : public Post_dfs_base<G, size_t, size_t, D> {
 
 template <typename G>
 void trace_dfs(const G& g, std::ostream& stream) {
-    class Tracer : public Dfs_tracer_base<G, Tracer> {
+    class Tracer : public DfsTracerBase<G, Tracer> {
        public:
         Tracer(const G& g, std::ostream& stream)
-            : Dfs_tracer_base<G, Tracer>(g, stream) {}
+            : DfsTracerBase<G, Tracer>(g, stream) {}
     };
     Tracer(g, stream).search();
 }
 
 template <typename G, typename D>
-struct Inverter_base {
+struct InverterBase {
     G invert(const G& g) {
         G inverted;
         for (auto v = g.cbegin(); v != g.cend(); ++v)
@@ -450,7 +452,7 @@ struct Inverter_base {
 };
 
 template <typename G, typename E = typename G::edge_type::value_type>
-struct Inverter : public Inverter_base<G, Inverter<G, E>> {
+struct Inverter : public InverterBase<G, Inverter<G, E>> {
     void do_invert(const G& g, G& inverted) {
         for (auto v = g.cbegin(); v != g.cend(); ++v)
             for (auto e = v->cedges_begin(); e != v->cedges_end(); ++e)
@@ -460,7 +462,7 @@ struct Inverter : public Inverter_base<G, Inverter<G, E>> {
 };
 
 template <typename G>
-struct Inverter<G, bool> : public Inverter_base<G, Inverter<G, bool>> {
+struct Inverter<G, bool> : public InverterBase<G, Inverter<G, bool>> {
     void do_invert(const G& g, G& inverted) {
         for (auto v = g.cbegin(); v != g.cend(); ++v)
             for (auto w = v->cbegin(); w != v->cend(); ++w)
@@ -479,43 +481,43 @@ Array<size_t> topological_sort_rearrange(const G& g) {
     auto inverted = invert(g);
     Post_dfs<G, size_t, size_t> d(inverted);
     d.search();
-    return d.post_.to_array();
+    return d.m_post.to_array();
 }
 
 template <typename G>
-struct Topological_sorter
-    : public Post_dfs_base<G, size_t, size_t, Topological_sorter<G>> {
-    using Base = Post_dfs_base<G, size_t, size_t, Topological_sorter<G>>;
-    Array<size_t> post_i_;
-    Topological_sorter(const G& g) : Base(g), post_i_(g.vertices_count()) {}
+struct TopologicalSorter
+    : public Post_dfs_base<G, size_t, size_t, TopologicalSorter<G>> {
+    using Base = Post_dfs_base<G, size_t, size_t, TopologicalSorter<G>>;
+    Array<size_t> m_post_i;
+    TopologicalSorter(const G& g) : Base(g), m_post_i(g.vertices_count()) {}
     void search_post_process(const typename Base::vertex_type& v) {
         Base::search_post_process(v);
-        post_i_[Base::post_[v]] = v;
+        m_post_i[Base::m_post[v]] = v;
     }
 };
 
 template <typename G>
 Array<size_t> topological_sort_relabel(const G& g) {
     auto inverted = invert(g);
-    Topological_sorter s(inverted);
+    TopologicalSorter s(inverted);
     s.search();
-    return std::move(s.post_i_);
+    return std::move(s.m_post_i);
 }
 
 template <typename G>
 void trace_dfs_topo_sorted(const G& g, std::ostream& stream) {
-    class Tracer : public Dfs_tracer_base<G, Tracer> {
+    class Tracer : public DfsTracerBase<G, Tracer> {
        public:
-        using Base = Dfs_tracer_base<G, Tracer>;
+        using Base = DfsTracerBase<G, Tracer>;
         using vertex_type = typename Base::vertex_type;
         Tracer(const G& g, std::ostream& stream) : Base(g, stream) {}
         void search() {
-            auto t_order = topological_sort_relabel(Base::g_);
-            for (auto it = Base::g_.crbegin(); it != Base::g_.crend(); ++it) {
-                const vertex_type& v = Base::g_[t_order[*it]];
-                if (Base::pre_.is_unset(v)) Base::search_vertex(v);
+            auto t_order = topological_sort_relabel(Base::m_g);
+            for (auto it = Base::m_g.crbegin(); it != Base::m_g.crend(); ++it) {
+                const vertex_type& v = Base::m_g[t_order[*it]];
+                if (Base::m_pre.is_unset(v)) Base::search_vertex(v);
             }
-            Base::stream_ << Base::last_root_id_ << std::endl;
+            Base::m_stream << Base::m_last_root_id << std::endl;
             Base::print_stack();
         }
     };
@@ -529,22 +531,22 @@ void trace_bfs(const G& g) {
     for (auto vv = g.cbegin(); vv != g.cend(); ++vv) {
         if (pre.is_unset(*vv)) {
             struct Entry {
-                const V* const v_;
-                const int d_;
-                Entry(const V* const v, int d) : v_(v), d_(d) {}
+                const V* const m_v;
+                const int m_d;
+                Entry(const V* const v, int d) : m_v(v), m_d(d) {}
             };
             Forward_list<Entry> queue;
             queue.emplace_back(&*vv, 0);
             while (!queue.empty()) {
                 auto p = queue.pop_front();
-                auto& w = *p.v_;
+                auto& w = *p.m_v;
                 for (auto t = w.cbegin(); t != w.cend(); ++t) {
                     if (pre.is_unset(*t)) {
                         pre.set_next(*t);
-                        queue.emplace_back(&*t, p.d_ + 1);
+                        queue.emplace_back(&*t, p.m_d + 1);
                     }
                     if (w != *t) {
-                        for (int i = 0; i < p.d_; ++i) std::cout << " ";
+                        for (int i = 0; i < p.m_d; ++i) std::cout << " ";
                         std::cout << w << " " << *t << std::endl;
                     }
                 }
@@ -553,9 +555,9 @@ void trace_bfs(const G& g) {
     }
 }
 
-class Invalid_dag_exception : public std::runtime_error {
+class InvalidDagException : public std::runtime_error {
    public:
-    Invalid_dag_exception() : std::runtime_error("invalid dag") {}
+    InvalidDagException() : std::runtime_error("invalid dag") {}
 };
 
 template <typename G>
@@ -566,8 +568,8 @@ void validate_dag(const G& g) {
         void visit_edge(const typename Base::edge_type& e) {
             auto& v = e.source();
             auto& w = e.target();
-            if (Base::pre_[w] < Base::pre_[v] && Base::post_.is_unset(w))
-                throw Invalid_dag_exception();  // back link found
+            if (Base::m_pre[w] < Base::m_pre[v] && Base::m_post.is_unset(w))
+                throw InvalidDagException();  // back link found
         }
     };
     Searcher(g).search();
@@ -578,7 +580,7 @@ bool is_dag(const G& g) {
     try {
         validate_dag(g);
         return true;
-    } catch (const Invalid_dag_exception&) {
+    } catch (const InvalidDagException&) {
         return false;
     }
 }
@@ -593,7 +595,7 @@ auto topological_sort_sinks_queue(const G& g) {
     for (auto v = g.cbegin(); v != g.cend(); ++v)
         if (in[*v] == 0) queue.push_back(&*v);
     Array<size_t> ordered(g.vertices_count());
-    for (auto ordered_it = ordered.begin(); !queue.empty(); ++ordered_it) {
+    for (auto* ordered_it = ordered.begin(); !queue.empty(); ++ordered_it) {
         auto v = queue.pop_front();
         *ordered_it = *v;
         for (auto w = v->cbegin(); w != v->cend(); ++w)
@@ -605,88 +607,89 @@ auto topological_sort_sinks_queue(const G& g) {
 template <typename G, typename V = typename G::vertex_type>
 Array<size_t> strong_components_kosaraju(const G& g) {
     struct Searcher {
-        const G& g_;
-        Array<size_t> ids_;
-        size_t group_id_;
-        Searcher(const G& g) : g_(g), ids_(g.vertices_count()), group_id_(-1) {
-            ids_.fill(-1);
+        const G& m_g;
+        Array<size_t> m_ids;
+        size_t m_group_id;
+        Searcher(const G& g)
+            : m_g(g), m_ids(g.vertices_count()), m_group_id(-1) {
+            m_ids.fill(-1);
         }
         void search() {
-            auto t_order = topological_sort_relabel(g_);
-            for (auto v = g_.crbegin(); v != g_.crend(); ++v) {
-                auto& t = g_[t_order[*v]];
-                if (ids_[t] == static_cast<size_t>(-1)) {
-                    ++group_id_;
+            auto t_order = topological_sort_relabel(m_g);
+            for (auto v = m_g.crbegin(); v != m_g.crend(); ++v) {
+                auto& t = m_g[t_order[*v]];
+                if (m_ids[t] == static_cast<size_t>(-1)) {
+                    ++m_group_id;
                     search(t);
                 }
             }
         }
         void search(const V& v) {
-            ids_[v] = group_id_;
+            m_ids[v] = m_group_id;
             for (auto w = v.cbegin(); w != v.cend(); ++w)
-                if (ids_[*w] == static_cast<size_t>(-1)) search(*w);
+                if (m_ids[*w] == static_cast<size_t>(-1)) search(*w);
         }
     };
 
     Searcher s(g);
     s.search();
-    return std::move(s.ids_);
+    return std::move(s.m_ids);
 }
 
 template <typename G>
 Array<size_t> strong_components_tarjan(const G& g) {
     using V = typename G::vertex_type;
     struct Searcher {
-        const G& g_;
-        Counters<size_t> pre_;
-        Array<size_t> min_;
-        Array<size_t> ids_;
-        size_t group_id_;
-        Stack<const V* const> stack_;
+        const G& m_g;
+        Counters<size_t> m_pre;
+        Array<size_t> m_min;
+        Array<size_t> m_ids;
+        size_t m_group_id;
+        Stack<const V* const> m_stack;
         Searcher(const G& g)
-            : g_(g),
-              pre_(g.vertices_count()),
-              min_(g.vertices_count()),
-              ids_(g.vertices_count()),
-              group_id_(0) {}
+            : m_g(g),
+              m_pre(g.vertices_count()),
+              m_min(g.vertices_count()),
+              m_ids(g.vertices_count()),
+              m_group_id(0) {}
         void search() {
-            for (auto v = g_.crbegin(); v != g_.crend(); ++v)
-                if (pre_.is_unset(*v)) search(*v);
+            for (auto v = m_g.crbegin(); v != m_g.crend(); ++v)
+                if (m_pre.is_unset(*v)) search(*v);
         }
         void search(const V& v) {
-            pre_.set_next(v);
-            size_t min = min_[v] = pre_[v];
-            stack_.push(&v);
+            m_pre.set_next(v);
+            size_t min = m_min[v] = m_pre[v];
+            m_stack.push(&v);
             for (auto w = v.cbegin(); w != v.cend(); ++w) {
-                if (pre_.is_unset(*w)) search(*w);
-                if (min_[*w] < min) min = min_[*w];
+                if (m_pre.is_unset(*w)) search(*w);
+                if (m_min[*w] < min) min = m_min[*w];
             }
-            if (min < min_[v])
-                min_[v] = min;
+            if (min < m_min[v])
+                m_min[v] = min;
             else {
                 const V* w;
                 do {
-                    w = stack_.pop();
-                    ids_[*w] = group_id_;
-                    min_[*w] = g_.vertices_count();
+                    w = m_stack.pop();
+                    m_ids[*w] = m_group_id;
+                    m_min[*w] = m_g.vertices_count();
                 } while (v != *w);
-                ++group_id_;
+                ++m_group_id;
             }
         }
     };
     Searcher s(g);
     s.search();
-    return std::move(s.ids_);
+    return std::move(s.m_ids);
 }
 
 template <typename G, typename E>
 auto compose_path_tree(const G& g, const E& edges_b, const E& edges_e) {
-    Adjacency_lists<Graph_type::DIGRAPH, typename G::vertex_type::value_type,
-                    typename G::edge_type::value_type>
+    AdjacencyLists<GraphType::DIGRAPH, typename G::vertex_type::value_type,
+                   typename G::edge_type::value_type>
         mst;
     for (auto v = g.cbegin(); v != g.cend(); ++v) mst.create_vertex(v->value());
     for (auto e = edges_b; e != edges_e; ++e)
-        if (e->target_)
+        if (e->m_target)
             mst.add_edge(mst[e->source()], mst[e->target()],
                          e->edge().weight());
     return mst;
@@ -697,47 +700,47 @@ auto pq_mst(const G& g) {
     using vertex_t = typename G::vertex_type;
     using w_t = typename G::edge_type::value_type;
 
-    struct Pq_mst_searcher {
-        const G& g_;
-        Array<w_t> weights_;
-        Array<typename G::vertex_type::const_edges_iterator::entry_type> fr_,
-            mst_;
-        Pq_mst_searcher(const G& g, size_t size)
-            : g_(g), weights_(size), fr_(size), mst_(size) {
-            for (auto& e : fr_) e.target_ = nullptr;
-            for (auto& e : mst_) e.target_ = nullptr;
+    struct PqMstSearcher {
+        const G& m_g;
+        Array<w_t> m_weights;
+        Array<typename G::vertex_type::const_edges_iterator::entry_type> m_fr,
+            m_mst;
+        PqMstSearcher(const G& g, size_t size)
+            : m_g(g), m_weights(size), m_fr(size), m_mst(size) {
+            for (auto& e : m_fr) e.m_target = nullptr;
+            for (auto& e : m_mst) e.m_target = nullptr;
         }
         void search(const vertex_t& v) {
-            Vertex_heap<const vertex_t*, w_t> heap(g_.vertices_count(),
-                                                   weights_);
+            VertexHeap<const vertex_t*, w_t> heap(m_g.vertices_count(),
+                                                  m_weights);
             heap.push(&v);
             while (!heap.empty()) {
                 const vertex_t& w = *heap.pop();
-                mst_[w] = fr_[w];
+                m_mst[w] = m_fr[w];
                 for (auto e = w.cedges_begin(); e != w.cedges_end(); ++e) {
                     const vertex_t& t = e->target();
                     w_t weight = e->edge().weight();
-                    if (!fr_[t].target_) {
-                        weights_[t] = weight;
+                    if (!m_fr[t].m_target) {
+                        m_weights[t] = weight;
                         heap.push(&t);
-                        fr_[t] = *e;
-                    } else if (!mst_[t].target_ && weight < weights_[t]) {
-                        weights_[t] = weight;
+                        m_fr[t] = *e;
+                    } else if (!m_mst[t].m_target && weight < m_weights[t]) {
+                        m_weights[t] = weight;
                         heap.move_up(&w);
-                        fr_[t] = *e;
+                        m_fr[t] = *e;
                     }
                 }
             }
         }
         void search() {
-            for (auto v = g_.cbegin(); v != g_.cend(); ++v)
-                if (!mst_[*v].target_) search(*v);
+            for (auto v = m_g.cbegin(); v != m_g.cend(); ++v)
+                if (!m_mst[*v].m_target) search(*v);
         }
     };
 
-    Pq_mst_searcher s(g, g.vertices_count());
+    PqMstSearcher s(g, g.vertices_count());
     s.search();
-    return compose_path_tree(g, s.mst_.cbegin(), s.mst_.cend());
+    return compose_path_tree(g, s.m_mst.cbegin(), s.m_mst.cend());
 }
 
 template <typename G>
@@ -746,26 +749,27 @@ struct Spt {
     using edge_t = typename G::vertex_type::const_edges_iterator::entry_type;
     using weight_t = typename G::edge_type::value_type;
 
-    Array<weight_t> distances_;
-    Array<edge_t> spt_;
+    Array<weight_t> m_distance;
+    Array<edge_t> m_spt;
     Spt(const G& g, const vertex_t& vertex, weight_t max_weight)
-        : distances_(g.vertices_count(), max_weight), spt_(g.vertices_count()) {
-        for (auto& e : spt_) e.target_ = nullptr;
-        Vertex_heap<const vertex_t*, weight_t> heap(g.vertices_count(),
-                                                    distances_);
+        : m_distance(g.vertices_count(), max_weight),
+          m_spt(g.vertices_count()) {
+        for (auto& e : m_spt) e.m_target = nullptr;
+        VertexHeap<const vertex_t*, weight_t> heap(g.vertices_count(),
+                                                   m_distance);
         for (const vertex_t* v = g.cbegin(); v != g.cend(); ++v) heap.push(v);
-        distances_[vertex] = 0;
+        m_distance[vertex] = 0;
         heap.move_up(&vertex);
         while (!heap.empty()) {
             const vertex_t* v = heap.pop();
-            if (v != &vertex && !spt_[*v].target_) return;
+            if (v != &vertex && !m_spt[*v].m_target) return;
             for (auto e = v->cedges_begin(); e != v->cedges_end(); ++e) {
-                const vertex_t* w = e->target_;
-                weight_t distance = distances_[*v] + e->edge().weight();
-                if (distances_[*w] > distance) {
-                    distances_[*w] = distance;
+                const vertex_t* w = e->m_target;
+                weight_t distance = m_distance[*v] + e->edge().weight();
+                if (m_distance[*w] > distance) {
+                    m_distance[*w] = distance;
                     heap.move_up(w);
-                    spt_[*w] = *e;
+                    m_spt[*w] = *e;
                 }
             }
         }
@@ -773,62 +777,62 @@ struct Spt {
 };
 
 template <typename G>
-struct Full_spts {
+struct FullSpts {
     using vertex_t = typename G::vertex_type;
     using w_t = typename G::edge_type::value_type;
     using edge_t = typename G::vertex_type::const_edges_iterator::entry_type;
-    const G& g_;
-    Array<Array<w_t>> distances_;
-    Array<Array<edge_t>> spts_;
-    Full_spts(const G& g, w_t max_weight)
-        : g_(g), distances_(g.vertices_count()), spts_(g.vertices_count()) {
+    const G& m_g;
+    Array<Array<w_t>> m_distances;
+    Array<Array<edge_t>> m_spts;
+    FullSpts(const G& g, w_t max_weight)
+        : m_g(g), m_distances(g.vertices_count()), m_spts(g.vertices_count()) {
         size_t i = 0;
         for (auto v = g.cbegin(); v != g.cend(); ++v, ++i) {
             Spt spt(g, *v, max_weight);
-            distances_[i] = std::move(spt.distances_);
-            spts_[i] = std::move(spt.spt_);
+            m_distances[i] = std::move(spt.m_distance);
+            m_spts[i] = std::move(spt.m_spt);
         }
     }
-    w_t distance(size_t v, size_t w) { return distances_[v][w]; }
-    const edge_t& path(size_t v, size_t w) { return spts_[w][v]; }
-    const edge_t& path_r(size_t v, size_t w) { return spts_[v][w]; }
+    w_t distance(size_t v, size_t w) { return m_distances[v][w]; }
+    const edge_t& path(size_t v, size_t w) { return m_spts[w][v]; }
+    const edge_t& path_r(size_t v, size_t w) { return m_spts[v][w]; }
     std::pair<const vertex_t*, const vertex_t*> diameter() {
         size_t v_max = 0;
         size_t w_max = 0;
-        for (auto v = g_.cbegin(); v != g_.cend(); ++v)
-            for (auto w = g_.cbegin(); w != g_.cend(); ++w)
-                if (path(*v, *w).target_ &&
+        for (auto v = m_g.cbegin(); v != m_g.cend(); ++v)
+            for (auto w = m_g.cbegin(); w != m_g.cend(); ++w)
+                if (path(*v, *w).m_target &&
                     distance(*v, *w) > distance(v_max, w_max)) {
                     v_max = *v;
                     w_max = *w;
                 }
-        return {&g_[v_max], &g_[w_max]};
+        return {&m_g[v_max], &m_g[w_max]};
     }
 };
 
 template <typename G>
-struct Dag_lpt {
+struct DagLpt {
     using w_t = typename G::edge_type::value_type;
     using edge_t = typename G::vertex_type::const_edges_iterator::entry_type;
-    Array<w_t> distances_;
-    Array<edge_t> lpt_;
-    Dag_lpt(const G& g)
-        : distances_(g.vertices_count()), lpt_(g.vertices_count()) {
-        distances_.fill(0);
-        for (auto& e : lpt_) e.target_ = nullptr;
+    Array<w_t> m_distances;
+    Array<edge_t> m_lpt;
+    DagLpt(const G& g)
+        : m_distances(g.vertices_count()), m_lpt(g.vertices_count()) {
+        m_distances.fill(0);
+        for (auto& e : m_lpt) e.m_target = nullptr;
 
-        Topological_sorter sorter(g);
+        TopologicalSorter sorter(g);
         sorter.search();
-        auto& t_sorted = sorter.post_i_;
+        auto& t_sorted = sorter.m_post_i;
 
         for (auto i = t_sorted.crbegin(); i != t_sorted.crend(); ++i) {
             auto& v = g[*i];
             for (auto e = v.cedges_begin(); e != v.cedges_end(); ++e) {
                 auto& w = e->target();
-                auto distance = distances_[v] + e->edge().weight();
-                if (distances_[w] < distance) {
-                    distances_[w] = distance;
-                    lpt_[w] = *e;
+                auto distance = m_distances[v] + e->edge().weight();
+                if (m_distances[w] < distance) {
+                    m_distances[w] = distance;
+                    m_lpt[w] = *e;
                 }
             }
         }
@@ -836,46 +840,46 @@ struct Dag_lpt {
 };
 
 template <typename G>
-struct Dag_full_spts {
+struct DagFullSpts {
     using vertex_t = typename G::vertex_type;
     using w_t = typename G::edge_type::value_type;
     using edge_t = typename G::vertex_type::const_edges_iterator::entry_type;
     static auto empty_edge_it() {
         auto create = []() {
             edge_t e;
-            e.target_ = nullptr;
+            e.m_target = nullptr;
             return e;
         };
         static edge_t e(create());
         return e;
     }
-    const G& g_;
-    Array<Array<w_t>> distances_;
-    Array<Array<edge_t>> spts_;
-    Dag_full_spts(const G& g, w_t max_weight)
-        : g_(g),
-          distances_(g.vertices_count(),
-                     Array<w_t>(g.vertices_count(), max_weight)),
-          spts_(g.vertices_count(),
-                Array<edge_t>(g.vertices_count(), empty_edge_it())) {
+    const G& m_g;
+    Array<Array<w_t>> m_distances;
+    Array<Array<edge_t>> m_spts;
+    DagFullSpts(const G& g, w_t max_weight)
+        : m_g(g),
+          m_distances(g.vertices_count(),
+                      Array<w_t>(g.vertices_count(), max_weight)),
+          m_spts(g.vertices_count(),
+                 Array<edge_t>(g.vertices_count(), empty_edge_it())) {
         for (size_t i = 0; i < g.vertices_count(); ++i)
-            if (!spts_[i][i].target_) dfs(g[i]);
+            if (!m_spts[i][i].m_target) dfs(g[i]);
     }
     void dfs(const vertex_t& s) {
         for (auto e = s.cedges_begin(); e != s.cedges_end(); ++e) {
             auto& t = e->target();
             auto weight = e->edge().weight();
-            if (distances_[s][t] > weight) {
-                distances_[s][t] = weight;
-                spts_[s][t] = *e;
+            if (m_distances[s][t] > weight) {
+                m_distances[s][t] = weight;
+                m_spts[s][t] = *e;
             }
-            if (!spts_[t][t].target_) dfs(t);
-            for (auto it = g_.cbegin(); it != g_.cend(); ++it) {
+            if (!m_spts[t][t].m_target) dfs(t);
+            for (auto it = m_g.cbegin(); it != m_g.cend(); ++it) {
                 auto& i = *it;
-                auto distance = distances_[t][i] + weight;
-                if (spts_[t][i].target_ && distances_[s][i] > distance) {
-                    distances_[s][i] = distance;
-                    spts_[s][i] = *e;
+                auto distance = m_distances[t][i] + weight;
+                if (m_spts[t][i].m_target && m_distances[s][i] > distance) {
+                    m_distances[s][i] = distance;
+                    m_spts[s][i] = *e;
                 }
             }
         }
@@ -886,15 +890,15 @@ struct Dag_full_spts {
  * Bellman-Ford algorithm for negative cycles search.
  */
 template <typename G>
-Array_cycle find_negative_cycle(const G& g, const typename G::vertex_type& s,
-                                typename G::edge_type::value_type sentinel) {
+ArrayCycle find_negative_cycle(const G& g, const typename G::vertex_type& s,
+                               typename G::edge_type::value_type sentinel) {
     using vertex_type = typename G::vertex_type;
     using w_t = typename G::edge_type::value_type;
     using edge_t = typename G::vertex_type::const_edges_iterator::entry_type;
 
     Array<w_t> weights(g.vertices_count(), sentinel);
     Array<edge_t> spt(g.vertices_count());
-    for (auto& s : spt) s.target_ = nullptr;
+    for (auto& s : spt) s.m_target = nullptr;
 
     weights[s] = 0;
 
@@ -923,38 +927,37 @@ Array_cycle find_negative_cycle(const G& g, const typename G::vertex_type& s,
             }
     }
 
-    using cycle_g_type = Adjacency_lists<Graph_type::DIGRAPH, int>;
+    using cycle_g_type = AdjacencyLists<GraphType::DIGRAPH, int>;
     cycle_g_type gg;
     for (auto v = g.cbegin(); v != g.cend(); ++v) gg.create_vertex(*v);
 
     for (auto& s : spt)
-        if (s.target_) gg.add_edge(gg[s.source()], gg[s.target()]);
+        if (s.m_target) gg.add_edge(gg[s.source()], gg[s.target()]);
 
     struct Searcher
         : public Post_dfs_base<cycle_g_type, size_t, size_t, Searcher> {
         using Base = Post_dfs_base<cycle_g_type, size_t, size_t, Searcher>;
-        bool found_;
-        Array<size_t> cycle_;
+        bool m_found;
+        Array<size_t> m_cycle;
         Searcher(const cycle_g_type& g, w_t sentinel)
-            : Base(g), found_(false), cycle_(g.vertices_count(), sentinel) {}
+            : Base(g), m_found(false), m_cycle(g.vertices_count(), sentinel) {}
         void search_vertex(const typename Base::vertex_type& v) {
-            if (!found_) Base::search_vertex(v);
+            if (!m_found) Base::search_vertex(v);
         }
         void visit_edge(const typename Base::edge_type& e) {
             auto& v = e.source();
             auto& w = e.target();
-            if (!found_ && Base::pre_[w] < Base::pre_[v] &&
-                Base::post_.is_unset(w))
-                found_ = true;
-            if (found_) cycle_[v] = w;
+            if (!m_found && Base::m_pre[w] < Base::m_pre[v] &&
+                Base::m_post.is_unset(w))
+                m_found = true;
+            if (m_found) m_cycle[v] = w;
         }
     };
     Searcher searcher(gg, sentinel);
     searcher.search();
-    if (searcher.found_)
-        return {std::move(searcher.cycle_), static_cast<size_t>(sentinel)};
-    else
-        return {{}, static_cast<size_t>(sentinel)};
+    if (searcher.m_found)
+        return {std::move(searcher.m_cycle), static_cast<size_t>(sentinel)};
+    return {{}, static_cast<size_t>(sentinel)};
 }
 
 }  // namespace Graph

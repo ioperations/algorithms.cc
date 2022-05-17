@@ -12,7 +12,7 @@ namespace Rich_text {
 class Style {
    private:
     using code_type = unsigned char;
-    code_type code_;
+    code_type m_code;
 
     Style(code_type code);
 
@@ -24,7 +24,7 @@ class Style {
     static const Style bold();
     static const Style red_bg();
 
-    code_type code() const { return code_; }
+    code_type code() const { return m_code; }
 
     Style operator+(const Style& o) const;
     Style& operator+=(const Style& o);
@@ -39,29 +39,29 @@ class Style {
 template <typename T>
 class Entry {
    public:
-    T value_;
+    T value;
 
    private:
-    Style style_;
+    Style m_style;
 
    public:
     Entry() : Entry(T()) {}
     Entry(const T& value) : Entry(value, Style::normal()) {}
-    Entry(const T& value, const Style& style) : value_(value), style_(style) {}
-    bool operator<(const Entry& o) const { return value_ < o.value_; }
-    void set_style(const Style& style) { style_ = style; }
-    void add_style(const Style& style) { style_ += style; }
-    void remove_style(const Style& style) { style_ -= style; }
-    void remove_styles() { style_ = Style::normal(); }
+    Entry(const T& value, const Style& style) : value(value), m_style(style) {}
+    bool operator<(const Entry& o) const { return value < o.value; }
+    void set_style(const Style& style) { m_style = style; }
+    void add_style(const Style& style) { m_style += style; }
+    void remove_style(const Style& style) { m_style -= style; }
+    void remove_styles() { m_style = Style::normal(); }
 
     template <typename TT>
     friend std::ostream& operator<<(std::ostream& s, Entry<TT> r) {
 #ifdef unix
-        r.style_.apply_to(s);
+        r.m_style.apply_to(s);
 #endif
-        s << r.value_;
+        s << r.value;
 #ifdef unix
-        if (r.style_.code()) s << "\x1B[0m";
+        if (r.m_style.code()) s << "\x1B[0m";
 #endif
         return s;
     }
@@ -73,40 +73,40 @@ void remove_styles(It b, It e) {
 }
 
 template <typename T, std::size_t SZ>
-struct Styled_entries {
-    const Style style_;
-    const std::array<T*, SZ> entries_;
-    Styled_entries(const Style& style, std::array<T*, SZ>&& entries)
-        : style_(style), entries_(entries) {
-        Std_ext::for_each(entries_, [this](auto e) { e->add_style(style_); });
+struct StyledEntries {
+    const Style m_style;
+    const std::array<T*, SZ> m_entries;
+    StyledEntries(const Style& style, std::array<T*, SZ>&& entries)
+        : m_style(style), m_entries(entries) {
+        Std_ext::for_each(m_entries, [this](auto e) { e->add_style(m_style); });
     }
-    ~Styled_entries() {
-        Std_ext::for_each(entries_,
-                          [this](auto e) { e->remove_style(style_); });
+    ~StyledEntries() {
+        Std_ext::for_each(m_entries,
+                          [this](auto e) { e->remove_style(m_style); });
     }
 };
 
 template <typename... Args>
 inline auto styled_entries(const Style& style, Args&... args) {
-    return Styled_entries(style, Std_ext::make_pointers_array(args...));
+    return StyledEntries(style, Std_ext::make_pointers_array(args...));
 }
 
 template <typename It>
 class Sequence {
    private:
-    It begin_;
-    It end_;
+    It m_begin;
+    It m_end;
 
    public:
-    Sequence(const It& begin, const It& end) : begin_(begin), end_(end) {}
+    Sequence(const It& begin, const It& end) : m_begin(begin), m_end(end) {}
     void reset(const It& begin, const It& end) {
-        begin_ = begin;
-        end_ = end;
+        m_begin = begin;
+        m_end = end;
     }
     void print(std::ostream& stream) {
-        auto el = begin_;
+        auto el = m_begin;
         stream << *el;
-        for (++el; el != end_; ++el) {
+        for (++el; el != m_end; ++el) {
             stream << " " << *el;
         }
     }
@@ -121,7 +121,7 @@ class Sequence {
                                    SES&&... styled_entries) {
         print(stream);
     }
-    const It& begin() { return begin_; }
-    const It& end() { return end_; }
+    const It& begin() { return m_begin; }
+    const It& end() { return m_end; }
 };
 }  // namespace Rich_text

@@ -38,19 +38,19 @@ TreeNode* construct_binary_tree(std::vector<std::optional<int>>& data) {
         q.pop();
 
         if (!data[i].has_value()) {
-            cur->l_ = NULL;
+            cur->m_l = NULL;
         } else {
             TreeNode* left_n = new TreeNode(data[i].value());
-            cur->l_ = left_n;
+            cur->m_l = left_n;
             q.push(left_n);
         }
         i++;
 
         if (!data[i].has_value()) {
-            cur->r_ = NULL;
+            cur->m_r = NULL;
         } else {
             TreeNode* right_n = new TreeNode(data[i].value());
-            cur->r_ = right_n;
+            cur->m_r = right_n;
             q.push(right_n);
         }
         i++;
@@ -62,10 +62,10 @@ TreeNode* construct_binary_tree(std::vector<std::optional<int>>& data) {
 // InOrder fashion
 void in_order(TreeNode* root, std::vector<string>& vec) {
     if (root != nullptr) {
-        in_order(root->l_, vec);
-        vec.push_back(std::to_string(root->value_));
+        in_order(root->m_l, vec);
+        vec.push_back(std::to_string(root->m_value));
 
-        in_order(root->r_, vec);
+        in_order(root->m_r, vec);
     }
 }
 
@@ -79,9 +79,9 @@ void bfs_search(TreeNode* root, std::vector<int>& vec) {
         q.pop();
 
         if (tmp != nullptr) {
-            q.push(tmp->l_);
-            q.push(tmp->r_);
-            vec.push_back(tmp->value_);
+            q.push(tmp->m_l);
+            q.push(tmp->m_r);
+            vec.push_back(tmp->m_value);
         }
     }
 }
@@ -89,8 +89,8 @@ void bfs_search(TreeNode* root, std::vector<int>& vec) {
 void free_tree_node(TreeNode* root) {
     if (root == nullptr) return;
 
-    free_tree_node(root->l_);
-    free_tree_node(root->r_);
+    free_tree_node(root->m_l);
+    free_tree_node(root->m_r);
 
     delete root;
 }

@@ -4,51 +4,51 @@ template <typename T>
 class Stack {
    private:
     struct Node {
-        Node* next_;
-        T data_;
+        Node* m_next;
+        T m_data;
         template <typename TT>
         Node(Node* next, TT&& data)
-            : next_(next), data_(std::forward<TT>(data)) {}
+            : m_next(next), m_data(std::forward<TT>(data)) {}
     };
-    Node* head_;
+    Node* m_head;
     template <typename TT>
     friend std::ostream& operator<<(std::ostream& stream, Stack<TT>& stack);
 
    public:
-    Stack() : head_(nullptr) {}
+    Stack() : m_head(nullptr) {}
     Stack(const Stack&) = delete;
     Stack& operator=(const Stack&) = delete;
     ~Stack() {
-        for (Node* node = head_; node;) {
+        for (Node* node = m_head; node;) {
             Node* previous = node;
-            node = node->next_;
+            node = node->m_next;
             delete previous;
         }
     }
     template <typename TT>
     void push(TT&& data) {
-        head_ = new Node(head_, std::forward<TT>(data));
+        m_head = new Node(m_head, std::forward<TT>(data));
     }
     template <typename... Args>
     void emplace(Args&&... args) {
-        head_ = new Node(head_, T(std::forward<Args>(args)...));
+        m_head = new Node(m_head, T(std::forward<Args>(args)...));
     }
     T pop() {
-        Node* node = head_;
-        head_ = head_->next_;
-        T data = std::move(node->data_);
-        node->next_ = nullptr;
+        Node* node = m_head;
+        m_head = m_head->m_next;
+        T data = std::move(node->m_data);
+        node->m_next = nullptr;
         delete node;
         return data;
     }
-    bool empty() { return head_ == nullptr; }
+    bool empty() { return m_head == nullptr; }
 };
 
 template <typename T>
 std::ostream& operator<<(std::ostream& stream, Stack<T>& stack) {
     stream << "[";
-    for (auto node = stack.head_; node != nullptr; node = node->next_) {
-        if (node != stack.head_) stream << ", ";
+    for (auto node = stack.m_head; node != nullptr; node = node->next_) {
+        if (node != stack.m_head) stream << ", ";
         stream << node->data_;
     }
     stream << "]";

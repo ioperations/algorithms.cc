@@ -7,58 +7,56 @@
 #include "tree_printer.h"
 
 template <typename T, typename C>
-class Base_tree_node {
+class BaseTreeNode {
    private:
-    T value_;
-    C children_;
+    T m_value;
+    C m_children;
 
    public:
-    Base_tree_node(T data) : value_(data) {}
-    Base_tree_node(T data, C&& children)
-        : value_(data), children_(std::move(children)) {}
-    Base_tree_node() = default;
+    BaseTreeNode(T data) : m_value(data) {}
+    BaseTreeNode(T data, C&& children)
+        : m_value(data), m_children(std::move(children)) {}
+    BaseTreeNode() = default;
 
-    Base_tree_node(const Base_tree_node&) = delete;
-    Base_tree_node& operator=(const Base_tree_node&) = delete;
+    BaseTreeNode(const BaseTreeNode&) = delete;
+    BaseTreeNode& operator=(const BaseTreeNode&) = delete;
 
-    Base_tree_node(Base_tree_node&& o)
-        : value_(std::move(o.value_)), children_(std::move(o.children_)) {}
-    Base_tree_node& operator=(Base_tree_node&& o) {
-        std::swap(value_, o.value_);
-        std::swap(children_, o.children_);
+    BaseTreeNode(BaseTreeNode&& o)
+        : m_value(std::move(o.m_value)), m_children(std::move(o.m_children)) {}
+    BaseTreeNode& operator=(BaseTreeNode&& o) {
+        std::swap(m_value, o.m_value);
+        std::swap(m_children, o.m_children);
         return *this;
     }
 
-    T value() const { return value_; }
-    const C& children() const { return children_; }
-    C& children() { return children_; }
+    T value() const { return m_value; }
+    const C& children() const { return m_children; }
+    C& children() { return m_children; }
 };
 
 template <typename T>
-class Array_tree_node : public Base_tree_node<T, Array<Array_tree_node<T>>> {
+class ArrayTreeNode : public BaseTreeNode<T, Array<ArrayTreeNode<T>>> {
    public:
-    using Base = Base_tree_node<T, Array<Array_tree_node<T>>>;
-    Array_tree_node(T data, Array<Array_tree_node>&& children)
+    using Base = BaseTreeNode<T, Array<ArrayTreeNode<T>>>;
+    ArrayTreeNode(T data, Array<ArrayTreeNode>&& children)
         : Base(data, std::move(children)) {}
-    Array_tree_node(T data) : Base(data) {}
-    Array_tree_node() = default;
+    ArrayTreeNode(T data) : Base(data) {}
+    ArrayTreeNode() = default;
 };
 
 template <typename T>
-class Forward_list_tree_node
-    : public Base_tree_node<T, Forward_list<Forward_list_tree_node<T>>> {
+class ForwardListTreeNode
+    : public BaseTreeNode<T, Forward_list<ForwardListTreeNode<T>>> {
    public:
-    using Base = Base_tree_node<T, Forward_list<Forward_list_tree_node<T>>>;
-    Forward_list_tree_node(T data,
-                           Forward_list<Forward_list_tree_node>&& children)
+    using Base = BaseTreeNode<T, Forward_list<ForwardListTreeNode<T>>>;
+    ForwardListTreeNode(T data, Forward_list<ForwardListTreeNode>&& children)
         : Base(data, std::move(children)) {}
-    Forward_list_tree_node(T data) : Base(data) {}
-    Forward_list_tree_node() = default;
+    ForwardListTreeNode(T data) : Base(data) {}
+    ForwardListTreeNode() = default;
 };
 
 template <typename T, typename C>
-std::ostream& operator<<(std::ostream& stream,
-                         const Base_tree_node<T, C>& node) {
-    Tree_printer<Base_tree_node<T, C>>::default_instance().print(node, stream);
+std::ostream& operator<<(std::ostream& stream, const BaseTreeNode<T, C>& node) {
+    Tree_printer<BaseTreeNode<T, C>>::default_instance().print(node, stream);
     return stream;
 }

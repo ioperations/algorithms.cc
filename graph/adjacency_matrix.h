@@ -12,111 +12,111 @@ namespace Adjacency_matrix_ns {
 template <typename T>
 class Edge {
    private:
-    T weight_;
+    T m_weight;
 
    public:
     static constexpr T empty_value() { return -1; }
     using value_type = T;
-    Edge() : weight_(empty_value()) {}
-    Edge(const T& t) : weight_(t) {}
-    T weight() const { return weight_; }
-    void set_weight(const T& weight) { weight_ = weight; }
-    bool exists() const { return weight_ != empty_value(); }
+    Edge() : m_weight(empty_value()) {}
+    Edge(const T& t) : m_weight(t) {}
+    T weight() const { return m_weight; }
+    void set_weight(const T& weight) { m_weight = weight; }
+    bool exists() const { return m_weight != empty_value(); }
     operator bool() const { return exists(); }
 };
 
 template <>
-bool Edge<bool>::empty_value() {
+constexpr bool Edge<bool>::empty_value() {
     return false;
 }
 
 template <typename V, typename E>
-class Adjacency_matrix_base {
+class AdjacencyMatrixBase {
    private:
     class Vertex;
     friend class Vertex;
-    Vector<Vertex> vertices_;
+    Vector<Vertex> m_vertices;
     void update_vertices_this_link() {
-        for (auto& v : vertices_) v.matrix_ = this;
+        for (auto& v : m_vertices) v.m_matrix = this;
     }
 
    protected:
     using vertex_type = Vertex;
-    Vector<Vector<E>> edges_;
+    Vector<Vector<E>> m_edges;
 
    public:
     using value_type = V;
     using edge_type = E;
 
-    Adjacency_matrix_base() : edges_(100) {
-        for (auto& l : edges_) l = Vector<E>(100);
+    AdjacencyMatrixBase() : m_edges(100) {
+        for (auto& l : m_edges) l = Vector<E>(100);
     }
 
-    Adjacency_matrix_base(const Adjacency_matrix_base& o)
-        : vertices_(o.vertices_), edges_(o.edges_) {
+    AdjacencyMatrixBase(const AdjacencyMatrixBase& o)
+        : m_vertices(o.m_vertices), m_edges(o.m_edges) {
         update_vertices_this_link();
     }
-    Adjacency_matrix_base& operator=(const Adjacency_matrix_base& o) {
+    AdjacencyMatrixBase& operator=(const AdjacencyMatrixBase& o) {
         auto copy = o;
         std::swap(*this, copy);
         return *this;
     }
-    Adjacency_matrix_base(Adjacency_matrix_base&& o)
-        : vertices_(std::move(o.vertices_)), edges_(std::move(o.edges_)) {
+    AdjacencyMatrixBase(AdjacencyMatrixBase&& o)
+        : m_vertices(std::move(o.m_vertices)), m_edges(std::move(o.m_edges)) {
         update_vertices_this_link();
     }
-    Adjacency_matrix_base& operator=(Adjacency_matrix_base&& o) {
-        std::swap(vertices_, o.vertices_);
-        std::swap(edges_, o.edges_);
+    AdjacencyMatrixBase& operator=(AdjacencyMatrixBase&& o) {
+        std::swap(m_vertices, o.m_vertices);
+        std::swap(m_edges, o.m_edges);
         update_vertices_this_link();
         return *this;
     }
 
     vertex_type& create_vertex(const V& t) {
-        vertices_.emplace_back(t, this);
-        return vertices_[vertices_.size() - 1];
+        m_vertices.emplace_back(t, this);
+        return m_vertices[m_vertices.size() - 1];
     }
-    size_t vertices_count() const { return vertices_.size(); }
+    size_t vertices_count() const { return m_vertices.size(); }
 
     const vertex_type& operator[](size_t index) const {
-        return vertices_[index];
+        return m_vertices[index];
     }
-    vertex_type& operator[](size_t index) { return vertices_[index]; }
+    vertex_type& operator[](size_t index) { return m_vertices[index]; }
     bool has_edge(const vertex_type& v, const vertex_type& w) {
-        return edges_[v][w];
+        return m_edges[v][w];
     }
     const E* get_edge(const vertex_type& v, const vertex_type& w) const {
-        auto& edge = edges_[v][w];
+        auto& edge = m_edges[v][w];
         return edge.exists() ? &edge : nullptr;
     }
     E* get_edge(const vertex_type& v, const vertex_type& w) {
         return const_cast<E*>(
-            static_cast<const Adjacency_matrix_base*>(this)->get_edge(v, w));
+            static_cast<const AdjacencyMatrixBase*>(this)->get_edge(v, w));
     }
 
-    auto begin() { return vertices_.begin(); }
-    auto end() { return vertices_.end(); }
-    auto cbegin() const { return vertices_.cbegin(); }
-    auto cend() const { return vertices_.cend(); }
-    auto crbegin() const { return vertices_.crbegin(); }
-    auto crend() const { return vertices_.crend(); }
+    auto begin() { return m_vertices.begin(); }
+    auto end() { return m_vertices.end(); }
+    auto cbegin() const { return m_vertices.cbegin(); }
+    auto cend() const { return m_vertices.cend(); }
+    auto crbegin() const { return m_vertices.crbegin(); }
+    auto crend() const { return m_vertices.crend(); }
 
     void print_internal(std::ostream& stream) const {
-        auto size = vertices_.size();
+        auto size = m_vertices.size();
         for (size_t r = 0; r < size; ++r) {
             for (size_t c = 0; c < size; ++c) {
-                stream << edges_[r][c] << " ";
+                stream << m_edges[r][c] << " ";
             }
             stream << std::endl;
         }
     }
 };
 
-template <typename D, Graph_type graph_type, typename V, typename E,
+template <typename D, GraphType graph_type, typename V, typename E,
           typename ET = typename E::value_type>
-class Edges_handler : public Adjacency_matrix_base<V, E> {
+class EdgesHandler : public AdjacencyMatrixBase<V, E> {
    public:
-    using vertex_type = typename Adjacency_matrix_base<V, E>::vertex_type;
+    using vertex_type = typename AdjacencyMatrixBase<V, E>::vertex_type;
     D& add_edge(const vertex_type& v1, const vertex_type& v2, const E& e) {
         auto& d = *static_cast<D*>(this);
         d.set_edge(v1, v2, e);
@@ -127,11 +127,11 @@ class Edges_handler : public Adjacency_matrix_base<V, E> {
     }
 };
 
-template <typename D, Graph_type graph_type, typename V, typename E>
-class Edges_handler<D, graph_type, V, E, bool>
-    : public Adjacency_matrix_base<V, E> {
+template <typename D, GraphType graph_type, typename V, typename E>
+class EdgesHandler<D, graph_type, V, E, bool>
+    : public AdjacencyMatrixBase<V, E> {
    public:
-    using vertex_type = typename Adjacency_matrix_base<V, E>::vertex_type;
+    using vertex_type = typename AdjacencyMatrixBase<V, E>::vertex_type;
     D& add_edge(const vertex_type& v1, const vertex_type& v2) {
         auto& d = *static_cast<D*>(this);
         d.set_edge(v1, v2, true);
@@ -142,51 +142,51 @@ class Edges_handler<D, graph_type, V, E, bool>
     }
 };
 
-template <Graph_type graph_type, typename V, typename E,
+template <GraphType graph_type, typename V, typename E,
           typename ET = typename E::value_type>
-class Adjacency_matrix
-    : public Edges_handler<Adjacency_matrix<graph_type, V, E, ET>, graph_type,
-                           V, E, ET> {
+class AdjacencyMatrix
+    : public EdgesHandler<AdjacencyMatrix<graph_type, V, E, ET>, graph_type, V,
+                          E, ET> {
    public:
-    using Base = Edges_handler<Adjacency_matrix<graph_type, V, E, ET>,
-                               graph_type, V, E, ET>;
+    using Base = EdgesHandler<AdjacencyMatrix<graph_type, V, E, ET>, graph_type,
+                              V, E, ET>;
     using vertex_type = typename Base::vertex_type;
     void set_edge(const vertex_type& v1, const vertex_type& v2, const E& e) {
-        Base::edges_[v1][v2] = e;
-        Base::edges_[v2][v1] = e;
+        Base::m_edges[v1][v2] = e;
+        Base::m_edges[v2][v1] = e;
     }
 };
 
 template <typename V, typename E, typename ET>
-class Adjacency_matrix<Graph_type::DIGRAPH, V, E, ET>
-    : public Edges_handler<Adjacency_matrix<Graph_type::DIGRAPH, V, E, ET>,
-                           Graph_type::DIGRAPH, V, E, ET> {
+class AdjacencyMatrix<GraphType::DIGRAPH, V, E, ET>
+    : public EdgesHandler<AdjacencyMatrix<GraphType::DIGRAPH, V, E, ET>,
+                          GraphType::DIGRAPH, V, E, ET> {
    public:
-    using Base = Edges_handler<Adjacency_matrix<Graph_type::DIGRAPH, V, E, ET>,
-                               Graph_type::DIGRAPH, V, E, ET>;
+    using Base = EdgesHandler<AdjacencyMatrix<GraphType::DIGRAPH, V, E, ET>,
+                              GraphType::DIGRAPH, V, E, ET>;
     using vertex_type = typename Base::vertex_type;
     void set_edge(const vertex_type& v1, const vertex_type& v2, const E& e) {
-        Base::edges_[v1][v2] = e;
+        Base::m_edges[v1][v2] = e;
     }
 };
 
 template <typename V, typename E>
-class Adjacency_matrix_base<V, E>::Vertex : public Vertex_base<V> {
+class AdjacencyMatrixBase<V, E>::Vertex : public VertexBase<V> {
    private:
     template <bool T_is_const>
     class Iterator;
     template <bool T_is_const>
     class Edges_iterator;
-    friend class Adjacency_matrix_base;
+    friend AdjacencyMatrixBase;  // Adjacency_matrix_base;
     friend class Vector<Vertex>;
 
-    Adjacency_matrix_base* matrix_;
+    AdjacencyMatrixBase* m_matrix;
 
-    Vertex(const V& value, Adjacency_matrix_base* matrix)
-        : Vertex_base<V>(value), matrix_(matrix) {}
-    Vertex() : matrix_(nullptr) {}
+    Vertex(const V& value, AdjacencyMatrixBase* matrix)
+        : VertexBase<V>(value), m_matrix(matrix) {}
+    Vertex() : m_matrix(nullptr) {}
 
-    Vector<E>& edges() const { return matrix_->edges_[*this]; }
+    Vector<E>& edges() const { return m_matrix->m_edges[*this]; }
     template <typename It, typename VV>
     static It create_begin_it(VV* vertex) {
         return It(vertex, vertex->edges().begin()).move_to_non_empty();
@@ -197,7 +197,7 @@ class Adjacency_matrix_base<V, E>::Vertex : public Vertex_base<V> {
     }
 
    public:
-    size_t index() const { return this - matrix_->vertices_.cbegin(); }
+    size_t index() const { return this - m_matrix->m_vertices.cbegin(); }
     operator size_t() const { return index(); }
 
     using iterator = Iterator<false>;
@@ -222,21 +222,21 @@ class Adjacency_matrix_base<V, E>::Vertex : public Vertex_base<V> {
 
 template <typename V, typename E>
 template <bool T_is_const>
-class Adjacency_matrix_base<V, E>::Vertex::Iterator {
+class AdjacencyMatrixBase<V, E>::Vertex::Iterator {
    private:
     using value_type = std::conditional_t<T_is_const, const Vertex, Vertex>;
     using vertices_type =
         std::conditional_t<T_is_const, const Vector<Vertex>, Vector<Vertex>>;
     friend class Vertex;
     Iterator& move_to_non_empty() {
-        for (; it_ != edges_.end() && !*it_; ++it_)
+        for (; m_it != m_edges.end() && !*m_it; ++m_it)
             ;
         return *this;
     }
     Iterator(value_type* vertex, const typename Vector<E>::iterator& it)
-        : vertices_(vertex->matrix_->vertices_),
-          edges_(vertex->matrix_->edges_[vertex->index()]),
-          it_(it) {}
+        : m_vertices(vertex->m_matrix->m_vertices),
+          m_edges(vertex->m_matrix->m_edges[vertex->index()]),
+          m_it(it) {}
     static Iterator create_begin_it(value_type* vertex) {
         return Iterator(vertex, vertex->edges().begin()).move_to_non_empty();
     }
@@ -245,62 +245,62 @@ class Adjacency_matrix_base<V, E>::Vertex::Iterator {
     }
 
    protected:
-    vertices_type& vertices_;
-    Vector<E>& edges_;
-    typename Vector<E>::iterator it_;
+    vertices_type& m_vertices;
+    Vector<E>& m_edges;
+    typename Vector<E>::iterator m_it;
 
    public:
     Iterator& operator++() {
-        ++it_;
+        ++m_it;
         move_to_non_empty();
         return *this;
     }
-    bool operator==(const Iterator& o) const { return it_ == o.it_; }
+    bool operator==(const Iterator& o) const { return m_it == o.m_it; }
     bool operator!=(const Iterator& o) const { return !operator==(o); }
-    value_type& operator*() const { return vertices_[it_ - edges_.begin()]; }
+    value_type& operator*() const { return m_vertices[m_it - m_edges.begin()]; }
     value_type* operator->() const { return &operator*(); }
 };
 
 template <typename V, typename E>
 template <bool T_is_const>
-class Adjacency_matrix_base<V, E>::Vertex::Edges_iterator
+class AdjacencyMatrixBase<V, E>::Vertex::Edges_iterator
     : public Iterator<T_is_const> {
    public:
-    using entry_type = Edges_iterator_entry<Vertex, E, T_is_const>;
+    using entry_type = EdgesIteratorEntry<Vertex, E, T_is_const>;
 
    private:
     using Base = Iterator<T_is_const>;
     using vertex_type = std::conditional_t<T_is_const, const Vertex, Vertex>;
     friend class Vertex;
 
-    entry_type entry_;
+    entry_type m_entry;
 
     Edges_iterator(vertex_type* vertex, const typename Vector<E>::iterator& it)
-        : Base(vertex, it), entry_(vertex) {}
+        : Base(vertex, it), m_entry(vertex) {}
     Edges_iterator& move_to_non_empty() {
         Base::move_to_non_empty();
         update_entry();
         return *this;
     }
     template <typename VV, typename EE, bool TT_is_const, typename It>
-    static void update_edge_p(Edges_iterator_entry<VV, EE, TT_is_const>& entry,
+    static void update_edge_p(EdgesIteratorEntry<VV, EE, TT_is_const>& entry,
                               const It& it) {
-        entry.edge_ = &*it;
+        entry.m_edge = &*it;
     }
     template <typename VV, bool TT_is_const, typename It>
     static void update_edge_p(
-        Edges_iterator_entry<VV, Edge<bool>, TT_is_const>& entry,
-        const It& it) {}
+        EdgesIteratorEntry<VV, Edge<bool>, TT_is_const>& entry, const It& it) {}
     void update_entry() {
-        if (Base::it_ != Base::edges_.end()) {
-            entry_.target_ = &Base::vertices_[Base::it_ - Base::edges_.begin()];
-            update_edge_p(entry_, Base::it_);
+        if (Base::m_it != Base::m_edges.end()) {
+            m_entry.m_target =
+                &Base::m_vertices[Base::m_it - Base::m_edges.begin()];
+            update_edge_p(m_entry, Base::m_it);
         }
     }
 
    public:
-    const entry_type& operator*() const { return entry_; }
-    const entry_type* operator->() const { return &entry_; }
+    const entry_type& operator*() const { return m_entry; }
+    const entry_type* operator->() const { return &m_entry; }
     Edges_iterator& operator++() {
         Base::operator++();
         update_entry();
@@ -310,14 +310,13 @@ class Adjacency_matrix_base<V, E>::Vertex::Edges_iterator
 
 }  // namespace Adjacency_matrix_ns
 
-template <Graph_type graph_type, typename V, typename TE = bool,
+template <GraphType graph_type, typename V, typename TE = bool,
           typename E = Adjacency_matrix_ns::Edge<TE>>
-using Adjacency_matrix =
-    Adjacency_matrix_ns::Adjacency_matrix<graph_type, V, E>;
+using AdjacencyMatrix = Adjacency_matrix_ns::AdjacencyMatrix<graph_type, V, E>;
 
-template <Graph_type graph_type, typename V, typename E>
+template <GraphType graph_type, typename V, typename E>
 void print_representation(
-    const Adjacency_matrix_ns::Adjacency_matrix<graph_type, V, E>& g,
+    const Adjacency_matrix_ns::AdjacencyMatrix<graph_type, V, E>& g,
     std::ostream& stream) {
     g.print_internal(stream);
 }

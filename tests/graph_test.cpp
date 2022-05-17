@@ -118,13 +118,13 @@ void bool_edges_test(bool digraph = false) {
 }
 
 TEST(Graph_test, base) {
-    weighted_graphs_test<Adjacency_lists<Graph_type::GRAPH, int, int>>();
-    weighted_graphs_test<Adjacency_lists<Graph_type::DIGRAPH, int, int>>(true);
-    weighted_graphs_test<Adjacency_matrix<Graph_type::GRAPH, int, int>>();
-    weighted_graphs_test<Adjacency_matrix<Graph_type::DIGRAPH, int, int>>(true);
+    weighted_graphs_test<AdjacencyLists<GraphType::GRAPH, int, int>>();
+    weighted_graphs_test<AdjacencyLists<GraphType::DIGRAPH, int, int>>(true);
+    weighted_graphs_test<AdjacencyMatrix<GraphType::GRAPH, int, int>>();
+    weighted_graphs_test<AdjacencyMatrix<GraphType::DIGRAPH, int, int>>(true);
 
-    bool_edges_test<Adjacency_lists<Graph_type::GRAPH, int>>();
-    bool_edges_test<Adjacency_lists<Graph_type::DIGRAPH, int>>(true);
-    bool_edges_test<Adjacency_matrix<Graph_type::GRAPH, int>>();
-    bool_edges_test<Adjacency_matrix<Graph_type::DIGRAPH, int>>(true);
+    bool_edges_test<AdjacencyLists<GraphType::GRAPH, int>>();
+    bool_edges_test<AdjacencyLists<GraphType::DIGRAPH, int>>(true);
+    bool_edges_test<AdjacencyMatrix<GraphType::GRAPH, int>>();
+    bool_edges_test<AdjacencyMatrix<GraphType::DIGRAPH, int>>(true);
 }

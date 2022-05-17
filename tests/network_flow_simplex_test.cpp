@@ -8,7 +8,7 @@
 
 using namespace Graph::Network_flow_ns;
 
-using graph_type = Graph::Network_flow_with_cost<int, int>;
+using graph_type = Graph::NetworkFlowWithCost<int, int>;
 using vertex_type = typename graph_type::vertex_type;
 using link_type = typename graph_type::link_type;
 using tree_type = Parent_link_array_tree<link_type>;
@@ -18,13 +18,13 @@ void add_link(graph_type& g, tree_type& tree, vertex_type& v, vertex_type& w) {
 }
 
 struct Replace_test_case {
-    graph_type g_;
-    tree_type tree_;
+    graph_type m_g;
+    tree_type m_tree;
     Replace_test_case(graph_type&& g,
                       Forward_list<std::pair<size_t, size_t>>&& links_map)
-        : g_(std::move(g)), tree_(g_.vertices_count()) {
+        : m_g(std::move(g)), m_tree(m_g.vertices_count()) {
         for (auto e : links_map)
-            tree_[e.second] = g_.get_edge(e.first, e.second)->link();
+            m_tree[e.second] = m_g.get_edge(e.first, e.second)->link();
     }
 };
 
@@ -35,7 +35,7 @@ TEST(Parent_link_array_tree, get_vertex_potential) {
 
     std::stringstream ss;
     for (int i = 0; i < 6; ++i)
-        ss << t.tree_.get_vertex_potential(t.g_[i]) << " ";
+        ss << t.m_tree.get_vertex_potential(t.m_g[i]) << " ";
     ASSERT_EQ("0 -97 -1 -98 -98 -100 ", ss.str());
 }
 
@@ -71,7 +71,7 @@ TEST(Parent_link_array_tree, find_lca_2) {
     auto g = Graph::Samples::simplex_sample();
     g.add_edge(g[5], g[0], 200, 150, 100);
     Replace_test_case t(std::move(g), {{5, 0}, {3, 1}, {0, 2}, {2, 3}, {1, 4}});
-    ASSERT_EQ(2, t.tree_.find_lca(t.g_.get_link(2, 4))->index());
+    ASSERT_EQ(2, t.m_tree.find_lca(t.m_g.get_link(2, 4))->index());
 }
 
 void replace_tree_link(tree_type& tree, link_type* old_link,
@@ -140,24 +140,24 @@ TEST(Parent_link_array_tree, replace_2) {
 TEST(Parent_link_array_tree, replace_3) {
     auto g = Graph::Samples::simplex_sample();
     Replace_test_case t(std::move(g), {{1, 0}, {4, 1}, {0, 2}, {2, 3}, {5, 4}});
-    replace_tree_link(t.tree_, t.g_.get_link(1, 4), t.g_.get_link(2, 4));
-    ASSERT_EQ("2-0, 0-1, 4-2, 2-3, 5-4, --5", stringify(t.tree_));
+    replace_tree_link(t.m_tree, t.m_g.get_link(1, 4), t.m_g.get_link(2, 4));
+    ASSERT_EQ("2-0, 0-1, 4-2, 2-3, 5-4, --5", stringify(t.m_tree));
 }
 
 TEST(Parent_link_array_tree, replace_4) {
     auto g = Graph::Samples::simplex_sample();
     g.add_edge(g[5], g[0], 200, 150, 100);
     Replace_test_case t(std::move(g), {{5, 0}, {3, 1}, {0, 2}, {5, 3}, {1, 4}});
-    replace_tree_link(t.tree_, t.g_.get_link(3, 5), t.g_.get_link(4, 5));
-    ASSERT_EQ("5-0, 4-1, 0-2, 1-3, 5-4, --5", stringify(t.tree_));
+    replace_tree_link(t.m_tree, t.m_g.get_link(3, 5), t.m_g.get_link(4, 5));
+    ASSERT_EQ("5-0, 4-1, 0-2, 1-3, 5-4, --5", stringify(t.m_tree));
 }
 
 TEST(Parent_link_array_tree, replace_5) {
     auto g = Graph::Samples::simplex_sample();
     g.add_edge(g[0], g[5], 200, 150, 100);
     Replace_test_case t(std::move(g), {{3, 1}, {0, 2}, {5, 3}, {1, 4}, {0, 5}});
-    replace_tree_link(t.tree_, t.g_.get_link(3, 5), t.g_.get_link(4, 5));
-    ASSERT_EQ("--0, 4-1, 0-2, 1-3, 5-4, 0-5", stringify(t.tree_));
+    replace_tree_link(t.m_tree, t.m_g.get_link(3, 5), t.m_g.get_link(4, 5));
+    ASSERT_EQ("--0, 4-1, 0-2, 1-3, 5-4, 0-5", stringify(t.m_tree));
 }
 
 TEST(Parent_link_array_tree, simplex) {

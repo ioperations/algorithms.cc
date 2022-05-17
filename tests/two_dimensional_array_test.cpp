@@ -1,11 +1,12 @@
-#include "gtest/gtest.h"
-
 #include "two_dimensional_array.h"
 
 #include <iostream>
 
-template<typename T>
-std::ostream& operator<<(std::ostream& stream, const Two_dimensional_array<T>& array) {
+#include "gtest/gtest.h"
+
+template <typename T>
+std::ostream& operator<<(std::ostream& stream,
+                         const Two_dimensional_array<T>& array) {
     stream << std::endl;
     for (auto r = array.cbegin(); r != array.cend(); ++r) {
         for (auto e = r->begin(); e != r->end(); ++e) {
@@ -17,7 +18,7 @@ std::ostream& operator<<(std::ostream& stream, const Two_dimensional_array<T>& a
     return stream;
 }
 
-template<typename T>
+template <typename T>
 std::string to_string(const T& t) {
     std::stringstream ss;
     ss << t;
@@ -25,14 +26,12 @@ std::string to_string(const T& t) {
 }
 
 TEST(Two_dimensional_array_test, base) {
-
     {
         Two_dimensional_array<int> array(5, 5);
 
         int i = -1;
         for (auto row : array)
-            for (auto& el : row)
-                el = ++i;
+            for (auto& el : row) el = ++i;
 
         const char* expected = R"(
   0   1   2   3   4 
@@ -68,6 +67,7 @@ TEST(Two_dimensional_array_test, base) {
   0   0   0   0   0 
   0   0   0   0   0 
   0   0   0   0   0 
-)", to_string(array));
+)",
+                  to_string(array));
     }
 }

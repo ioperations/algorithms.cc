@@ -64,8 +64,8 @@ void test_graph() {
 }
 
 TEST(Graphs_algorithms_test, graph) {
-    test_graph<Adjacency_matrix<Graph_type::GRAPH, int>>();
-    test_graph<Adjacency_lists<Graph_type::GRAPH, int>>();
+    test_graph<AdjacencyMatrix<GraphType::GRAPH, int>>();
+    test_graph<AdjacencyLists<GraphType::GRAPH, int>>();
 }
 
 template <typename G>
@@ -191,11 +191,11 @@ void test_digraph() {
 }
 
 TEST(Graphs_algorithms_test, digraph) {
-    test_digraph<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
-    test_digraph<Adjacency_lists<Graph_type::DIGRAPH, int>>();
+    test_digraph<AdjacencyMatrix<GraphType::DIGRAPH, int>>();
+    test_digraph<AdjacencyLists<GraphType::DIGRAPH, int>>();
 
     auto g =
-        Samples::digraph_sample<Adjacency_matrix<Graph_type::DIGRAPH, int>>();
+        Samples::digraph_sample<AdjacencyMatrix<GraphType::DIGRAPH, int>>();
     auto transitive_closure = warshall_transitive_closure(g);
     std::stringstream ss;
     print_representation(transitive_closure, reset_with_new_line(ss));
@@ -232,7 +232,7 @@ void test_weighted_graph() {
 
     g = Samples::spt_sample<G>();
     Spt spt(g, g[0], g.vertices_count());
-    trace_dfs(compose_path_tree(g, spt.spt_.cbegin() + 1, spt.spt_.cend()),
+    trace_dfs(compose_path_tree(g, spt.m_spt.cbegin() + 1, spt.m_spt.cend()),
               reset_with_new_line(ss));
     ASSERT_EQ(R"(
 0
@@ -245,13 +245,13 @@ void test_weighted_graph() {
 )",
               ss.str());
 
-    Full_spts full_spts(g, 1);
+    FullSpts full_spts(g, 1);
     auto diameter = full_spts.diameter();
 
     reset(ss);
     ss << *diameter.first;
     for (auto v = diameter.first; v != diameter.second;) {
-        v = full_spts.path(*v, *diameter.second).source_;
+        v = full_spts.path(*v, *diameter.second).m_source;
         ss << " - " << *v;
     }
     ASSERT_EQ("1 - 0 - 3", ss.str());
@@ -259,10 +259,10 @@ void test_weighted_graph() {
 }
 
 TEST(Graphs_algorithms_test, weighted_graph) {
-    test_weighted_graph<Adjacency_matrix<Graph_type::GRAPH, int, double>>();
-    test_weighted_graph<Adjacency_lists<Graph_type::GRAPH, int, double>>();
+    test_weighted_graph<AdjacencyMatrix<GraphType::GRAPH, int, double>>();
+    test_weighted_graph<AdjacencyLists<GraphType::GRAPH, int, double>>();
 
-    Builder<Adjacency_lists<Graph_type::DIGRAPH, int, double>> b;
+    Builder<AdjacencyLists<GraphType::DIGRAPH, int, double>> b;
     for (int i = 0; i < 6; ++i) b.for_vertex(i);
     auto g = b.for_vertex(0)
                  .add_edge(1, .41)
@@ -302,8 +302,9 @@ void test_weighted_dag() {
     auto g = Samples::weighted_dag_sample<G>();
     validate_dag(g);
 
-    Dag_lpt dag_lpt(g);
-    auto lpt = compose_path_tree(g, dag_lpt.lpt_.cbegin(), dag_lpt.lpt_.cend());
+    DagLpt dag_lpt(g);
+    auto lpt =
+        compose_path_tree(g, dag_lpt.m_lpt.cbegin(), dag_lpt.m_lpt.cend());
     std::stringstream ss;
     trace_dfs(lpt, reset_with_new_line(ss));
     ASSERT_EQ(R"(
@@ -319,12 +320,12 @@ void test_weighted_dag() {
 5
 )",
               ss.str());
-    Dag_full_spts dd(g, g.vertices_count());
+    DagFullSpts dd(g, g.vertices_count());
     ASSERT_EQ("[10, 0.41, 0.92, 0.73, 0.7, 10, 0.7, 0.41, 0.73, 0.41]",
-              stringify(dd.distances_[0]));
+              stringify(dd.m_distances[0]));
 }
 
 TEST(Graphs_algorithms_test, weighted_dag) {
-    test_weighted_dag<Adjacency_matrix<Graph_type::DIGRAPH, int, double>>();
-    test_weighted_dag<Adjacency_lists<Graph_type::DIGRAPH, int, double>>();
+    test_weighted_dag<AdjacencyMatrix<GraphType::DIGRAPH, int, double>>();
+    test_weighted_dag<AdjacencyLists<GraphType::DIGRAPH, int, double>>();
 }

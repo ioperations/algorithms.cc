@@ -11,7 +11,7 @@ TEST(Binary_tree, binary_tree) {
         map.insert(key, ++i);
     }
 
-    Map_printer<int, int> printer;
+    MapPrinter<int, int> printer;
     printer.print(map, std::cout);
     std::cout << std::endl;
 
