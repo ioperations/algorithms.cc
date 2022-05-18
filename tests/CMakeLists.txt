@@ -8,7 +8,8 @@ link_libraries(GTest::GTest GTest::Main)
 
 macro (do_add_test _name)
     add_executable(${_name} ${_name}.cpp)
-    add_test(NAME ${_name} COMMAND ./${_name})
+
+    add_test(NAME ${_name} COMMAND ${_name} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     target_compile_options(${_name} PUBLIC "-g")
 endmacro()
 

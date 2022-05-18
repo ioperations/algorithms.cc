@@ -431,11 +431,11 @@ void non_recursive_merge_sort(const It& b, const It& e, bool verbose = false) {
 int main(int argc, const char** argv) {
     using Entry = Rich_text::Entry<int>;
     using Array_iterator = Array<Entry>::iterator;
-    using List_iterator = Forward_list<Entry>::iterator;
+    using List_iterator = ForwardList<Entry>::iterator;
 
     {
         Array<Entry> array(15);
-        Forward_list<Entry> list;
+        ForwardList<Entry> list;
         {
             RandomSequenceGenerator generator(300, 10, 99);
             for (auto& e : array) {
@@ -470,7 +470,7 @@ int main(int argc, const char** argv) {
         std::cout << "items cout: " << count << std::endl;
         auto array = RandomSequenceGenerator(300, 0, count)
                          .generate_array<Array<Entry>>();
-        Forward_list<Entry> list;
+        ForwardList<Entry> list;
         for (const auto& item : array) list.push_back(item);
 
         sort_and_measure("buble sort", array, buble_sort<Array_iterator>);

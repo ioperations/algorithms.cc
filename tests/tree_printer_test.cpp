@@ -27,7 +27,7 @@ TEST(Tree_printer_test, arbitrary_tree) {
 
     std::stringstream ss;
     ss << std::endl;
-    for (auto& s : Tree_printer<node>::default_instance().compose_text_lines(n))
+    for (auto& s : TreePrinter<node>::default_instance().compose_text_lines(n))
         ss << s << std::endl;
 
     ASSERT_EQ(ss.str(), R"(
@@ -103,7 +103,7 @@ TEST(Tree_printer_test, arbitrary_tree) {
 }
 
 TEST(Tree_printer_test, binary_tree) {
-    using node = Binary_tree_node<int>;
+    using node = BinaryTreeNode<int>;
     node n = {
         1,
         new node(11, nullptr, new node(112, nullptr, new node(1122))),

@@ -54,7 +54,7 @@ TEST(Network_flow_test, feasible_flow) {
 }
 
 TEST(Network_flow_test, bipartite_matching) {
-    std::map<int, Forward_list<int>> mapping = {
+    std::map<int, ForwardList<int>> mapping = {
         {0, {6, 7, 8}}, {1, {6, 7, 11}},  {2, {8, 9, 10}},
         {3, {6, 7}},    {4, {9, 10, 11}}, {5, {8, 10, 11}}};
     std::stringstream ss;

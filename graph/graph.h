@@ -204,7 +204,7 @@ Array<const V*> compose_hamilton_path(const G& graph, const V& s, const V& t) {
 
 template <typename G, typename V = typename G::vertex_type>
 auto compose_euler_tour(const G& g, const V& s) {
-    using Path = Forward_list<const V*>;
+    using Path = ForwardList<const V*>;
     Path path;
     for (auto w = g.cbegin(); w != g.cend(); ++w)
         if (count_vertex_edges(*w) % 2 != 0) return path;
@@ -244,13 +244,13 @@ auto compose_euler_tour(const G& g, const V& s) {
 }
 
 template <typename G, typename V = typename G::vertex_type>
-Forward_list<std::pair<const V*, const V*>> find_bridges(const G& graph) {
+ForwardList<std::pair<const V*, const V*>> find_bridges(const G& graph) {
     struct Searcher {
         const G& m_g;
         Array<int> m_orders;
         Array<int> m_mins;
         int m_order;
-        Forward_list<std::pair<const V*, const V*>> m_bridges;
+        ForwardList<std::pair<const V*, const V*>> m_bridges;
         Searcher(const G& g)
             : m_g(g),
               m_orders(g.vertices_count()),
@@ -291,7 +291,7 @@ class ShortestPathsMatrix {
    public:
     ShortestPathsMatrix(parents_type&& parents) : m_parents(parents) {}
     auto find_path(const V& v, const V& w) {
-        Forward_list<const V*> path;
+        ForwardList<const V*> path;
         auto row = m_parents[w];
         for (auto t = &v; t != &w; t = row[*t]) path.push_back(t);
         path.push_back(&w);
@@ -306,7 +306,7 @@ ShortestPathsMatrix<V> find_shortest_paths(const G& g) {
     all_parents.fill(nullptr);
     for (auto v = g.cbegin(); v != g.cend(); ++v) {
         auto parents = all_parents[*v];
-        Forward_list<std::pair<const V&, const V&>> queue;
+        ForwardList<std::pair<const V&, const V&>> queue;
         queue.emplace_back(*v, *v);
         while (!queue.empty()) {
             auto e = queue.pop_front();
@@ -359,14 +359,14 @@ G dfs_transitive_closure(const G& g) {
 }
 
 template <typename G, typename D>
-class DfsTracerBase : public Post_dfs_base<G, size_t, size_t, D> {
+class DfsTracerBase : public PostDfsBase<G, size_t, size_t, D> {
    private:
     int m_depth;
     Stack<std::string> m_lines_stack;
 
    protected:
     std::ostream& m_stream;
-    using Base = Post_dfs_base<G, size_t, size_t, D>;
+    using Base = PostDfsBase<G, size_t, size_t, D>;
     using vertex_type = typename Base::vertex_type;
     using edge_type = typename Base::edge_type;
     size_t m_last_root_id;
@@ -479,15 +479,15 @@ G invert(const G& g) {
 template <typename G>
 Array<size_t> topological_sort_rearrange(const G& g) {
     auto inverted = invert(g);
-    Post_dfs<G, size_t, size_t> d(inverted);
+    PostDfs<G, size_t, size_t> d(inverted);
     d.search();
     return d.m_post.to_array();
 }
 
 template <typename G>
 struct TopologicalSorter
-    : public Post_dfs_base<G, size_t, size_t, TopologicalSorter<G>> {
-    using Base = Post_dfs_base<G, size_t, size_t, TopologicalSorter<G>>;
+    : public PostDfsBase<G, size_t, size_t, TopologicalSorter<G>> {
+    using Base = PostDfsBase<G, size_t, size_t, TopologicalSorter<G>>;
     Array<size_t> m_post_i;
     TopologicalSorter(const G& g) : Base(g), m_post_i(g.vertices_count()) {}
     void search_post_process(const typename Base::vertex_type& v) {
@@ -535,7 +535,7 @@ void trace_bfs(const G& g) {
                 const int m_d;
                 Entry(const V* const v, int d) : m_v(v), m_d(d) {}
             };
-            Forward_list<Entry> queue;
+            ForwardList<Entry> queue;
             queue.emplace_back(&*vv, 0);
             while (!queue.empty()) {
                 auto p = queue.pop_front();
@@ -562,8 +562,8 @@ class InvalidDagException : public std::runtime_error {
 
 template <typename G>
 void validate_dag(const G& g) {
-    struct Searcher : public Post_dfs_base<G, size_t, size_t, Searcher> {
-        using Base = Post_dfs_base<G, size_t, size_t, Searcher>;
+    struct Searcher : public PostDfsBase<G, size_t, size_t, Searcher> {
+        using Base = PostDfsBase<G, size_t, size_t, Searcher>;
         Searcher(const G& g) : Base(g) {}
         void visit_edge(const typename Base::edge_type& e) {
             auto& v = e.source();
@@ -591,7 +591,7 @@ auto topological_sort_sinks_queue(const G& g) {
     in.fill(0);
     for (auto v = g.cbegin(); v != g.cend(); ++v)
         for (auto w = v->cbegin(); w != v->cend(); ++w) ++in[*w];
-    Forward_list<const V* const> queue;
+    ForwardList<const V* const> queue;
     for (auto v = g.cbegin(); v != g.cend(); ++v)
         if (in[*v] == 0) queue.push_back(&*v);
     Array<size_t> ordered(g.vertices_count());
@@ -902,7 +902,7 @@ ArrayCycle find_negative_cycle(const G& g, const typename G::vertex_type& s,
 
     weights[s] = 0;
 
-    Forward_list<const vertex_type*> queue;
+    ForwardList<const vertex_type*> queue;
     queue.push_back(&s);
     queue.push_back(nullptr);
 
@@ -935,8 +935,8 @@ ArrayCycle find_negative_cycle(const G& g, const typename G::vertex_type& s,
         if (s.m_target) gg.add_edge(gg[s.source()], gg[s.target()]);
 
     struct Searcher
-        : public Post_dfs_base<cycle_g_type, size_t, size_t, Searcher> {
-        using Base = Post_dfs_base<cycle_g_type, size_t, size_t, Searcher>;
+        : public PostDfsBase<cycle_g_type, size_t, size_t, Searcher> {
+        using Base = PostDfsBase<cycle_g_type, size_t, size_t, Searcher>;
         bool m_found;
         Array<size_t> m_cycle;
         Searcher(const cycle_g_type& g, w_t sentinel)

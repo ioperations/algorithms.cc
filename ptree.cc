@@ -20,7 +20,7 @@ auto to_string(const N& node) {
 #include <vector>
 using namespace std;
 
-using TreeNode = Binary_tree_node<int>;
+using TreeNode = BinaryTreeNode<int>;
 // Decodes your encoded data to tree.
 TreeNode* construct_binary_tree(std::vector<std::optional<int>>& data) {
     data.resize(data.size() * 3 + 31);

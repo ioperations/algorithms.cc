@@ -7,98 +7,98 @@
 template <typename T>
 class Vector {
    private:
-    static const constexpr size_t DEFAULT_SIZE = 100;
-    static const constexpr int SIZE_MULTIPLIER = 2;
+    static const constexpr size_t default_size = 100;
+    static const constexpr int size_multiplier = 2;
 
-    T* array_;
-    size_t array_size_;
-    size_t size_;
+    T* m_array;
+    size_t m_array_size;
+    size_t m_size;
 
     void fill_defaults() {
-        for (size_t i = 0; i < array_size_; ++i) array_[i] = T();
+        for (size_t i = 0; i < m_array_size; ++i) m_array[i] = T();
     }
 
    public:
     using iterator = T*;
     using const_iterator = const iterator;
-    using reverse_iterator = Collections::Reverse_iterator<T, false>;
-    using const_reverse_iterator = Collections::Reverse_iterator<T, true>;
+    using reverse_iterator = Collections::ReverseIterator<T, false>;
+    using const_reverse_iterator = Collections::ReverseIterator<T, true>;
 
     explicit Vector(size_t size)
-        : array_(new T[size]), array_size_(size), size_(size) {
+        : m_array(new T[size]), m_array_size(size), m_size(size) {
         fill_defaults();
     }
     Vector()
-        : array_(new T[DEFAULT_SIZE]), array_size_(DEFAULT_SIZE), size_(0) {
+        : m_array(new T[default_size]), m_array_size(default_size), m_size(0) {
         fill_defaults();
     }
     Vector(std::initializer_list<T> i_list) : Vector(i_list.size()) {
         size_t i = 0;
-        for (auto& el : i_list) array_[i++] = std::move(el);
+        for (auto& el : i_list) m_array[i++] = std::move(el);
     }
 
     Vector(const Vector& o)
-        : array_(new T[o.array_size_]),
-          array_size_(o.array_size_),
-          size_(o.size_) {
-        for (size_t i = 0; i < size_; ++i) array_[i] = o.array_[i];
+        : m_array(new T[o.m_array_size]),
+          m_array_size(o.m_array_size),
+          m_size(o.m_size) {
+        for (size_t i = 0; i < m_size; ++i) m_array[i] = o.m_array[i];
     }
     Vector& operator=(const Vector& o) {
-        array_size_ = o.array_size_;
-        size_ = o.size_;
-        delete[] array_;
-        array_ = new T[array_size_];
-        for (size_t i = 0; i < size_; ++i) array_[i] = o.array_[i];
+        m_array_size = o.m_array_size;
+        m_size = o.m_size;
+        delete[] m_array;
+        m_array = new T[m_array_size];
+        for (size_t i = 0; i < m_size; ++i) m_array[i] = o.m_array[i];
         return *this;
     }
 
     Vector(Vector&& o)
-        : array_(o.array_), array_size_(o.array_size_), size_(o.size_) {
-        o.array_ = nullptr;
-        o.array_size_ = 0;
-        o.size_ = 0;
+        : m_array(o.m_array), m_array_size(o.m_array_size), m_size(o.m_size) {
+        o.m_array = nullptr;
+        o.m_array_size = 0;
+        o.m_size = 0;
     }
     Vector& operator=(Vector&& o) {
-        std::swap(array_, o.array_);
-        std::swap(array_size_, o.array_size_);
-        std::swap(size_, o.size_);
+        std::swap(m_array, o.m_array);
+        std::swap(m_array_size, o.m_array_size);
+        std::swap(m_size, o.m_size);
         return *this;
     };
 
-    ~Vector() { delete[] array_; }
+    ~Vector() { delete[] m_array; }
 
-    inline size_t size() const { return size_; }
+    inline size_t size() const { return m_size; }
 
-    inline iterator begin() { return array_; }
-    inline iterator end() { return array_ + size_; }
-    inline const_iterator cbegin() const { return array_; }
-    inline const_iterator cend() const { return array_ + size_; }
+    inline iterator begin() { return m_array; }
+    inline iterator end() { return m_array + m_size; }
+    inline const_iterator cbegin() const { return m_array; }
+    inline const_iterator cend() const { return m_array + m_size; }
 
-    reverse_iterator rbegin() { return {array_ + size_ - 1}; }
-    reverse_iterator rend() { return {array_ - 1}; }
-    const_reverse_iterator crbegin() const { return {array_ + size_ - 1}; }
-    const_reverse_iterator crend() const { return {array_ - 1}; }
+    reverse_iterator rbegin() { return {m_array + m_size - 1}; }
+    reverse_iterator rend() { return {m_array - 1}; }
+    const_reverse_iterator crbegin() const { return {m_array + m_size - 1}; }
+    const_reverse_iterator crend() const { return {m_array - 1}; }
 
     template <typename TT>
     void push_back(TT&& t) {
-        if (size_ + 1 > array_size_) {
-            array_size_ *= SIZE_MULTIPLIER;
-            T* old_array = array_;
-            array_ = new T[array_size_];
-            for (size_t i = 0; i < size_; ++i)
-                array_[i] = std::move(old_array[i]);
+        if (m_size + 1 > m_array_size) {
+            m_array_size *= size_multiplier;
+            T* old_array = m_array;
+            m_array = new T[m_array_size];
+            for (size_t i = 0; i < m_size; ++i)
+                m_array[i] = std::move(old_array[i]);
             delete[] old_array;
         }
-        array_[size_++] = std::forward<TT>(t);
+        m_array[m_size++] = std::forward<TT>(t);
     }
     template <typename... Args>
     void emplace_back(Args&&... args) {
         push_back(T(std::forward<Args>(args)...));
     }
 
-    T& operator[](size_t i) { return array_[i]; }
+    T& operator[](size_t i) { return m_array[i]; }
 
-    const T& operator[](size_t i) const { return array_[i]; }
+    const T& operator[](size_t i) const { return m_array[i]; }
 };
 
 template <typename T>

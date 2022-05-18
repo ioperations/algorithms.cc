@@ -11,17 +11,17 @@ using namespace Graph::Network_flow_ns;
 using graph_type = Graph::NetworkFlowWithCost<int, int>;
 using vertex_type = typename graph_type::vertex_type;
 using link_type = typename graph_type::link_type;
-using tree_type = Parent_link_array_tree<link_type>;
+using tree_type = ParentLinkArrayTree<link_type>;
 
 void add_link(graph_type& g, tree_type& tree, vertex_type& v, vertex_type& w) {
     tree[w] = g.add_edge(v, w, 5, 0, 0);
 }
 
-struct Replace_test_case {
+struct ReplaceTestCase {
     graph_type m_g;
     tree_type m_tree;
-    Replace_test_case(graph_type&& g,
-                      Forward_list<std::pair<size_t, size_t>>&& links_map)
+    ReplaceTestCase(graph_type&& g,
+                    ForwardList<std::pair<size_t, size_t>>&& links_map)
         : m_g(std::move(g)), m_tree(m_g.vertices_count()) {
         for (auto e : links_map)
             m_tree[e.second] = m_g.get_edge(e.first, e.second)->link();
@@ -31,7 +31,7 @@ struct Replace_test_case {
 TEST(Parent_link_array_tree, get_vertex_potential) {
     auto g = Graph::Samples::simplex_sample();
     g.add_edge(g[0], g[5], 200, 150, 100);
-    Replace_test_case t(std::move(g), {{3, 1}, {0, 2}, {5, 3}, {1, 4}, {0, 5}});
+    ReplaceTestCase t(std::move(g), {{3, 1}, {0, 2}, {5, 3}, {1, 4}, {0, 5}});
 
     std::stringstream ss;
     for (int i = 0; i < 6; ++i)
@@ -70,13 +70,13 @@ TEST(Parent_link_array_tree, find_lca) {
 TEST(Parent_link_array_tree, find_lca_2) {
     auto g = Graph::Samples::simplex_sample();
     g.add_edge(g[5], g[0], 200, 150, 100);
-    Replace_test_case t(std::move(g), {{5, 0}, {3, 1}, {0, 2}, {2, 3}, {1, 4}});
+    ReplaceTestCase t(std::move(g), {{5, 0}, {3, 1}, {0, 2}, {2, 3}, {1, 4}});
     ASSERT_EQ(2, t.m_tree.find_lca(t.m_g.get_link(2, 4))->index());
 }
 
 void replace_tree_link(tree_type& tree, link_type* old_link,
                        link_type* new_link) {
-    auto lca = tree.find_lca(new_link);
+    auto* lca = tree.find_lca(new_link);
     tree.replace(old_link, new_link, lca);
 }
 
@@ -107,10 +107,10 @@ TEST(Parent_link_array_tree, replace) {
 
     ASSERT_EQ("7-0, 0-1, 0-2, 1-3, 5-4, 2-5, 2-6, --7", stringify(tree));
 
-    auto old_link = tree[2];
+    auto* old_link = tree[2];
     ASSERT_EQ(0, old_link->source());
     ASSERT_EQ(2, old_link->target());
-    auto new_link = g.get_edge(v1, v4)->link();
+    auto* new_link = g.get_edge(v1, v4)->link();
     ASSERT_EQ(1, new_link->source());
     ASSERT_EQ(4, new_link->target());
 
@@ -139,7 +139,7 @@ TEST(Parent_link_array_tree, replace_2) {
 
 TEST(Parent_link_array_tree, replace_3) {
     auto g = Graph::Samples::simplex_sample();
-    Replace_test_case t(std::move(g), {{1, 0}, {4, 1}, {0, 2}, {2, 3}, {5, 4}});
+    ReplaceTestCase t(std::move(g), {{1, 0}, {4, 1}, {0, 2}, {2, 3}, {5, 4}});
     replace_tree_link(t.m_tree, t.m_g.get_link(1, 4), t.m_g.get_link(2, 4));
     ASSERT_EQ("2-0, 0-1, 4-2, 2-3, 5-4, --5", stringify(t.m_tree));
 }
@@ -147,7 +147,7 @@ TEST(Parent_link_array_tree, replace_3) {
 TEST(Parent_link_array_tree, replace_4) {
     auto g = Graph::Samples::simplex_sample();
     g.add_edge(g[5], g[0], 200, 150, 100);
-    Replace_test_case t(std::move(g), {{5, 0}, {3, 1}, {0, 2}, {5, 3}, {1, 4}});
+    ReplaceTestCase t(std::move(g), {{5, 0}, {3, 1}, {0, 2}, {5, 3}, {1, 4}});
     replace_tree_link(t.m_tree, t.m_g.get_link(3, 5), t.m_g.get_link(4, 5));
     ASSERT_EQ("5-0, 4-1, 0-2, 1-3, 5-4, --5", stringify(t.m_tree));
 }
@@ -155,7 +155,7 @@ TEST(Parent_link_array_tree, replace_4) {
 TEST(Parent_link_array_tree, replace_5) {
     auto g = Graph::Samples::simplex_sample();
     g.add_edge(g[0], g[5], 200, 150, 100);
-    Replace_test_case t(std::move(g), {{3, 1}, {0, 2}, {5, 3}, {1, 4}, {0, 5}});
+    ReplaceTestCase t(std::move(g), {{3, 1}, {0, 2}, {5, 3}, {1, 4}, {0, 5}});
     replace_tree_link(t.m_tree, t.m_g.get_link(3, 5), t.m_g.get_link(4, 5));
     ASSERT_EQ("--0, 4-1, 0-2, 1-3, 5-4, 0-5", stringify(t.m_tree));
 }

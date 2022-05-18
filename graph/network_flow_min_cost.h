@@ -35,7 +35,7 @@ struct MaxFlowMinCost {
         m_weights.fill(m_sentinel);
         m_weights[vertex] = 0;
 
-        Forward_list<vertex_type*> queue;
+        ForwardList<vertex_type*> queue;
         queue.push_back(&vertex);
         queue.push_back(nullptr);
 

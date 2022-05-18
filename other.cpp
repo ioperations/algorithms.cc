@@ -278,7 +278,7 @@ int main() {
     RandomSequenceGenerator generator(300, 10, 99);
 
     Array<Entry> array(15);
-    Forward_list<Entry> list;
+    ForwardList<Entry> list;
     for (auto& e : array) {
         int value = generator.generate();
         e.value = value;

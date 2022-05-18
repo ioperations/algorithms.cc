@@ -79,9 +79,9 @@ void TreePrinterBase::print(Lines& lines, std::ostream& stream) {
     print(lines, Appender(stream));
 }
 
-Forward_list<std::string> TreePrinterBase::compose_text_lines(Lines& lines) {
+ForwardList<std::string> TreePrinterBase::compose_text_lines(Lines& lines) {
     struct Appender : BaseAppender<std::stringstream> {
-        Forward_list<std::string> m_lines;
+        ForwardList<std::string> m_lines;
         Appender() : BaseAppender<std::stringstream>(std::stringstream()) {}
         void new_line() {
             m_lines.push_back(m_stream.str());

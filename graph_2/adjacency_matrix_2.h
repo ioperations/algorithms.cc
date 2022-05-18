@@ -12,92 +12,92 @@ namespace Adjency_matrix_ns {
 
 class Vertex {
    private:
-    size_t index_;
+    size_t m_index;
 
    public:
-    Vertex(size_t index) : index_(index) {}
+    Vertex(size_t index) : m_index(index) {}
     Vertex() : Vertex(0) {}
-    operator size_t() { return index_; }
+    operator size_t() { return m_index; }
 };
 
-class Adjacent_iterator_end {
+class AdjacentIteratorEnd {
    private:
     template <typename T>
     friend class Adjency_matrix;
-    static const Adjacent_iterator_end instance() {
-        static const Adjacent_iterator_end e;
+    static const AdjacentIteratorEnd instance() {
+        static const AdjacentIteratorEnd e;
         return e;
     }
 };
 
-class Adjacent_iterator {
+class AdjacentIterator {
    private:
     template <typename T>
     friend class Adjency_matrix;
-    bool* begin_;
-    bool* end_;
-    bool* current_;
-    Adjacent_iterator(bool* begin, bool* end, bool* current)
-        : begin_(begin), end_(end), current_(current) {}
-    Adjacent_iterator& move_on_first() {
-        while (!*current_ && current_ != end_) ++current_;
+    bool* m_begin;
+    bool* m_end;
+    bool* m_current;
+    AdjacentIterator(bool* begin, bool* end, bool* current)
+        : m_begin(begin), m_end(end), m_current(current) {}
+    AdjacentIterator& move_on_first() {
+        while (!*m_current && m_current != m_end) ++m_current;
         return *this;
     }
 
    public:
-    Adjacent_iterator() = default;
-    Adjacent_iterator& operator++() {
-        ++current_;
+    AdjacentIterator() = default;
+    AdjacentIterator& operator++() {
+        ++m_current;
         return move_on_first();
     }
-    bool operator!=(const Adjacent_iterator& o) {
-        return current_ != o.current_;
+    bool operator!=(const AdjacentIterator& o) {
+        return m_current != o.m_current;
     }
-    bool operator!=(const Adjacent_iterator_end& e) { return current_ != end_; }
-    Vertex operator*() { return current_ - begin_; }
+    bool operator!=(const AdjacentIteratorEnd& e) { return m_current != m_end; }
+    Vertex operator*() { return m_current - m_begin; }
 };
 
 template <typename T>
 class Adjency_matrix {
    private:
-    Array<T> vertices_;
-    Two_dimensional_array<bool> edges_;
-    size_t vertices_count_;
+    Array<T> m_vertices;
+    Two_dimensional_array<bool> m_edges;
+    size_t m_vertices_count;
 
    public:
     using value_type = T;
     using vertex_type = Vertex;
-    using adjacent_iterator = Adjacent_iterator;
-    using adjacent_iterator_end = Adjacent_iterator_end;
+    using adjacent_iterator = AdjacentIterator;
+    using adjacent_iterator_end = AdjacentIteratorEnd;
 
     Adjency_matrix(size_t size = 100)
-        : vertices_(size), edges_(size, size), vertices_count_(0) {
-        edges_.fill(false);
+        : m_vertices(size), m_edges(size, size), m_vertices_count(0) {
+        m_edges.fill(false);
     }
     template <typename TT>
     vertex_type add_vertex(TT&& t) {
-        auto index = vertices_count_;
-        vertices_[index] = std::forward<TT>(t);
-        ++vertices_count_;
+        auto index = m_vertices_count;
+        m_vertices[index] = std::forward<TT>(t);
+        ++m_vertices_count;
         return index;
     }
-    T& value(vertex_type v) { return vertices_[v]; }
+    T& value(vertex_type v) { return m_vertices[v]; }
     void add_edge(vertex_type v, vertex_type w) {
-        edges_.get(v, w) = true;
-        edges_.get(w, v) = true;
+        m_edges.get(v, w) = true;
+        m_edges.get(w, v) = true;
     }
     Pair<adjacent_iterator, adjacent_iterator_end> adjacent(vertex_type v) {
-        auto r = edges_[v];
+        auto r = m_edges[v];
         bool* b = r.begin();
         bool* e = r.end();
-        return {Adjacent_iterator(b, e, b).move_on_first(),
-                Adjacent_iterator_end::instance()};
+        return {AdjacentIterator(b, e, b).move_on_first(),
+                AdjacentIteratorEnd::instance()};
     }
 
     void print_internal(std::ostream& stream) {
-        for (size_t r = 0; r < vertices_count_; ++r) {
-            for (size_t c = 0; c < vertices_count_; ++c)
-                stream << edges_.get(r, c) << " ";
+        for (size_t r = 0; r < m_vertices_count; ++r) {
+            for (size_t c = 0; c < m_vertices_count; ++c)
+                stream << m_edges.get(r, c) << " ";
             stream << std::endl;
         }
     }

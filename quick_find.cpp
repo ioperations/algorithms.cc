@@ -12,9 +12,9 @@
 using Entry = Rich_text::Entry<int>;
 using Style = Rich_text::Style;
 using Connections = Array<Entry>;
-using Connection_pairs = Forward_list<Pair<int, int>>;
+using Connection_pairs = ForwardList<Pair<int, int>>;
 
-void print_links(const Forward_list<int>& links, std::ostream& stream) {
+void print_links(const ForwardList<int>& links, std::ostream& stream) {
     if (!links.empty()) {
         stream << "  ";
         for (auto it = links.cbegin(); it != links.cend(); ++it) {
@@ -49,7 +49,7 @@ struct QuickFind {
     void add(Connection_pairs::const_iterator pair,
              const Connection_pairs& pairs) {
         if (pair == pairs.cbegin()) std::cout << m_connections << std::endl;
-        Forward_list<int> l;
+        ForwardList<int> l;
         auto c = m_connections[pair->m_first].value;
         if (c == m_connections[pair->m_second].value) {
             for (size_t i = 0; i < m_connections.size(); ++i)
@@ -70,7 +70,7 @@ struct QuickFind {
 using Pair_tree_node = ForwardListTreeNode<Pair<Entry, int>>;
 
 struct PairTreePrinterNodeHandler
-    : public Tree_printer_node_handler<Pair_tree_node> {
+    : public TreePrinterNodeHandler<Pair_tree_node> {
     std::string node_to_string(const Pair_tree_node& node) {
         std::stringstream ss;
         ss << node.value().m_first;
@@ -81,7 +81,7 @@ struct PairTreePrinterNodeHandler
     }
 };
 auto pair_tree_printer =
-    Tree_printer<Pair_tree_node, PairTreePrinterNodeHandler>();
+    TreePrinter<Pair_tree_node, PairTreePrinterNodeHandler>();
 
 template <typename A>
 struct QuickUnion : A {
@@ -91,7 +91,7 @@ struct QuickUnion : A {
     };
 
     Connections& m_connections;
-    Forward_list<CustomTextBlocks> m_text_blocks_lines;
+    ForwardList<CustomTextBlocks> m_text_blocks_lines;
 
     template <typename... Args>
     QuickUnion(Connections& connections, Args&&... args)
@@ -101,7 +101,7 @@ struct QuickUnion : A {
              const Connection_pairs& pairs) {
         int f = pair->m_first, s = pair->m_second, fi = f,
             si = s;  // todo remove
-        Forward_list<int> l;
+        ForwardList<int> l;
         auto follow_links = [&l, this](int& index) {
             bool linked;
             do {
@@ -176,7 +176,7 @@ struct QuickUnion : A {
 };
 
 struct QuickUnionSimpleAdder {
-    void add(int f, int s, Connections& connections, Forward_list<int>& l) {
+    void add(int f, int s, Connections& connections, ForwardList<int>& l) {
         connections[f].value = s;
         l.clear();
     }
@@ -187,7 +187,7 @@ struct QuickUnionWeightedAdder {
     QuickUnionWeightedAdder(size_t size) : m_sizes(size) {
         for (auto& size : m_sizes) size = 0;
     }
-    void add(int f, int s, Connections& connections, Forward_list<int>& l) {
+    void add(int f, int s, Connections& connections, ForwardList<int>& l) {
         if (m_sizes[f] < m_sizes[s]) {
             connections[f].value = s;
             m_sizes[s] += m_sizes[f];

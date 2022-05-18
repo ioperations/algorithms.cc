@@ -79,7 +79,7 @@ class AdjListsVertexBase : public VertexBase<VT> {
    protected:
     using adj_lists_type = AdjacencyListsBase<T_graph_type, D>;
     adj_lists_type* m_adjacency_lists;
-    Forward_list<vertex_link_type> m_links;
+    ForwardList<vertex_link_type> m_links;
 
     AdjListsVertexBase(const VT& value, adj_lists_type* adjacency_lists)
         : VertexBase<VT>(value), m_adjacency_lists(adjacency_lists) {}
@@ -317,7 +317,7 @@ class AdjListsVertexBase<T_graph_type, VT, E, D>::Iterator {
 
    protected:
     using link_type = VertexLink<T_graph_type, E>;
-    using links_type = Forward_list<link_type>;
+    using links_type = ForwardList<link_type>;
     using links_iterator_type =
         std::conditional_t<T_is_const, typename links_type::const_iterator,
                            typename links_type::iterator>;
@@ -360,10 +360,8 @@ class AdjListsVertexBase<T_graph_type, VT, E, D>::Edges_iterator
 
     entry_type m_entry;
 
-    static auto links_end(Forward_list<link_type>& links) {
-        return links.end();
-    }
-    static auto links_end(const Forward_list<link_type>& links) {
+    static auto links_end(ForwardList<link_type>& links) { return links.end(); }
+    static auto links_end(const ForwardList<link_type>& links) {
         return links.cend();
     }
 

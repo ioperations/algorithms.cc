@@ -12,61 +12,60 @@ namespace Graph {
 
 namespace Layout {
 
-struct Vertex_position {
-    std::string label_;
-    double x_;
-    double y_;
-    Vertex_position() = default;
-    Vertex_position(const std::string& label, double x, double y)
-        : label_(label), x_(x), y_(y) {}
+struct VertexPosition {
+    std::string m_label;
+    double m_x;
+    double m_y;
+    VertexPosition() = default;
+    VertexPosition(const std::string& label, double x, double y)
+        : m_label(label), m_x(x), m_y(y) {}
 };
 
 class Calculator;
 class Vertex_positions_impl;
-class Vertex_positions {
+class VertexPositions {
    private:
     friend class Calculator;
-    Vertex_positions_impl* positions_impl_;
-    Vertex_positions(Calculator&);
+    Vertex_positions_impl* m_positions_impl;
+    VertexPositions(Calculator&);
 
    public:
-    ~Vertex_positions();
-    void iterate(std::function<void(const Vertex_position&)>);
+    ~VertexPositions();
+    void iterate(std::function<void(const VertexPosition&)>);
     void iterate_edges(
-        std::function<
-            void(const std::pair<Vertex_position, Vertex_position>&)>);
+        std::function<void(const std::pair<VertexPosition, VertexPosition>&)>);
 };
 
 class Layout {
    public:
     using Edges =
-        Forward_list<std::pair<Vertex_position* const, Vertex_position* const>>;
+        ForwardList<std::pair<VertexPosition* const, VertexPosition* const>>;
 
    private:
-    std::vector<Vertex_position> positions_;
-    Edges edges_;
-    size_t edges_count_;
+    std::vector<VertexPosition> m_positions;
+    Edges m_edges;
+    size_t m_edges_count;
 
    public:
-    Layout(std::vector<Vertex_position>&& positions, Edges&& edges,
+    Layout(std::vector<VertexPosition>&& positions, Edges&& edges,
            size_t edges_count)
-        : positions_(std::move(positions)),
-          edges_(std::move(edges)),
-          edges_count_(edges_count) {}
+        : m_positions(std::move(positions)),
+          m_edges(std::move(edges)),
+          m_edges_count(edges_count) {}
     Layout(const Layout&) = delete;
     Layout& operator=(const Layout&) = delete;
     Layout(Layout&& o)
-        : positions_(std::move(o.positions_)),
-          edges_(std::move(o.edges_)),
-          edges_count_(o.edges_count_) {}
+        : m_positions(std::move(o.m_positions)),
+          m_edges(std::move(o.m_edges)),
+          m_edges_count(o.m_edges_count) {}
     Layout& operator=(Layout&&) = delete;
 
-    auto edges_cbegin() const { return edges_.cbegin(); }
-    auto edges_cend() const { return edges_.cend(); }
-    auto vertices_cbegin() const { return positions_.cbegin(); }
-    auto vertices_cend() const { return positions_.cend(); }
-    auto edges_count() { return edges_count_; }
-    auto vertices_count() { return positions_.size(); }
+    auto edges_cbegin() const { return m_edges.cbegin(); }
+    auto edges_cend() const { return m_edges.cend(); }
+    auto vertices_cbegin() const { return m_positions.cbegin(); }
+    auto vertices_cend() const { return m_positions.cend(); }
+    auto edges_count() { return m_edges_count; }
+    auto vertices_count() { return m_positions.size(); }
 };
 
 class Vertex;
@@ -76,8 +75,8 @@ class Calculator {
     using graph_type = boost::adjacency_list<
         boost::listS, boost::vecS, boost::undirectedS,
         boost::property<boost::vertex_name_t, std::string>>;
-    graph_type graph_;
-    Vertex_positions positions_;
+    graph_type m_graph;
+    VertexPositions m_positions;
 
    public:
     using vertex_descriptor = typename graph_type::vertex_descriptor;
@@ -86,7 +85,7 @@ class Calculator {
     Calculator& add_edge(const vertex_descriptor& v1,
                          const vertex_descriptor& v2);
     void calculate_layout(double width, double height, int iterations = 100);
-    Vertex_positions& positions();
+    VertexPositions& positions();
 
     Layout calculate_layout_2(double size, int iterations = 100);
 };

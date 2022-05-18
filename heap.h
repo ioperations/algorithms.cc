@@ -71,8 +71,8 @@ class HeapBase {
         return *this;
     }
 
-    HeapBase(const Binary_tree_node<T>& root);
-    Binary_tree_node<T> to_tree() const;
+    HeapBase(const BinaryTreeNode<T>& root);
+    BinaryTreeNode<T> to_tree() const;
 
     void fix_up(size_t i) {
         ++i;
@@ -125,9 +125,9 @@ class HeapBase {
 };
 
 template <typename T, typename D>
-HeapBase<T, D>::HeapBase(const Binary_tree_node<T>& root)
+HeapBase<T, D>::HeapBase(const BinaryTreeNode<T>& root)
     : m_array_size(0), m_size(0) {
-    Forward_list<const Binary_tree_node<T>*> queue;
+    ForwardList<const BinaryTreeNode<T>*> queue;
     queue.push_back(&root);
     bool incomplete_occurred = false;
     while (!queue.empty()) {
@@ -158,12 +158,12 @@ HeapBase<T, D>::HeapBase(const Binary_tree_node<T>& root)
 }
 
 template <typename T, typename D>
-Binary_tree_node<T> HeapBase<T, D>::to_tree() const {
-    Binary_tree_node<T> root(m_array[0]);
-    Array<Binary_tree_node<T>*> nodes(m_size);
+BinaryTreeNode<T> HeapBase<T, D>::to_tree() const {
+    BinaryTreeNode<T> root(m_array[0]);
+    Array<BinaryTreeNode<T>*> nodes(m_size);
     nodes[0] = &root;
     for (size_t i = 1; i < m_size; ++i)
-        nodes[i] = new Binary_tree_node<T>(m_array[i]);
+        nodes[i] = new BinaryTreeNode<T>(m_array[i]);
     auto get_node = [&nodes](size_t index) {
         return index < nodes.size() ? nodes[index] : nullptr;
     };

@@ -5,19 +5,19 @@
 namespace Collections {
 
 template <typename T, bool T_is_const>
-class Reverse_iterator {
+class ReverseIterator {
    private:
     using value_type = std::conditional_t<T_is_const, const T, T>;
-    value_type* ptr_;
+    value_type* m_ptr;
 
    public:
-    Reverse_iterator(value_type* ptr) : ptr_(ptr) {}
-    value_type& operator*() const { return *ptr_; }
-    value_type* operator->() const { return ptr_; }
-    bool operator==(const Reverse_iterator& o) const { return ptr_ == o.ptr_; }
-    bool operator!=(const Reverse_iterator& o) const { return !operator==(o); }
-    Reverse_iterator& operator++() {
-        --ptr_;
+    ReverseIterator(value_type* ptr) : m_ptr(ptr) {}
+    value_type& operator*() const { return *m_ptr; }
+    value_type* operator->() const { return m_ptr; }
+    bool operator==(const ReverseIterator& o) const { return m_ptr == o.m_ptr; }
+    bool operator!=(const ReverseIterator& o) const { return !operator==(o); }
+    ReverseIterator& operator++() {
+        --m_ptr;
         return *this;
     }
 };

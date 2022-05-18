@@ -330,7 +330,7 @@ class PreFlowPushMaxFlow {
           m_v_count(g.vertices_count()),
           m_heights(m_v_count, m_v_count + 1),
           m_weights(m_v_count, 0) {
-        Array_queue<vertex_t*> queue(m_v_count);
+        ArrayQueue<vertex_t*> queue(m_v_count);
         queue.push(&m_t);
         m_heights[m_t] = 0;
         auto default_height = m_v_count + 1;

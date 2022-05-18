@@ -12,7 +12,7 @@ class Map {
         K m_key;
         V m_value;
     };
-    using node_type = Binary_tree_node<Node>;
+    using node_type = BinaryTreeNode<Node>;
 
    private:
     template <typename KK, typename VV>
@@ -93,7 +93,7 @@ class Map {
 
 template <typename K, typename V>
 class MapPrinterNodeHandler
-    : public Binary_tree_printer_node_handler<typename Map<K, V>::Node> {
+    : public BinaryTreePrinterNodeHandler<typename Map<K, V>::Node> {
    public:
     std::string node_to_string(const typename Map<K, V>::node_type& n) {
         std::stringstream ss;
@@ -103,11 +103,11 @@ class MapPrinterNodeHandler
 };
 
 template <typename K, typename V>
-class MapPrinter : public Tree_printer<typename Map<K, V>::node_type,
-                                       MapPrinterNodeHandler<K, V>> {
+class MapPrinter : public TreePrinter<typename Map<K, V>::node_type,
+                                      MapPrinterNodeHandler<K, V>> {
    private:
-    using Base = Tree_printer<typename Map<K, V>::node_type,
-                              MapPrinterNodeHandler<K, V>>;
+    using Base =
+        TreePrinter<typename Map<K, V>::node_type, MapPrinterNodeHandler<K, V>>;
 
    public:
     void print(const Map<K, V>& map, std::ostream& stream) {

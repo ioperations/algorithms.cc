@@ -4,7 +4,7 @@
 
 class TextBlock {
    public:
-    using Lines = Forward_list<std::string>;
+    using Lines = ForwardList<std::string>;
 
    private:
     Lines m_lines;
@@ -30,7 +30,7 @@ class TextBlock {
     int lines_count() const { return m_lines_count; }
 };
 
-class TextBlocks : public Forward_list<TextBlock> {
+class TextBlocks : public ForwardList<TextBlock> {
    private:
     const int m_offset;
     int m_max_line_length = 0;
@@ -40,12 +40,12 @@ class TextBlocks : public Forward_list<TextBlock> {
    public:
     TextBlocks(int offset = 3) : m_offset(offset) {}
     TextBlocks(TextBlocks&& o)
-        : Forward_list<TextBlock>(std::move(o)),
+        : ::ForwardList<TextBlock>(std::move(o)),
           m_offset(o.m_offset),
           m_max_line_length(o.m_max_line_length) {}
     template <typename... Args>
     void emplace_back(Args&&... args) {
-        Forward_list<TextBlock>::emplace_back(std::forward<Args>(args)...);
+        ::ForwardList<TextBlock>::emplace_back(std::forward<Args>(args)...);
         m_max_line_length = std::max(m_max_line_length, back().lines_count());
     }
     size_t width() const {

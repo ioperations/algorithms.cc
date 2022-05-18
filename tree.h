@@ -46,10 +46,10 @@ class ArrayTreeNode : public BaseTreeNode<T, Array<ArrayTreeNode<T>>> {
 
 template <typename T>
 class ForwardListTreeNode
-    : public BaseTreeNode<T, Forward_list<ForwardListTreeNode<T>>> {
+    : public BaseTreeNode<T, ForwardList<ForwardListTreeNode<T>>> {
    public:
-    using Base = BaseTreeNode<T, Forward_list<ForwardListTreeNode<T>>>;
-    ForwardListTreeNode(T data, Forward_list<ForwardListTreeNode>&& children)
+    using Base = BaseTreeNode<T, ForwardList<ForwardListTreeNode<T>>>;
+    ForwardListTreeNode(T data, ForwardList<ForwardListTreeNode>&& children)
         : Base(data, std::move(children)) {}
     ForwardListTreeNode(T data) : Base(data) {}
     ForwardListTreeNode() = default;
@@ -57,6 +57,6 @@ class ForwardListTreeNode
 
 template <typename T, typename C>
 std::ostream& operator<<(std::ostream& stream, const BaseTreeNode<T, C>& node) {
-    Tree_printer<BaseTreeNode<T, C>>::default_instance().print(node, stream);
+    TreePrinter<BaseTreeNode<T, C>>::default_instance().print(node, stream);
     return stream;
 }

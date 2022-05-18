@@ -1,7 +1,7 @@
 #include "text_block.h"
 
 std::ostream& operator<<(std::ostream& stream, const TextBlocks& blocks) {
-    Forward_list<TextBlock::Lines::const_iterator> text_block;
+    ForwardList<TextBlock::Lines::const_iterator> text_block;
     for (auto block = blocks.cbegin(); block != blocks.cend(); ++block)
         text_block.push_back(block->lines().cbegin());
 

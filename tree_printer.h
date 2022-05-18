@@ -87,17 +87,17 @@ class TreePrinterBase {
         }
     };
 
-    using Line = Forward_list<Siblings>;
-    using Lines = Forward_list<Line>;
+    using Line = ForwardList<Siblings>;
+    using Lines = ForwardList<Line>;
 
     void print(Lines& lines, std::ostream& stream);
-    Forward_list<std::string> compose_text_lines(Lines& lines);
+    ForwardList<std::string> compose_text_lines(Lines& lines);
     template <typename A>
     void print(Lines& lines, A&& appender);
 };
 
 template <typename N>
-class Tree_printer_node_handler {
+class TreePrinterNodeHandler {
    public:
     std::string node_to_string(const N& node) {
         std::stringstream ss;
@@ -116,19 +116,19 @@ class Tree_printer_node_handler {
     bool node_is_empty(const N& n) { return false; }
 };
 
-template <typename N, typename NH = Tree_printer_node_handler<N>>
-class Tree_printer : protected NH, protected TreePrinterBase {
+template <typename N, typename NH = TreePrinterNodeHandler<N>>
+class TreePrinter : protected NH, protected TreePrinterBase {
    private:
     Lines compose_lines(const N& node) {
-        struct Node_info {
+        struct NodeInfo {
             const N* m_node;
             int m_level;
             PrintedNode* m_parent;
-            Node_info(const N* node, int level, PrintedNode* parent)
+            NodeInfo(const N* node, int level, PrintedNode* parent)
                 : m_node(node), m_level(level), m_parent(parent) {}
         };
 
-        Forward_list<Node_info> queue;
+        ForwardList<NodeInfo> queue;
         queue.emplace_back(&node, 1, nullptr);
         int level = 0;
         Lines lines;
@@ -173,13 +173,13 @@ class Tree_printer : protected NH, protected TreePrinterBase {
         TreePrinterBase::print(lines, stream);
     }
 
-    Forward_list<std::string> compose_text_lines(const N& node) {
+    ForwardList<std::string> compose_text_lines(const N& node) {
         auto lines = compose_lines(node);
         return TreePrinterBase::compose_text_lines(lines);
     }
 
-    static Tree_printer default_instance() {
-        static Tree_printer printer;
+    static TreePrinter default_instance() {
+        static TreePrinter printer;
         return printer;
     }
 };

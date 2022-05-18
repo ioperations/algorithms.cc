@@ -6,14 +6,14 @@
 #include "pair.h"
 
 template <typename T>
-auto to_string(const Forward_list<T>& l) {
+auto to_string(const ForwardList<T>& l) {
     std::stringstream ss;
     for (auto it = l.cbegin(); it != l.cend(); ++it) ss << (*it) << " ";
     return ss.str();
 }
 
 TEST(Forward_list_test, base) {
-    using list = Forward_list<int>;
+    using list = ForwardList<int>;
     list l;
     auto fill_list = [&l]() {
         l.push_back(3);
@@ -49,16 +49,16 @@ TEST(Forward_list_test, base) {
 }
 
 TEST(Forward_list_test, pair) {
-    Forward_list<Pair<int, int>> list;
+    ForwardList<Pair<int, int>> list;
     list.emplace_back(1, 2);
     ASSERT_EQ(Pair(1, 2), *list.begin());
 }
 
 TEST(Forward_list_test, pop_front) {
-    Forward_list<int> list;
+    ForwardList<int> list;
     for (int i = 0; i < 10; ++i) list.push_back(i);
 
-    Forward_list<int> list_2;
+    ForwardList<int> list_2;
     while (!list.empty()) list_2.push_back(list.pop_front());
 
     ASSERT_EQ("0 1 2 3 4 5 6 7 8 9 ", to_string(list_2));
@@ -70,7 +70,7 @@ TEST(Forward_list_test, pop_front) {
 }
 
 TEST(Forward_list_test, merge_sort) {
-    Forward_list<int> list{5, 3, 1, 4, 2};
+    ForwardList<int> list{5, 3, 1, 4, 2};
     ASSERT_EQ("5 3 1 4 2 ", to_string(list));
     list.merge_sort();
     ASSERT_EQ("1 2 3 4 5 ", to_string(list));
@@ -85,7 +85,7 @@ TEST(Forward_list_test, merge_sort) {
 }
 
 TEST(Forward_list_test, remove_element) {
-    Forward_list<int> list{5, 3};
+    ForwardList<int> list{5, 3};
     ASSERT_TRUE(list.remove_first_if([](int value) { return value == 5; }));
     ASSERT_EQ("3 ", to_string(list));
     ASSERT_FALSE(list.remove_first_if([](int value) { return value == 2; }));

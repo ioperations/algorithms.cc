@@ -9,7 +9,7 @@ std::ostream& operator<<(std::ostream& stream,
                          const Two_dimensional_array<T>& array) {
     stream << std::endl;
     for (auto r = array.cbegin(); r != array.cend(); ++r) {
-        for (auto e = r->begin(); e != r->end(); ++e) {
+        for (const auto* e = r->begin(); e != r->end(); ++e) {
             stream.width(3);
             stream << *e << " ";
         }
