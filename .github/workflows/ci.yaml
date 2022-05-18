@@ -1,0 +1,25 @@
+name: test and dryrun
+
+# Run this workflow every time a new commit pushed to your repository
+on: push
+
+jobs:
+  build-test:
+    name: Build on ${{matrix.container }}
+    runs-on: ubuntu-latest
+    container: ${{ matrix.container }}
+    steps:
+      - id: step0
+        name: Checkout code
+        uses: actions/checkout@v2
+      - id: fetch-toolchain
+        run: sudo apt update && sudo apt install cmake build-essential libgtest-dev clang-12 -y
+
+      - id: build-and-test
+        run: |
+          pwd && ls && ls -R
+          mkdir build  
+          cd build 
+          cmake ..
+          make -j $(nproc) 
+          make test
