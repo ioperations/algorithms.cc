@@ -2,8 +2,8 @@ enable_testing()
 find_package(GTest REQUIRED)
 
 set(MAIN_SRC ${CMAKE_CURRENT_SOURCE_DIR}/..)
-include_directories(${MAIN_SRC})
-include_directories(${MAIN_SRC}/graph)
+include_directories(${MAIN_SRC}/inlcude)
+include_directories(${MAIN_SRC}/include/graph)
 link_libraries(GTest::GTest GTest::Main)
 
 macro (do_add_test _name)
