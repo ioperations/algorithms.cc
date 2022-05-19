@@ -7,13 +7,13 @@ include_directories(${MAIN_SRC}/include/graph)
 link_libraries(GTest::GTest GTest::Main)
 
 macro (do_add_test _name)
-    add_executable(${_name} ${_name}.cpp)
+    add_executable(${_name} ${_name}.cc)
 
     add_test(NAME ${_name} COMMAND ${_name} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
     target_compile_options(${_name} PUBLIC "-g")
 endmacro()
 
-file(GLOB TEST_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*_test.cpp)
+file(GLOB TEST_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*_test.cc)
 foreach(_path ${TEST_SOURCE_FILES})
     get_filename_component(_name ${_path} NAME)
     list(APPEND TEST_SOURCE_FILE_NAMES ${_name})
