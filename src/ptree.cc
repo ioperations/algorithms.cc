@@ -1,8 +1,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 
 #include "binary_tree.h"
+#include "popl/popl.hpp"
 #include "tree.h"
 #include "tree_printer.h"
 
@@ -95,34 +97,52 @@ void free_tree_node(TreeNode* root) {
     delete root;
 }
 
-void test(int argc, char* argv[]) {
-    std::optional<int> tmp;
-
+void test(int begin, int end, int step) {
     vector<optional<int>> vec;
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "null") == 0) {
-            vec.push_back(tmp);
-        } else {
-            vec.push_back(atoi(argv[i]));
-        }
+    for (int i = begin; i < end; i += step) {
+        vec.push_back(i);
     }
 
     TreeNode* n = construct_binary_tree(vec);
 
     std::cout << to_string(*n) << std::endl;
-
-    //   free_tree_node(n);
-    //
 }
-void usage(int argc, char* argv[]) { fprintf(stderr, "%s  1 2 3 4 ", argv[0]); }
+
+#define MAX_SIZE 5000
 
 int main(int argc, char* argv[]) {
-    if (argc > 1 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "-") == 0 ||
-                     strcmp(argv[1], "--help") == 0)) {
-        usage(argc, argv);
+    popl::OptionParser op("ptree");
+    auto help = op.add<popl::Switch>("h", "help", "help message");
+    auto begin = op.add<popl::Value<int>>("f", "from", "ptree start from ", 0);
+    auto end = op.add<popl::Value<int>>("t", "to", "ptree end until");
+    auto step = op.add<popl::Value<int>>("s", "step", "ptree step from ", 1);
+
+    op.parse(argc, argv);
+    if (help->is_set()) {
+        std::cerr << op << std::endl;
         return -1;
     }
-    test(argc, argv);
+    if (end->is_set()) {
+        if ((end->value() - begin->value()) && (step->value() == 0)) {
+            std::cerr << "range from " << begin->value() << " to "
+                      << end->value() << " ,but step is 0" << std::endl;
+            return -1;
+        }
+        if ((end->value() - begin->value()) * step->value() < 0) {
+            std::cerr << "cannot range from " << begin->value() << " to "
+                      << end->value() << " while step is " << step->value()
+                      << std::endl;
+            return -1;
+        }
+        if ((end->value() - begin->value()) <= step->value() * MAX_SIZE) {
+            test(begin->value(), end->value(), step->value());
+        } else {
+            std::cerr << "end value is too much big" << std::endl;
+        }
+    } else {
+        std::cerr << "do not have end set" << std::endl;
+        std::cerr << op << std::endl;
+    }
     return 0;
 }
 

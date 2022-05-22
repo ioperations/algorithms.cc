@@ -18,6 +18,7 @@ add_library(common_utils ./src/string_utils.cc ./src/tree_printer.cc ./src/text_
 link_libraries(common_utils)
 
 include_directories(PRIVATE ${CMAKE_SOURCE_DIR}/include)
+include_directories(PRIVATE ${CMAKE_SOURCE_DIR}/third_party)
 
 add_executable(stack ./src/stack.cc)
 add_executable(quick_find ./src/quick_find.cc)
