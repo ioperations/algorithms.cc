@@ -99,8 +99,14 @@ void free_tree_node(TreeNode* root) {
 
 void test(int begin, int end, int step) {
     vector<optional<int>> vec;
-    for (int i = begin; i < end; i += step) {
-        vec.push_back(i);
+    if (step > 0) {
+        for (int i = begin; i < end; i += step) {
+            vec.push_back(i);
+        }
+    } else {
+        for (int i = begin; i > end; i += step) {
+            vec.push_back(i);
+        }
     }
 
     TreeNode* n = construct_binary_tree(vec);
@@ -134,7 +140,8 @@ int main(int argc, char* argv[]) {
                       << std::endl;
             return -1;
         }
-        if ((end->value() - begin->value()) <= step->value() * MAX_SIZE) {
+        if (abs(end->value() - begin->value()) <=
+            abs(step->value() * MAX_SIZE)) {
             test(begin->value(), end->value(), step->value());
         } else {
             std::cerr << "end value is too much big" << std::endl;
